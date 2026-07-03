@@ -84,7 +84,7 @@ sense of unfairness. Quote the policy both ways. Stop before send.
 ## Sixty seconds
 
 ```console
-$ npm install -g github:shahcolate/docket   # or run every command via npx
+$ npm install -g docket-agent   # or: npx docket-agent <command>
 $ docket init
 ✓ created .docket
 
@@ -181,13 +181,13 @@ try the new tool, point it at the same files, keep working.
 `docket mcp` is a zero-config MCP server. Add it to Claude Code:
 
 ```console
-$ claude mcp add docket -- npx github:shahcolate/docket mcp
+$ claude mcp add docket -- npx docket-agent mcp
 ```
 
 or to any MCP client:
 
 ```json
-{ "mcpServers": { "docket": { "command": "npx", "args": ["github:shahcolate/docket", "mcp"] } } }
+{ "mcpServers": { "docket": { "command": "npx", "args": ["docket-agent", "mcp"] } } }
 ```
 
 The agent gets four tools:

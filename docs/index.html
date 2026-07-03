@@ -303,7 +303,7 @@ footer.site {
         <a class="btn primary" href="#start">Set up in 60 seconds</a>
         <a class="btn ghost" href="https://github.com/shahcolate/docket">View on GitHub</a>
       </div>
-      <p class="fine">MIT licensed · <code>npx github:shahcolate/docket init</code> is the whole install</p>
+      <p class="fine">MIT licensed · <code>npx docket-agent init</code> is the whole install</p>
     </div>
 
     <div class="widget" id="widget">
@@ -382,11 +382,11 @@ footer.site {
             <li><b>Compile</b> — your rules land in CLAUDE.md, which Claude Code already reads.</li>
             <li><b>Optional:</b> add the MCP server so Claude checks warrants and writes the record itself.</li>
           </ol>
-          <div class="codeblock"><button class="copy" type="button">copy</button><pre>npx github:shahcolate/docket init
-npx github:shahcolate/docket new appeal --template insurance-appeal
-npx github:shahcolate/docket compile --target claude --write
+          <div class="codeblock"><button class="copy" type="button">copy</button><pre>npx docket-agent init
+npx docket-agent new appeal --template insurance-appeal
+npx docket-agent compile --target claude --write
 <span class="c"># optional — native tools for checks + record:</span>
-claude mcp add docket -- npx github:shahcolate/docket mcp</pre></div>
+claude mcp add docket -- npx docket-agent mcp</pre></div>
         </div>
         <p class="after">That’s it — Claude now starts every session knowing the rules, and asks before anything you didn’t allow.</p>
       </div>
@@ -398,9 +398,9 @@ claude mcp add docket -- npx github:shahcolate/docket mcp</pre></div>
             <li><b>Compile to AGENTS.md</b> — the file Codex and ChatGPT’s coding agent read automatically.</li>
             <li><b>Done.</b> The rules travel with your repo; every clone gets them.</li>
           </ol>
-          <div class="codeblock"><button class="copy" type="button">copy</button><pre>npx github:shahcolate/docket init
-npx github:shahcolate/docket new appeal --template insurance-appeal
-npx github:shahcolate/docket compile --target agents --write</pre></div>
+          <div class="codeblock"><button class="copy" type="button">copy</button><pre>npx docket-agent init
+npx docket-agent new appeal --template insurance-appeal
+npx docket-agent compile --target agents --write</pre></div>
         </div>
         <p class="after">AGENTS.md is an open convention — the same compile also covers Zed, Amp, and other tools that read it.</p>
       </div>
@@ -412,9 +412,9 @@ npx github:shahcolate/docket compile --target agents --write</pre></div>
             <li><b>Compile to GEMINI.md</b> — Gemini CLI loads it as project context on launch.</li>
             <li><b>Done.</b> Same rules, same record, different model.</li>
           </ol>
-          <div class="codeblock"><button class="copy" type="button">copy</button><pre>npx github:shahcolate/docket init
-npx github:shahcolate/docket new appeal --template insurance-appeal
-npx github:shahcolate/docket compile --target gemini --write</pre></div>
+          <div class="codeblock"><button class="copy" type="button">copy</button><pre>npx docket-agent init
+npx docket-agent new appeal --template insurance-appeal
+npx docket-agent compile --target gemini --write</pre></div>
         </div>
         <p class="after">Running Claude and Gemini side by side? Compile both targets — one rule file governs both.</p>
       </div>
@@ -426,9 +426,9 @@ npx github:shahcolate/docket compile --target gemini --write</pre></div>
             <li><b>Compile to Cursor rules</b> — lands in <code>.cursor/rules/docket.mdc</code>.</li>
             <li><b>Done.</b> Cursor’s agent sees the warrant on every request.</li>
           </ol>
-          <div class="codeblock"><button class="copy" type="button">copy</button><pre>npx github:shahcolate/docket init
-npx github:shahcolate/docket new appeal --template insurance-appeal
-npx github:shahcolate/docket compile --target cursor --write</pre></div>
+          <div class="codeblock"><button class="copy" type="button">copy</button><pre>npx docket-agent init
+npx docket-agent new appeal --template insurance-appeal
+npx docket-agent compile --target cursor --write</pre></div>
         </div>
         <p class="after">Commit <code>.docket/</code> and the compiled rules — your whole team inherits them.</p>
       </div>
@@ -442,7 +442,7 @@ npx github:shahcolate/docket compile --target cursor --write</pre></div>
           </ol>
           <div class="codeblock"><button class="copy" type="button">copy</button><pre>{ "mcpServers": { "docket": {
     "command": "npx",
-    "args": ["github:shahcolate/docket", "mcp",
+    "args": ["docket-agent", "mcp",
              "--dir", "/path/to/your/project"] } } }</pre></div>
         </div>
         <p class="after">Works with Claude Desktop, and any other MCP-capable client.</p>
