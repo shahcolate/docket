@@ -8,11 +8,12 @@ import path from 'node:path';
 
 const BIN = new URL('../bin/docket.js', import.meta.url).pathname;
 
-function docket(cwd, args, { expectExit = 0 } = {}) {
+function docket(cwd, args, { expectExit = 0, input } = {}) {
   try {
     const out = execFileSync(process.execPath, [BIN, ...args], {
       cwd,
       encoding: 'utf8',
+      input,
       env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0' },
     });
     assert.equal(0, expectExit, `expected exit ${expectExit}, got 0\n${out}`);
@@ -89,6 +90,66 @@ test('match routes a task to its loop; no coverage exits 2', () => {
   assert.match(none, /defaults to ask/);
 
   docket(dir, ['match'], { expectExit: 1 });
+});
+
+// The guided creator reads answers line by line; --guided forces it on
+// without a TTY so the whole tour is testable through a pipe.
+const GUIDED_ANSWERS = [
+  'Build the appeal, cite the policy.', // description
+  'the denial reason code and the appeal deadline', // brief
+  'read the denial letter first', // procedure
+  'policy documents, denial letter', // read
+  'appeal letter', // draft
+  '', // change
+  '', // send
+  'contacting the insurer', // ask
+  'accepting a settlement', // never
+  'signing and sending', // reserved
+  'every policy clause cited', // record
+];
+
+test('guided creator walks the five layers, previews, writes, and demos verdicts', () => {
+  const dir = freshProject();
+  const input = ['appeal', ...GUIDED_ANSWERS, 'y'].join('\n') + '\n';
+  const out = docket(dir, ['new', '--guided'], { input });
+  for (const n of [1, 2, 3, 4, 5]) assert.match(out, new RegExp(`Step ${n} of 5`));
+  assert.match(out, /Unlisted means ask/);
+  // the live demo shows all three verdicts against the warrant just written
+  assert.match(out, /ALLOW\s+read → "policy documents"/);
+  assert.match(out, /ASK\s+send → /);
+  assert.match(out, /DENY\s+change → "accepting a settlement"/);
+  const text = fs.readFileSync(path.join(dir, '.docket', 'loops', 'appeal.loop.md'), 'utf8');
+  assert.match(text, /^---\nname: appeal\n/);
+  assert.match(text, /never:\n    - accepting a settlement/);
+  assert.match(text, /# Brief\n\n- the denial reason code/);
+  // the written file is immediately usable by the rest of the CLI
+  docket(dir, ['check', 'appeal', 'draft', 'appeal letter']);
+  // demo checks are demonstrations, not agent checks — only ours is recorded
+  assert.equal(docket(dir, ['record', 'log']).trim().split('\n').filter((l) => /appeal/.test(l)).length, 1);
+});
+
+test('guided creator re-asks on invalid or taken names and honors declining the write', () => {
+  const dir = freshProject();
+  docket(dir, ['new', 'taken', '--template', 'insurance-appeal']);
+  const input = ['Bad Name', 'taken', 'appeal', ...GUIDED_ANSWERS, 'n'].join('\n') + '\n';
+  const out = docket(dir, ['new', '--guided'], { input, expectExit: 1 });
+  assert.match(out, /lowercase letters, digits, and dashes/);
+  assert.match(out, /already exists/);
+  assert.match(out, /not written/);
+  assert.ok(!fs.existsSync(path.join(dir, '.docket', 'loops', 'appeal.loop.md')));
+});
+
+test('guided creator aborts cleanly when input runs out', () => {
+  const dir = freshProject();
+  const out = docket(dir, ['new', 'appeal', '--guided'], { input: 'desc\n', expectExit: 1 });
+  assert.match(out, /cancelled — nothing written/);
+  assert.ok(!fs.existsSync(path.join(dir, '.docket', 'loops', 'appeal.loop.md')));
+});
+
+test('new without a name and without a TTY is a usage error', () => {
+  const dir = freshProject();
+  const out = docket(dir, ['new'], { expectExit: 1 });
+  assert.match(out, /usage: docket new/);
 });
 
 test('check verdicts and exit codes: allow=0 ask=2 deny=3', () => {

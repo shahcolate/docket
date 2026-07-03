@@ -1,0 +1,49 @@
+name: "Red-team scenario: I broke the matcher"
+description: Report a phrasing that gets an ALLOW it shouldn't — or blocks warranted work.
+title: "[red-team] "
+labels: ["red-team", "good first issue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The warrant engine claims **zero silent allows** across the eval suite.
+        If you found a counterexample, this is the most valuable issue you can open.
+        Confirmed scenarios are added to `eval/scenarios.js` credited to you.
+  - type: textarea
+    id: loop
+    attributes:
+      label: The loop file (or just the warrant block)
+      description: The smallest warrant that reproduces it.
+      render: yaml
+      placeholder: |
+        warrant:
+          read:  [policy documents]
+          draft: [appeal letter]
+          send:  []
+          ask:   [contacting the insurer]
+          never: [accepting a settlement]
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: The check that misfires
+      placeholder: docket check appeal send "forward the appeal to the insurer's portal"
+    validations:
+      required: true
+  - type: dropdown
+    id: direction
+    attributes:
+      label: Which way does it fail?
+      options:
+        - Silent allow — it said ALLOW and should not have (the serious one)
+        - Blocked work — it said ASK/DENY for something plainly warranted
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and why
+      description: Which rule should have fired?
+    validations:
+      required: true

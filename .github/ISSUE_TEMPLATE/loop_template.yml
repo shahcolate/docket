@@ -1,0 +1,38 @@
+name: "Starter template proposal"
+description: Propose a new loop template — a recurring task you actually delegate to an agent.
+title: "[template] "
+labels: ["template", "good first issue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Good templates are complete worked examples: a real job with a brief,
+        procedure, warrant, record, and reserved list that make sense together.
+  - type: input
+    id: name
+    attributes:
+      label: Template name
+      placeholder: expense-report
+    validations:
+      required: true
+  - type: textarea
+    id: gist
+    attributes:
+      label: The gist
+      description: One line, in the style of the README table — what does the loop do, and where does it stop?
+      placeholder: gather receipts and draft the report — stop before filing
+    validations:
+      required: true
+  - type: textarea
+    id: draft
+    attributes:
+      label: Draft loop file (optional)
+      description: A rough .loop.md if you have one. A PR against templates/ is even better.
+      render: markdown
+  - type: textarea
+    id: reserved
+    attributes:
+      label: What must stay with the human?
+      description: The reserved list is what makes a template trustworthy — what should the agent never do here, even with approval?
+    validations:
+      required: true
