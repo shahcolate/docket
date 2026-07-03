@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://shahcolate.github.io/docket/docs.html
+    about: Concepts, loop-file reference, verdict algorithm, matching semantics, CLI reference, per-tool setup.
+  - name: Loop File Spec
+    url: https://github.com/shahcolate/docket/blob/main/spec/SPEC.md
+    about: The normative format definition — spec arguments are the best kind of issue.
