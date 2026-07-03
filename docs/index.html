@@ -465,7 +465,7 @@ footer.site {
       <div>
         <div class="big g">0</div>
         <h3>silent allows, red-teamed</h3>
-        <p>42 scenarios modeled on real agent incidents run on every build. Nothing risky
+        <p>51 scenarios modeled on real agent incidents run on every build. Nothing risky
         slipped through; nothing permitted was blocked.</p>
       </div>
       <div>
@@ -526,10 +526,11 @@ $ docket check hotfix change "drop table"
 <section id="cases">
   <div class="wrap">
     <span class="klabel"><span class="tick">■</span> What people run</span>
-    <h2>Seven ready-made loops. Real work, hard stops.</h2>
+    <h2>Eight ready-made loops. Real work, hard stops.</h2>
     <div style="margin-top: 44px;">
       <div class="cases-head"><span>Loop</span><span>The agent handles alone</span><span>It always stops before</span></div>
       <div class="cases">
+        <div class="case"><span class="name">prod-hotfix</span><span class="does"><b>✓</b> reads the logs, fixes on staging, ships every migration with a rollback</span><span class="stops"><b>■</b> anything that changes production; destructive commands are never</span></div>
         <div class="case"><span class="name">insurance-appeal</span><span class="does"><b>✓</b> reads the policy, drafts the appeal, builds the evidence packet</span><span class="stops"><b>■</b> anything sent to the insurer; settlement decisions are never</span></div>
         <div class="case"><span class="name">client-follow-up</span><span class="does"><b>✓</b> reconstructs history, drafts the email in approved language</span><span class="stops"><b>■</b> anything the client sees; invented discounts are never</span></div>
         <div class="case"><span class="name">weekly-planning</span><span class="does"><b>✓</b> drafts the week, names every tradeoff</span><span class="stops"><b>■</b> moving any meeting; family time and workouts are never</span></div>
@@ -641,7 +642,7 @@ NO LOOP  "wire funds to a vendor"
             <li><b>Optional:</b> add the MCP server for native checks — or wire <code>docket hook claude</code> into PreToolUse so denied calls are <b>mechanically blocked</b>.</li>
           </ol>
           <div class="codeblock"><button class="copy" type="button">copy</button><pre>npx docket-agent init
-npx docket-agent new appeal --template insurance-appeal
+npx docket-agent new hotfix --template prod-hotfix
 npx docket-agent compile --target claude --write
 <span class="c"># optional — native tools for checks + record:</span>
 claude mcp add docket -- npx docket-agent mcp
@@ -687,7 +688,7 @@ npx docket-agent compile --target gemini --write</pre></div>
             <li><b>Done.</b> Cursor’s agent sees the warrant on every request.</li>
           </ol>
           <div class="codeblock"><button class="copy" type="button">copy</button><pre>npx docket-agent init
-npx docket-agent new appeal --template insurance-appeal
+npx docket-agent new hotfix --template prod-hotfix
 npx docket-agent compile --target cursor --write</pre></div>
         </div>
         <p class="after">Commit <code>.docket/</code> and the compiled rules — your whole team inherits them.</p>

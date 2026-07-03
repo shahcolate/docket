@@ -132,9 +132,11 @@ DENY  change → "accepting a settlement"
   never happens, with or without approval.
 ```
 
-那位被激怒的客户的故事，就这样被一个文本文件拦下了。而其中最重要的是默认姿态：
+一次智能体越权，就这样被一个文本文件拦下了。而其中最重要的是默认姿态：
 授权令从未给 `send` 授予过任何东西，所以**每一次发送都要先问**——
-智能体不需要预判出那封邮件的具体内容，也照样会被拦住。
+智能体不需要预判出那封邮件的具体内容，也照样会被拦住。数据库那个故事靠的
+也是同一种姿态：`never: 生产环境的破坏性命令` 是在冷静时预先写下的，
+任何当下的慌乱都推翻不了它。
 
 匹配是词级、带词干还原、并且**不对称**的：`ask`/`never` 模式在两个方向上都做模糊匹配
 （`accepting a settlement` 会命中 `accepting or rejecting a settlement`），
@@ -142,7 +144,7 @@ DENY  change → "accepting a settlement"
 `"status email to the team"` 这样具体的 allow 条目继承到权限。
 措辞上的差异可能带来一次多余的询问，但绝不会带来一次意外的放行。
 
-我们对这个论断做红队测试：[42 个场景](eval/REPORT.md)取材于真实的智能体越权事件，
+我们对这个论断做红队测试：[51 个场景](eval/REPORT.md)取材于真实的智能体越权事件，
 在每次 CI 构建中对内置模板全量运行——**零静默放行，零误拦已授权的工作**。
 你可以用 `npm run eval` 自行复现。
 
@@ -298,10 +300,11 @@ allow read: "state insurance regulations" in appeal? [y/N] y
 
 ## 起步模板
 
-七个模板，每个都是完整的成品示例（`docket templates`）：
+八个模板，每个都是完整的成品示例（`docket templates`）：
 
 | Loop | 要点 |
 |---|---|
+| `prod-hotfix` | 在 staging 上诊断和修复——**碰生产必须先问，破坏性命令永远禁止** |
 | `insurance-appeal` | 写好申诉信和证据包，**在发送前停下** |
 | `client-follow-up` | 许下的承诺、批准过的话术、语气——附带审批规则 |
 | `travel-morning` | 按你的脚力和饮食习惯来，而不是旅游指南的 |

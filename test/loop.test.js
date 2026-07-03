@@ -82,7 +82,7 @@ test('extractSections is case-insensitive and heading-level tolerant', () => {
 test('all shipped templates parse and have every layer', () => {
   const dir = new URL('../templates/', import.meta.url).pathname;
   const files = fs.readdirSync(dir).filter((f) => f.endsWith('.loop.md'));
-  assert.equal(files.length, 7);
+  assert.equal(files.length, 8);
   for (const f of files) {
     const loop = parseLoop(fs.readFileSync(path.join(dir, f), 'utf8'), { file: f });
     assert.equal(`${loop.name}.loop.md`, f, `${f}: name must match filename`);
