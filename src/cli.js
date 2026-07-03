@@ -18,7 +18,8 @@ ${bold('Usage:')} docket <command> [args]
 
 ${bold('Getting started')}
   ${cyan('init')}                       create a .docket directory here
-  ${cyan('new')} <name>                 create a loop (interactive, or --template <t>)
+  ${cyan('new')} [name]                 create a loop — a step-by-step guided creator
+                             that teaches the five layers (or --template <t>, --blank)
   ${cyan('templates')}                  list the starter loop templates
 
 ${bold('Working with loops')}
