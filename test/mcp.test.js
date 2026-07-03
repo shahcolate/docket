@@ -7,12 +7,16 @@ import os from 'node:os';
 import path from 'node:path';
 
 const BIN = new URL('../bin/docket.js', import.meta.url).pathname;
+// Color must be off regardless of the host shell's FORCE_COLOR/CLICOLOR exports —
+// assertions match plain text.
+const ENV = { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0' };
 
 function setupProject() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-mcp-'));
-  execFileSync(process.execPath, [BIN, 'init', '--quiet'], { cwd: dir });
+  execFileSync(process.execPath, [BIN, 'init', '--quiet'], { cwd: dir, env: ENV });
   execFileSync(process.execPath, [BIN, 'new', 'appeal', '--template', 'insurance-appeal'], {
     cwd: dir,
+    env: ENV,
   });
   return dir;
 }
@@ -83,11 +87,13 @@ test('initialize, list tools, check boundary, leave receipt', async () => {
   const verify = execFileSync(process.execPath, [BIN, 'record', 'verify'], {
     cwd: dir,
     encoding: 'utf8',
+    env: ENV,
   });
   assert.match(verify, /chain intact/);
   const log = execFileSync(process.execPath, [BIN, 'record', 'log'], {
     cwd: dir,
     encoding: 'utf8',
+    env: ENV,
   });
   assert.match(log, /ask send/);
   assert.match(log, /did: drafted appeal/);
