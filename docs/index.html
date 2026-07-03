@@ -248,9 +248,10 @@ h2 { font-size: clamp(26px, 3.4vw, 40px); font-weight: 800; letter-spacing: -0.0
 .panel .steps-mini { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
 @media (max-width: 860px) { .panel .steps-mini { grid-template-columns: 1fr; } }
 .panel ol { margin: 0; padding: 0; list-style: none; counter-reset: st; }
-.panel ol li { counter-increment: st; padding: 12px 0; border-top: 1px solid var(--hair); font-size: 15px; color: var(--mut); display: flex; gap: 14px; }
+.panel ol li { counter-increment: st; padding: 12px 0 12px 34px; border-top: 1px solid var(--hair); font-size: 15px; color: var(--mut); position: relative; }
 .panel ol li:first-child { border-top: none; padding-top: 0; }
-.panel ol li::before { content: counter(st, decimal-leading-zero); font-family: var(--mono); font-size: 12px; color: var(--red); font-weight: 700; padding-top: 3px; }
+.panel ol li::before { content: counter(st, decimal-leading-zero); font-family: var(--mono); font-size: 12px; color: var(--red); font-weight: 700; position: absolute; left: 0; top: 15px; }
+.panel ol li:first-child::before { top: 3px; }
 .panel ol li b { color: var(--ink); }
 .codeblock { position: relative; background: var(--term-bg); color: var(--term-ink); padding: 18px 18px 20px; overflow-x: auto; }
 .codeblock pre { font-size: 12.5px; line-height: 1.8; }
@@ -392,12 +393,11 @@ footer.site {
 <header class="hero wrap">
   <div class="hero-grid">
     <div>
-      <div class="klabel"><span class="tick">■</span> Open source · zero dependencies · works with Claude, ChatGPT, Gemini, Cursor, OpenClaw, Hermes</div>
+      <div class="klabel"><span class="tick">■</span> Open source · works with Claude, ChatGPT, Gemini, Cursor &amp; more</div>
       <h1>Let your agent act. Decide what it&rsquo;s <span class="r">allowed</span>&nbsp;to&nbsp;do.</h1>
-      <p class="sub">AI agents now send emails, move meetings, and change records on your
-      behalf. Docket gives each recurring task a one-page rule file the agent must
-      check before acting — <b>allow, ask, or deny</b> — and a tamper-evident record of
-      everything it did. Anything you didn’t write down, it has to ask about.</p>
+      <p class="sub">AI agents act on your behalf. Docket gives yours one page of rules —
+      <b>allow, ask, or deny</b> — and tamper-proof receipts for everything it does.
+      Anything you didn’t write down, it asks first.</p>
       <div class="ctas">
         <a class="btn primary" href="#start">Set up in 60 seconds</a>
         <a class="btn ghost" href="https://github.com/shahcolate/docket">View on GitHub</a>
@@ -414,11 +414,11 @@ footer.site {
         <p class="q">Your agent is handling an insurance appeal. It wants to…</p>
         <div class="acts" role="group" aria-label="choose an action">
           <button type="button" data-v="allow" data-cmd='docket check appeal draft "appeal letter"'
-            data-why="Drafting the appeal is exactly what this loop is for. The warrant lists it — the agent proceeds, and the check is logged.">draft the appeal letter</button>
+            data-why="The rules list drafting — the agent proceeds, and the check is logged.">draft the appeal letter</button>
           <button type="button" data-v="ask" data-cmd='docket check appeal send "appeal email to the insurer"'
-            data-why="Sending leaves the sandbox. Nothing under send is listed, and unlisted always means ask — the agent stops and brings it to you.">send the appeal to the insurer</button>
+            data-why="Sending isn’t listed, and unlisted always means ask — the agent stops and brings it to you.">send the appeal to the insurer</button>
           <button type="button" data-v="deny" data-cmd='docket check appeal change "accept the settlement offer"'
-            data-why="You wrote 'never: accepting or rejecting a settlement.' No amount of in-the-moment persuasion overrides a never.">accept the settlement offer</button>
+            data-why="You wrote “never: accepting a settlement.” No in-the-moment persuasion overrides a never.">accept the settlement offer</button>
         </div>
         <div class="verdict" aria-live="polite">
           <div class="word" id="v-word"></div>
@@ -426,33 +426,33 @@ footer.site {
           <p class="cli" id="v-cli"></p>
         </div>
       </div>
-      <div class="widget-foot">Every check is appended to a hash-chained record — exit codes <code>0/2/3</code> so hooks and CI can enforce it.</div>
+      <div class="widget-foot">Every check lands on a tamper-evident record — exit codes <code>0/2/3</code> let hooks and CI enforce it.</div>
     </div>
   </div>
 </header>
 
 <section id="value">
   <div class="wrap">
-    <span class="klabel"><span class="tick">■</span> Why teams adopt it</span>
+    <span class="klabel"><span class="tick">■</span> Why docket</span>
     <h2>Autonomy you can hand to an agent — and defend to anyone.</h2>
     <div class="value" style="margin-top: 44px;">
       <div>
         <div class="big g">0</div>
         <h3>silent allows, red-teamed</h3>
-        <p>42 scenarios modeled on real agent incidents run on every build. No risky action
-        was ever silently allowed — and no permitted work was blocked. <code>npm run eval</code> reproduces it.</p>
+        <p>42 scenarios modeled on real agent incidents run on every build. Nothing risky
+        slipped through; nothing permitted was blocked.</p>
       </div>
       <div>
         <div class="big">100%</div>
         <h3>of actions on the record</h3>
-        <p>What the agent saw, did, skipped, and where it stopped — in a hash-chained log
-        that exposes any edit. Evidence you can hand to a client or a compliance review.</p>
+        <p>Everything the agent did — in a tamper-evident log you can hand to a client,
+        a boss, or a compliance review.</p>
       </div>
       <div>
         <div class="big">1</div>
         <h3>rule file, every AI tool</h3>
-        <p>Write rules once; compile them to Claude, ChatGPT/Codex, Gemini, Cursor,
-        OpenClaw, and Hermes. Switching vendors is one command, not a migration.</p>
+        <p>Write rules once, compile them to every AI tool you use. Switching vendors is
+        one command, not a migration.</p>
       </div>
     </div>
   </div>
@@ -462,8 +462,7 @@ footer.site {
   <div class="wrap">
     <span class="klabel"><span class="tick">■</span> Get started</span>
     <h2>60 seconds, in the tool you already use.</h2>
-    <p class="sec-intro">Three commands: create your rules from a template, then compile them into
-    the file your AI tool already reads. No account, no server, no dependencies.</p>
+    <p class="sec-intro">Three commands. No account, no server, no dependencies.</p>
 
     <div style="margin-top: 40px;">
       <div class="tabs" role="tablist" aria-label="choose your tool">
@@ -481,7 +480,7 @@ footer.site {
           <ol>
             <li><b>Create a loop</b> from a template — or answer five questions interactively.</li>
             <li><b>Compile</b> — your rules land in CLAUDE.md, which Claude Code already reads.</li>
-            <li><b>Optional:</b> add the MCP server so Claude checks warrants and writes the record itself — or go further and <b>enforce mechanically</b>: <code>docket hook claude</code> as a PreToolUse hook blocks denied calls and prompts you on ask.</li>
+            <li><b>Optional:</b> add the MCP server for native checks — or wire <code>docket hook claude</code> into PreToolUse so denied calls are <b>mechanically blocked</b>.</li>
           </ol>
           <div class="codeblock"><button class="copy" type="button">copy</button><pre>npx docket-agent init
 npx docket-agent new appeal --template insurance-appeal
@@ -491,7 +490,7 @@ claude mcp add docket -- npx docket-agent mcp
 <span class="c"># optional — hard enforcement (docs → Hooks): wire</span>
 <span class="c"># "npx docket-agent hook claude" into hooks.PreToolUse</span></pre></div>
         </div>
-        <p class="after">That’s it — Claude now starts every session knowing the rules, asks before anything you didn’t allow, and with the hook installed it <em>can’t</em> run a denied call.</p>
+        <p class="after">That’s it — Claude starts every session knowing the rules. With the hook installed, it <em>can’t</em> run a denied call.</p>
       </div>
 
       <div class="panel" id="panel-chatgpt" role="tabpanel">
@@ -593,8 +592,8 @@ npx docket-agent compile --target agents --write
       <div class="step">
         <div class="n">01</div>
         <h3>Write the rules once</h3>
-        <p>One Markdown file per recurring task: what the agent must know, how the job is
-        done, what it may do alone, what stays human. Plain English — no DSL.</p>
+        <p>One plain-English file per task: what the agent should know, what it may do
+        alone, what stays yours.</p>
         <div class="mini"><b>warrant:</b>
   read:  [policy documents]
   draft: [appeal letter]
@@ -603,9 +602,9 @@ npx docket-agent compile --target agents --write
       </div>
       <div class="step">
         <div class="n">02</div>
-        <h3>The agent must check first</h3>
-        <p>Before acting, it gets a deterministic verdict. Not listed? It asks.
-        Marked never? Denied — even with approval. No guessing, ever.</p>
+        <h3>The agent checks first</h3>
+        <p>Every action gets a verdict before it happens. Not listed? It asks.
+        Marked never? Denied — even with approval.</p>
         <div class="mini">$ docket check appeal draft "letter"
 <span class="ga">ALLOW</span>  within the draft warrant
 $ docket check appeal send "email"
@@ -616,8 +615,8 @@ $ docket check appeal change "settle"
       <div class="step">
         <div class="n">03</div>
         <h3>Everything lands on the record</h3>
-        <p>Checks and completed work append to a hash-chained log. Any edit, deletion, or
-        reorder breaks the chain at the exact entry. Proof, not trust.</p>
+        <p>Every check and action joins a hash-chained log. Any edit breaks the chain at
+        the exact entry. Proof, not trust.</p>
         <div class="mini">$ docket record verify
 <span class="ga">✓ chain intact</span> — 4 entries
   head: sha256:fd4394fc…</div>
@@ -632,19 +631,13 @@ $ docket check appeal change "settle"
     <div class="record-grid" style="margin-top: 26px;">
       <div class="record-copy">
         <h2 style="margin-top: 0;">Fifty loops. Flat context.</h2>
-        <p style="margin-top: 16px;">Compiling every rule into the agent’s context stops
-        scaling around a handful of loops — the rules start crowding out the work. So
-        rules scale <b>on disk, not in context</b>: <code>docket compile --index</code>
-        keeps just the protocol plus one line per loop resident. The agent routes each
-        task with <code>docket match</code> (MCP: <code>docket_match_loop</code>) and
-        pulls only that loop in full.</p>
-        <p>Routing is deterministic — loop name, author-written <code>triggers</code>
-        phrases, warrant targets — and it <b>fails closed</b>: no match doesn’t mean
-        “best guess”, it means <em>no loop covers this, ask</em>. Exit 2, same as the
-        warrant. And enforcement never needed context at all — the check runs outside
-        the model and injects the one matched rule at the moment it matters.</p>
-        <p><b>The context window holds a table of contents and one open chapter. The
-        checker holds every rule, forever, at zero context cost.</b></p>
+        <p style="margin-top: 16px;">Stuffing every rule into the agent’s context stops
+        scaling after a handful of tasks. Docket keeps one line per loop in context —
+        the agent routes each task with <code>docket match</code> and pulls in only the
+        loop it needs.</p>
+        <p>Routing <b>fails closed</b>: no matching loop means <em>ask</em>, not best
+        guess. <b>The context window holds a table of contents and one open chapter;
+        the checker holds every rule, at zero context cost.</b></p>
       </div>
       <div class="codeblock"><pre>$ docket compile --index --target claude --write
 ✓ compiled index of 23 loops → CLAUDE.md
@@ -688,16 +681,15 @@ NO LOOP  "wire funds to a vendor"
     <div class="record-grid" style="margin-top: 26px;">
       <div class="record-copy">
         <h2 style="margin-top: 0;">Try to falsify it.</h2>
-        <p style="margin-top: 16px;">Every entry commits cryptographically to the one before it.
-        Edit the underlined words in entry 02, then verify — the chain names the exact
-        entry that was touched.</p>
-        <p><b>This is the difference between “the agent says it asked” and proof that it
-        did.</b> The log is a plain JSONL file in your repo: grep it, commit it, hand it
-        to an audit — but never quietly rewrite it.</p>
-        <p>And the record feeds back: <code>docket review</code> finds the actions your
-        agent kept asking about and proposes the exact rule updates — <b>you approve
-        each one</b>, and the approval is logged too. The rules improve weekly; the
-        agent never widens its own permissions.</p>
+        <p style="margin-top: 16px;">Every entry commits cryptographically to the one
+        before it. Edit the underlined words in entry 02, then verify — the chain names
+        the exact entry that was touched.</p>
+        <p><b>That’s the difference between “the agent says it asked” and proof that it
+        did.</b> The log is a plain file in your repo — grep it, commit it, hand it to
+        an audit.</p>
+        <p>And it feeds back: <code>docket review</code> turns repeated asks into
+        proposed rule updates. <b>You approve each one</b> — the agent never widens its
+        own permissions.</p>
       </div>
       <div class="ledger" id="ledger">
         <span class="tamper-flag" aria-hidden="true">Tampered</span>
