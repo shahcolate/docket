@@ -143,6 +143,7 @@ nav.top .links a:hover { color: var(--ink); }
   <a href="#compile">Compiling to your tools</a>
   <a href="#routing">Routing &amp; context scale</a>
   <a href="#mcp">The MCP server</a>
+  <a href="#hooks">Hooks: hard enforcement</a>
   <a href="#integrations">Per-tool setup</a>
   <a href="#cli">CLI reference</a>
   <div class="group">Trust</div>
@@ -151,7 +152,7 @@ nav.top .links a:hover { color: var(--ink); }
 </aside>
 
 <main class="doc">
-  <span class="klabel"><span class="tick">■</span> Documentation · v0.2</span>
+  <span class="klabel"><span class="tick">■</span> Documentation · v0.3</span>
   <h1>How docket works</h1>
   <p class="lede">Everything on this page is implemented, tested, and reproducible from the
   repo. The normative format definition is the
@@ -465,6 +466,49 @@ $ docket match "wire funds to a vendor"
     distinguishable from human CLI checks forever.</p>
   </section>
 
+  <section id="hooks">
+    <h2>Hooks: hard enforcement</h2>
+    <p>Compiled context tells the agent the rules; MCP makes checking cheap. For the tool
+    calls you actually fear, make the warrant <b>mechanical</b>: <code>docket hook
+    claude</code> plugs into Claude Code’s permission system as a PreToolUse hook. Add to
+    <code>.claude/settings.json</code>:</p>
+    <div class="code"><pre>{
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash|Write|Edit",
+        "hooks": [{ "type": "command", "command": "npx docket-agent hook claude" }] }
+    ]
+  }
+}</pre></div>
+    <p>Every matched tool call is piped through the warrant <em>before it runs</em>:</p>
+    <div class="table-scroll"><table>
+      <tr><th>Verdict</th><th>What Claude Code does</th></tr>
+      <tr><td><span class="verdict-w d">deny</span></td><td>the call is blocked; the loop, rule, and reason go back to the model</td></tr>
+      <tr><td><span class="verdict-w k">ask</span></td><td>Claude Code prompts <em>you</em> before the call runs</td></tr>
+      <tr><td><span class="verdict-w a">allow</span></td><td><b>silence.</b> Docket emits no decision on allow — it only ever <em>tightens</em> the gate, never bypasses Claude Code’s own permission prompts</td></tr>
+    </table></div>
+    <h3>How calls map to the warrant</h3>
+    <ul>
+      <li>Read-shaped tools (<code>Read</code>, <code>Grep</code>, <code>WebFetch</code>, …)
+      check as <code>read</code>; file-writing tools (<code>Write</code>, <code>Edit</code>, …)
+      as <code>change</code>. Everything else — <code>Bash</code>, MCP tools, tools that
+      don’t exist yet — checks as <code>send</code>, the most consequential verb, so
+      unknown tools fall toward ask, never toward allow.</li>
+      <li>The target is the human part of the input (<code>Bash: git push origin main</code>,
+      <code>Write: appeal-letter.md</code>), so your warrant patterns match it in plain
+      words.</li>
+      <li>Without <code>--loop</code>, each call is <a href="#routing">routed</a> with the
+      same scoring as <code>docket match</code>; when no loop claims the call, the hook
+      stays silent and Claude Code’s own permissions decide. Pin one loop with
+      <code>--loop &lt;name&gt;</code>, or add <code>--strict</code> to turn no-coverage
+      into an ask.</li>
+      <li>Every check lands on the record with <code>via: "hook"</code> — enforcement and
+      evidence in one move. Misconfiguration (a bad loop name, non-JSON stdin) is loud on
+      stderr but never blocks the session; a project without a <code>.docket</code>
+      directory costs nothing.</li>
+    </ul>
+  </section>
+
   <section id="integrations">
     <h2>Per-tool setup</h2>
     <p>The pattern is the same everywhere: <code>init</code> → <code>new</code> →
@@ -475,7 +519,9 @@ $ docket match "wire funds to a vendor"
 npx docket-agent new followup --template client-follow-up
 npx docket-agent compile --target claude --write
 <span class="c"># optional — native checks + record via MCP:</span>
-claude mcp add docket -- npx docket-agent mcp</pre></div>
+claude mcp add docket -- npx docket-agent mcp
+<span class="c"># optional — hard enforcement: wire `docket hook claude` into</span>
+<span class="c"># .claude/settings.json as a PreToolUse hook (see “Hooks” above)</span></pre></div>
 
     <h3>ChatGPT · Codex</h3>
     <div class="code"><pre>npx docket-agent compile --target agents --write   <span class="c"># → AGENTS.md</span></pre></div>
@@ -536,6 +582,7 @@ npx docket-agent compile --target agents --write</pre></div>
       <tr><td><code>docket review</code></td><td>propose warrant updates from repeated asks (<code>--min</code>, <code>--loop</code>, <code>--yes</code>)</td></tr>
       <tr><td><code>docket compile</code></td><td><code>--target claude|agents|gemini|cursor|raw</code>, <code>--write</code> to update the file in place, <code>--loop</code> to preview one loop on stdout, <code>--index</code> to compile the routing table instead of full loops</td></tr>
       <tr><td><code>docket mcp</code></td><td>run the MCP server (<code>--dir</code> or <code>DOCKET_DIR</code> to locate the project)</td></tr>
+      <tr><td><code>docket hook claude</code></td><td>Claude Code PreToolUse hook: deny blocks, ask prompts the human, allow stays silent (<code>--loop</code> pins a loop, <code>--strict</code> asks on no coverage, <code>--dir</code> locates the project)</td></tr>
     </table></div>
   </section>
 
@@ -564,10 +611,12 @@ npx docket-agent compile --target agents --write</pre></div>
     <h3>What stops the agent from just ignoring the rules?</h3>
     <p>Three layers, in increasing strength: the compiled context tells it the rules
     (models follow explicit written boundaries far better than vibes); the MCP tools make
-    checking cheap and logged, so skipping the check is visible in the record; and the
-    exit codes let you make it <em>mechanical</em> — wrap risky tools in a shell guard
-    that calls <code>docket check</code> and refuses on exit 2/3, or wire it into your
-    agent’s hook system. Advisory for cooperative agents, enforceable where it counts.</p>
+    checking cheap and logged, so skipping the check is visible in the record; and
+    <a href="#hooks"><code>docket hook claude</code></a> makes it <em>mechanical</em> —
+    Claude Code pipes tool calls through the warrant before they run, blocking on deny
+    and prompting you on ask. On other agents, the exit codes give you the same lever:
+    wrap risky tools in a shell guard that calls <code>docket check</code> and refuses on
+    exit 2/3. Advisory for cooperative agents, enforceable where it counts.</p>
     <h3>Can the record be faked?</h3>
     <p>Edits, deletions, insertions, and reordering break the hash chain at a named
     entry. Tail truncation is caught by pinning the head hash

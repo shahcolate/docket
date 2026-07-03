@@ -9,6 +9,7 @@ import { cmdRecord } from './commands/record.js';
 import { cmdCompile } from './commands/compile.js';
 import { cmdReview } from './commands/review.js';
 import { cmdMcp } from './commands/mcp.js';
+import { cmdHook } from './commands/hook.js';
 
 const HELP = `
 ${bold('docket')} — brief the agent, warrant the actions, keep the record
@@ -45,6 +46,9 @@ ${bold('Portability')}
                              (--index: one line per loop + the protocol, instead of
                              full loops — keeps context flat as rule count grows)
   ${cyan('mcp')}                        run the MCP server (stdio) for agent integration
+  ${cyan('hook')} claude [--loop <name>] [--strict]
+                             Claude Code PreToolUse hook: gate tool calls on
+                             the warrant — deny blocks, ask prompts the human
 
 ${dim('Every loop answers five questions: what must it know, how is the work')}
 ${dim('done, what may it do without asking, where does it stop, and what')}
@@ -87,6 +91,8 @@ export async function main(argv) {
       return cmdReview(rest);
     case 'mcp':
       return cmdMcp(rest);
+    case 'hook':
+      return cmdHook(rest);
     default:
       console.error(`docket: unknown command "${command}" — try \`docket help\``);
       return 1;

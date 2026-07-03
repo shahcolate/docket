@@ -284,6 +284,7 @@ footer.site {
   <div class="links">
     <a href="#start">Get started</a>
     <a href="#how">How it works</a>
+    <a href="#scale">Scale</a>
     <a href="#record">The record</a>
     <a href="docs.html">Docs</a>
     <a class="gh" href="https://github.com/shahcolate/docket">GitHub&nbsp;★</a>
@@ -383,15 +384,17 @@ footer.site {
           <ol>
             <li><b>Create a loop</b> from a template — or answer five questions interactively.</li>
             <li><b>Compile</b> — your rules land in CLAUDE.md, which Claude Code already reads.</li>
-            <li><b>Optional:</b> add the MCP server so Claude checks warrants and writes the record itself.</li>
+            <li><b>Optional:</b> add the MCP server so Claude checks warrants and writes the record itself — or go further and <b>enforce mechanically</b>: <code>docket hook claude</code> as a PreToolUse hook blocks denied calls and prompts you on ask.</li>
           </ol>
           <div class="codeblock"><button class="copy" type="button">copy</button><pre>npx docket-agent init
 npx docket-agent new appeal --template insurance-appeal
 npx docket-agent compile --target claude --write
 <span class="c"># optional — native tools for checks + record:</span>
-claude mcp add docket -- npx docket-agent mcp</pre></div>
+claude mcp add docket -- npx docket-agent mcp
+<span class="c"># optional — hard enforcement (docs → Hooks): wire</span>
+<span class="c"># "npx docket-agent hook claude" into hooks.PreToolUse</span></pre></div>
         </div>
-        <p class="after">That’s it — Claude now starts every session knowing the rules, and asks before anything you didn’t allow.</p>
+        <p class="after">That’s it — Claude now starts every session knowing the rules, asks before anything you didn’t allow, and with the hook installed it <em>can’t</em> run a denied call.</p>
       </div>
 
       <div class="panel" id="panel-chatgpt" role="tabpanel">

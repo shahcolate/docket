@@ -242,6 +242,35 @@ The agent gets five tools:
 Warrant checks made by the agent land in the record too. *"Did the agent
 even ask?"* becomes a grep.
 
+## Make it mechanical (Claude Code hooks)
+
+Compiled context tells the agent the rules; MCP makes checking cheap. For
+the tool calls you actually fear, make the warrant **mechanical** — wire it
+into Claude Code's permission system as a PreToolUse hook, in
+`.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit",
+        "hooks": [{ "type": "command", "command": "npx docket-agent hook claude" }]
+      }
+    ]
+  }
+}
+```
+
+Every matched tool call now passes through the warrant *before it runs*:
+**deny** blocks the call and tells the model why, **ask** makes Claude Code
+prompt you, and **allow** stays silent — docket only ever *tightens* the
+gate; it never bypasses Claude Code's own permission prompts. Without
+`--loop` the hook routes each call with the same scoring as `docket match`
+and stays out of the way when no loop claims the call (pin one loop with
+`--loop <name>`; add `--strict` to force an ask instead). Every check lands
+on the record with `via: "hook"` — enforcement and evidence in one move.
+
 ## OpenClaw and Hermes
 
 **[OpenClaw](https://docs.openclaw.ai)** injects your workspace's `AGENTS.md`
@@ -352,8 +381,8 @@ Read the [Loop File Spec](spec/SPEC.md) — it's short on purpose.
 
 ## Roadmap
 
+- [x] `docket check` as a Claude Code PreToolUse hook — shipped as `docket hook claude`
 - [ ] Signed record heads (attest the chain tip, share the attestation)
-- [ ] `docket check` as a Claude Code PreToolUse hook recipe
 - [ ] Loop inheritance (`extends:`) for team baselines
 - [ ] Record export → human-readable work summaries
 - [ ] Adapters: OpenAI custom instructions, Windsurf
