@@ -2,6 +2,9 @@
 name: insurance-appeal
 description: Build the appeal, cite the policy, assemble the evidence packet — stop before send.
 version: 1
+triggers:
+  - insurance appeal, appeal a denial
+  - denied claim, denial letter, claim dispute
 warrant:
   read:
     - policy documents

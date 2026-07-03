@@ -2,6 +2,9 @@
 name: ticket-handoff
 description: Turn messy work into tickets another human — or another agent — can pick up cold: source, owner, status, blocker, warrant, record.
 version: 1
+triggers:
+  - file a ticket, create tickets from this
+  - handoff, hand this off, triage the backlog
 warrant:
   read:
     - the conversation or incident being handed off

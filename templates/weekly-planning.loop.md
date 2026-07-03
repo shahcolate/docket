@@ -2,6 +2,9 @@
 name: weekly-planning
 description: Propose the week — priorities, tradeoffs, and what has to move — but change nothing.
 version: 1
+triggers:
+  - plan the week, weekly plan, weekly planning
+  - review the calendar, sort out priorities for the week
 warrant:
   read:
     - calendar

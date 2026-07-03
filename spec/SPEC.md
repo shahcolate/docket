@@ -67,6 +67,7 @@ in frontmatter because tools enforce structure well.
 | `description` | string | no | one line, shown in listings and compiled context |
 | `version` | number | no | spec version, default `1` |
 | `warrant` | map | no | see below |
+| `triggers` | list of strings | no | phrases that mark a task as this loop's job; used only for routing (see below) |
 | `reserved` | list of strings | no | what stays with the human, always |
 | `record` | list of strings | no | what the agent must report when it finishes or stops |
 
@@ -170,6 +171,43 @@ system degrades toward the human, never away.
 `docket check` exits `0` for allow, `2` for ask, `3` for deny (and `1` for
 usage errors), so shells, hooks, and CI can gate on the warrant directly.
 
+## Routing: which loop covers this task?
+
+With more than a handful of loops, the agent should not hold every brief and
+procedure in context — it holds an index and pulls one loop at a time (see
+*Compiled context* below). Something then has to answer "which one?", and it
+must be deterministic: `docket match "<task>"` / the `docket_match_loop` MCP
+tool.
+
+Scoring is lexical, integer-weighted, and reuses the warrant's cautious
+matcher (patterns split into alternatives; content words compare under
+stemming):
+
+| Signal | Weight | Notes |
+|---|---|---|
+| loop `name`, read as a phrase (dashes as spaces) | +5 | qualifies on its own |
+| each matching `triggers` entry | +4 | qualifies on its own |
+| each matching warrant pattern (any list) | +1 | capped at +3 per loop |
+| each distinct content word shared with `description` | +1 | capped at +3 per loop |
+
+Candidates need a score of **3** or more; they rank by score, then name, and
+implementations should return a short list (default 3) for the agent — or the
+human — to make the final pick from.
+
+Two rules matter more than the weights:
+
+- **The asymmetry principle inverts at routing time.** The warrant matches
+  allow-entries strictly because a false allow is an incident. Routing
+  matches generously because a false candidate costs one extra index line —
+  and a routing miss is still caught downstream by the warrant.
+- **Retrieval fails closed.** When nothing clears the bar, the answer is not
+  "best guess" — it is *no loop covers this task, ask the human*. `docket
+  match` exits `2` (the same exit as an `ask` verdict) so hooks can gate on
+  it; `0` means matched, `1` a usage error.
+
+Routing is advisory and read-only: a match is not an action, so it is not
+written to the record. The warrant checks that follow are.
+
 ## The record
 
 The record is the audit half of the trust story: *what did the agent see,
@@ -244,9 +282,30 @@ and (with `--write`) inserts or replaces that block in the target file:
 Content outside the markers is never touched. Because every target renders
 from the same loops, moving to a new tool is a recompile, not a re-teach.
 
+### The index: rules scale on disk, not in context
+
+The full render puts every brief and procedure in the agent's context on
+every turn — O(loops × loop size), which crowds out the actual work as loops
+accumulate. `docket compile --index` renders the same managed block in
+**tiers** instead:
+
+- **Tier 0 — protocol** (invariant with loop count): find the loop, load it,
+  check the warrant before acting, ask when nothing covers the task.
+- **Tier 1 — index**: one line per loop — name, description, triggers. The
+  routing table.
+- **Tier 2 — the active loop**: loaded on demand via `docket compile --loop
+  <name>` or `docket_loop_context`, only for the task at hand.
+
+Enforcement never needed residency at all: the warrant check runs outside the
+model, and its verdict text carries the one matched rule into the
+conversation exactly when it becomes relevant. The index and the full render
+use the same markers, so switching modes replaces the block rather than
+stacking a second one. `docket compile` prints a token estimate and suggests
+`--index` when the full render grows past a few thousand tokens.
+
 ## MCP tools
 
-`docket mcp` serves four tools over stdio (newline-delimited JSON-RPC,
+`docket mcp` serves five tools over stdio (newline-delimited JSON-RPC,
 protocol `2024-11-05`). MCP hosts often spawn servers with a cwd far from
 your project, so the server resolves its project from `--dir <path>` (or
 `DOCKET_DIR`), falling back to walking up from cwd — and it always answers
@@ -256,6 +315,7 @@ before the handshake.
 | Tool | Purpose |
 |---|---|
 | `docket_list_loops` | discover the loops |
+| `docket_match_loop` | route a task to the loop that covers it (ranked, fail-closed) |
 | `docket_loop_context` | fetch a loop's five layers before starting work |
 | `docket_warrant_check` | get an allow/ask/deny verdict **before** acting; auto-recorded as a `check` entry |
 | `docket_record` | append a `note` entry to the record |
