@@ -7,7 +7,8 @@ import { ACTIONS } from './loop.js';
 
 export const TARGETS = {
   claude: { file: 'CLAUDE.md', label: 'Claude Code' },
-  agents: { file: 'AGENTS.md', label: 'AGENTS.md (Codex, Cursor, Zed, …)' },
+  agents: { file: 'AGENTS.md', label: 'AGENTS.md (ChatGPT/Codex, Zed, …)' },
+  gemini: { file: 'GEMINI.md', label: 'Gemini CLI' },
   cursor: { file: path.join('.cursor', 'rules', 'docket.mdc'), label: 'Cursor rules' },
   raw: { file: null, label: 'stdout' },
 };

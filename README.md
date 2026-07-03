@@ -168,7 +168,8 @@ Loops are the source of truth; assistant files are build artifacts:
 
 ```console
 $ docket compile --target claude --write    # → CLAUDE.md
-$ docket compile --target agents --write    # → AGENTS.md (Codex, Zed, …)
+$ docket compile --target agents --write    # → AGENTS.md (ChatGPT/Codex, Zed, …)
+$ docket compile --target gemini --write    # → GEMINI.md (Gemini CLI)
 $ docket compile --target cursor --write    # → .cursor/rules/docket.mdc
 ```
 

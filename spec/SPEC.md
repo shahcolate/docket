@@ -226,7 +226,8 @@ and (with `--write`) inserts or replaces that block in the target file:
 | Target | File |
 |---|---|
 | `claude` | `CLAUDE.md` |
-| `agents` | `AGENTS.md` |
+| `agents` | `AGENTS.md` (ChatGPT/Codex, Zed, …) |
+| `gemini` | `GEMINI.md` (Gemini CLI) |
 | `cursor` | `.cursor/rules/docket.mdc` |
 | `raw` | stdout |
 

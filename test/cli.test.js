@@ -140,6 +140,8 @@ test('compile writes and idempotently replaces the block', () => {
 
   docket(dir, ['compile', '--target', 'agents', '--write']);
   assert.ok(fs.existsSync(path.join(dir, 'AGENTS.md')));
+  docket(dir, ['compile', '--target', 'gemini', '--write']);
+  assert.ok(fs.existsSync(path.join(dir, 'GEMINI.md')));
   docket(dir, ['compile', '--target', 'cursor', '--write']);
   assert.ok(fs.existsSync(path.join(dir, '.cursor', 'rules', 'docket.mdc')));
 });
