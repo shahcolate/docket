@@ -37,7 +37,7 @@ ${bold('The record')}
   ${cyan('record verify')}             verify the hash chain end to end
 
 ${bold('Portability')}
-  ${cyan('compile')} [--target claude|agents|cursor|raw] [--loop <name>] [--write]
+  ${cyan('compile')} [--target claude|agents|gemini|cursor|raw] [--loop <name>] [--write]
                              render loops into CLAUDE.md / AGENTS.md / Cursor rules
   ${cyan('mcp')}                        run the MCP server (stdio) for agent integration
 

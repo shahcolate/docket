@@ -7,7 +7,10 @@
 Before your agent acts, it checks a one-page rule file you wrote: allow, ask,
 or deny. After, it leaves a tamper-evident record. Anything you didn't write
 down, the agent must ask about. Plain Markdown in your repo; works with
-Claude, Codex, Cursor, and any MCP client.
+Claude, ChatGPT/Codex, Gemini, Cursor, OpenClaw, Hermes, and any MCP client.
+
+**Install:** `npm install -g docket-agent` · **Docs:**
+[shahcolate.github.io/docket/docs.html](https://shahcolate.github.io/docket/docs.html)
 
 Zero dependencies · plain Markdown + JSONL · MIT
 
@@ -316,7 +319,7 @@ Read the [Loop File Spec](spec/SPEC.md) — it's short on purpose.
 - [ ] `docket check` as a Claude Code PreToolUse hook recipe
 - [ ] Loop inheritance (`extends:`) for team baselines
 - [ ] Record export → human-readable work summaries
-- [ ] Adapters: OpenAI custom instructions, Gemini, Windsurf
+- [ ] Adapters: OpenAI custom instructions, Windsurf
 
 ## Contributing
 

@@ -44,9 +44,14 @@ Then:
   record. `docket record verify` catches any edit, deletion, or
   reordering; `--head` pins against tail truncation. "Did the agent even
   ask?" becomes a grep.
-- `docket compile` renders your loops into CLAUDE.md / AGENTS.md / Cursor
-  rules from one source of truth — moving to a new tool is a recompile, not
-  a re-teach.
+- `docket compile` renders your loops into CLAUDE.md, AGENTS.md, GEMINI.md,
+  or Cursor rules from one source of truth — the same rules govern Claude,
+  ChatGPT/Codex, Gemini, Cursor, OpenClaw, and Hermes. Moving to a new tool
+  is a recompile, not a re-teach.
+- `docket review` mines the record for actions the agent kept asking about
+  and proposes the exact rule updates — a human approves each one, and the
+  approval is logged too. The rules iterate; the agent never widens its own
+  permissions.
 - `docket mcp` exposes it all to agents natively (warrant checks the agent
   makes land in the record too).
 
@@ -55,6 +60,8 @@ Zero dependencies, node >= 18, MIT. We red-team the warrant engine in CI:
 zero warranted work blocked — and the matcher is asymmetric by
 construction, so a phrasing difference can cause an unnecessary ask but
 never an accidental allow. `npm run eval` regenerates the report.
+
+Install: npm i -g docket-agent · Docs: https://shahcolate.github.io/docket/docs.html
 
 I'd especially love argument about the verdict algorithm (never → ask →
 allow-list → default-ask) and what belongs in v1 of the spec.
@@ -91,11 +98,17 @@ Anything unlisted → ask. Silence is never permission.
 `docket record verify` names the exact entry. A record you can quietly
 rewrite is not a record.
 
-6/ And it's portable: loops compile to CLAUDE.md, AGENTS.md, Cursor rules.
-A model switch is a recompile, not a re-teach.
+6/ And it's portable: loops compile to CLAUDE.md, AGENTS.md, GEMINI.md,
+Cursor rules — Claude, ChatGPT, Gemini, Cursor, OpenClaw, and Hermes under
+one warrant. A model switch is a recompile, not a re-teach.
 
-7/ Zero dependencies. Plain files. MIT. Red-teamed in CI: 42 scenarios,
-zero silent allows. github.com/shahcolate/docket
+7/ The rules iterate themselves: docket review finds what the agent kept
+asking about and proposes the exact amendments. You approve; the approval
+is logged. The agent never widens its own permissions.
+
+8/ Zero dependencies. Plain files. MIT. Red-teamed in CI: 42 scenarios,
+zero silent allows.
+npm i -g docket-agent · github.com/shahcolate/docket
 
 ## The pitch in one paragraph (for directories / newsletters)
 
@@ -107,9 +120,11 @@ stays human. Before acting, the agent gets a deterministic verdict — allow,
 ask, or deny; anything not written down defaults to ask. After acting, it
 leaves a hash-chained record of what it saw, did, and where it stopped —
 evidence you can hand to a client or a compliance review. The rules and the
-record are plain files in your repo, compiled to Claude, Codex, and Cursor
-from one source, so there's no platform to adopt and no vendor to be locked
-into. Zero dependencies, MIT.
+record are plain files in your repo, compiled to Claude, ChatGPT/Codex,
+Gemini, Cursor, OpenClaw, and Hermes from one source, so there's no platform
+to adopt and no vendor to be locked into. And it improves with use: docket
+review turns repeated asks into proposed rule updates a human approves.
+Zero dependencies, MIT.
 
 ## Who hears what
 
