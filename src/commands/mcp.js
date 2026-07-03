@@ -6,6 +6,7 @@ import readline from 'node:readline';
 import { parseArgs } from '../lib/args.js';
 import { requireDocketDir, listLoops, loadLoop, loopExists, loopNames, ACTIONS } from '../lib/loop.js';
 import { checkWarrant } from '../lib/warrant.js';
+import { matchLoops } from '../lib/match.js';
 import { appendRecord, collectRecordFields, recordCheck } from '../lib/record.js';
 import { renderLoop } from '../lib/compile.js';
 import { VERSION } from '../lib/pkg.js';
@@ -16,6 +17,22 @@ const TOOLS = [
     description:
       'List the loops the human has defined. Each loop is one recurring task with brief, procedure, warrant, record, and reserved layers.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+  },
+  {
+    name: 'docket_match_loop',
+    description:
+      'Find which loop covers a task BEFORE starting it. Give the task in plain words; returns the best-matching loops, ranked, with why each matched. Then call docket_loop_context on the one that fits. If nothing matches, no loop covers the task — ask the human instead of guessing.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        intent: {
+          type: 'string',
+          description: 'the task about to start, in plain words (e.g. "draft an appeal for the denied claim")',
+        },
+      },
+      required: ['intent'],
+      additionalProperties: false,
+    },
   },
   {
     name: 'docket_loop_context',
@@ -76,6 +93,34 @@ export function handleToolCall(docketDir, name, args = {}) {
       const loops = listLoops(docketDir);
       if (!loops.length) return textResult('No loops defined yet.');
       return textResult(loops.map((l) => `${l.name}: ${l.description}`).join('\n'));
+    }
+    case 'docket_match_loop': {
+      const intent = typeof args.intent === 'string' ? args.intent.trim() : '';
+      if (!intent) return textResult('give the task in plain words via `intent`', true);
+      const loops = listLoops(docketDir);
+      if (!loops.length) return textResult('No loops defined yet.');
+      const candidates = matchLoops(loops, intent);
+      if (!candidates.length) {
+        return textResult(
+          `No loop covers "${intent}". Do not guess or proceed without one — work outside a loop ` +
+            `defaults to ask. Tell the human what you want to do and which loop (if any) should own it.`
+        );
+      }
+      const lines = candidates.map(
+        (c, i) =>
+          `${i + 1}. ${c.loop.name} — ${c.loop.description || '(no description)'} ` +
+          `(score ${c.score}: ${c.hits.map((h) => `${h.field} ~ ${h.pattern}`).join(', ')})`
+      );
+      return textResult(
+        [
+          `Candidate loops for "${intent}":`,
+          '',
+          ...lines,
+          '',
+          'Call docket_loop_context on the loop that fits, and work under it. If none of these',
+          'actually covers the task, ask the human — do not guess.',
+        ].join('\n')
+      );
     }
     case 'docket_loop_context': {
       const loop = loadLoop(docketDir, args.loop);

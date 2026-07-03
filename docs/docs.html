@@ -141,7 +141,9 @@ nav.top .links a:hover { color: var(--ink); }
   <a href="#review">Review: iteration</a>
   <div class="group">Using it</div>
   <a href="#compile">Compiling to your tools</a>
+  <a href="#routing">Routing &amp; context scale</a>
   <a href="#mcp">The MCP server</a>
+  <a href="#hooks">Hooks: hard enforcement</a>
   <a href="#integrations">Per-tool setup</a>
   <a href="#cli">CLI reference</a>
   <div class="group">Trust</div>
@@ -150,7 +152,7 @@ nav.top .links a:hover { color: var(--ink); }
 </aside>
 
 <main class="doc">
-  <span class="klabel"><span class="tick">■</span> Documentation · v0.2</span>
+  <span class="klabel"><span class="tick">■</span> Documentation · v0.3</span>
   <h1>How docket works</h1>
   <p class="lede">Everything on this page is implemented, tested, and reproducible from the
   repo. The normative format definition is the
@@ -226,6 +228,9 @@ $ docket check appeal change "accepting a settlement"
     <div class="code"><pre>---
 name: insurance-appeal
 description: Build the appeal, cite the policy — stop before send.
+triggers:
+  - insurance appeal, appeal a denial
+  - denied claim, denial letter
 warrant:
   read:  [policy documents, denial letter, claim correspondence]
   draft: [appeal letter, evidence summary]
@@ -260,6 +265,9 @@ general sense of unfairness. Stop before send.</pre></div>
       small enough to audit is part of the security posture.</li>
       <li>A <code>version</code> the tool doesn’t understand is rejected, never silently
       misread.</li>
+      <li><code>triggers</code> is optional routing metadata — phrases that mark a task
+      as this loop’s job. It never grants permission; it only helps
+      <a href="#routing">routing</a> find the loop.</li>
     </ul>
   </section>
 
@@ -385,6 +393,60 @@ allow read: "state insurance regulations" in appeal? [y/N] y
     recompile, not a re-teach.</p>
   </section>
 
+  <section id="routing">
+    <h2>Routing &amp; context scale</h2>
+    <p>The full compile puts every brief and procedure in the agent’s context on every
+    turn. That stops scaling around a handful of loops — the rules start crowding out
+    the work. The fix is architectural: <b>rules scale on disk, not in context.</b></p>
+    <div class="code"><pre>$ docket compile --index --target claude --write
+<span class="g">✓</span> compiled index of 23 loops → CLAUDE.md</pre></div>
+    <p><code>--index</code> compiles the same managed block in tiers instead of in
+    full:</p>
+    <div class="table-scroll"><table>
+      <tr><th>Tier</th><th>Resident?</th><th>Grows with</th></tr>
+      <tr><td><b>protocol</b></td><td>always</td><td>nothing — find the loop, load it, check the warrant, ask when uncovered</td></tr>
+      <tr><td><b>index</b></td><td>always</td><td>one line per loop: name, description, <code>triggers</code></td></tr>
+      <tr><td><b>active loop</b></td><td>on demand</td><td>only the task at hand — <code>docket compile --loop &lt;name&gt;</code> or <code>docket_loop_context</code></td></tr>
+      <tr><td><b>enforcement</b></td><td>never</td><td>the warrant check runs <em>outside</em> the model; its verdict carries the one matched rule into the conversation exactly when it matters</td></tr>
+    </table></div>
+    <p><code>docket compile</code> prints a token estimate and suggests
+    <code>--index</code> when the full render grows past a few thousand tokens.
+    The two modes share markers, so switching replaces the block instead of stacking
+    a second one.</p>
+    <h3>Which loop covers this task?</h3>
+    <p>With only an index resident, something has to answer the routing question —
+    deterministically:</p>
+    <div class="code"><pre>$ docket match "draft an appeal for my denied claim"
+1 candidate loop for "draft an appeal for my denied claim"
+
+  appeal                 Build the appeal, cite the policy — stop before send.
+                         score 14 — name: appeal · trigger: denied claim, denial letter
+
+$ docket match "wire funds to a vendor"
+<span class="y">NO LOOP</span>  "wire funds to a vendor"
+  No loop covers this task. Work outside a loop defaults to ask</pre></div>
+    <p>Scoring is lexical and integer-weighted, reusing the warrant’s cautious matcher:
+    the loop <b>name</b> read as a phrase (+5), each author-written <b>trigger</b> (+4),
+    matching <b>warrant targets</b> (+1 each, capped), shared <b>description</b> words
+    (+1 each, capped). Candidates need a score of 3; the top few are returned for the
+    agent — or you — to make the final pick. One shared word like “email” never routes
+    on its own.</p>
+    <p>Two rules matter more than the weights:</p>
+    <ul>
+      <li><b>The asymmetry inverts at routing time.</b> The warrant matches allow-entries
+      strictly because a false allow is an incident. Routing matches generously because a
+      false candidate costs one extra index line — and a routing miss is still caught
+      downstream by the warrant.</li>
+      <li><b>Retrieval fails closed.</b> No match doesn’t mean “best guess” — it means
+      <em>no loop covers this task, ask the human</em>. <code>docket match</code> exits
+      <b>2</b> on no coverage, the same exit as an ask verdict, so hooks can gate on
+      it.</li>
+    </ul>
+    <div class="callout"><b>The shape of it:</b> the context window holds a table of
+    contents and one open chapter. The enforcement layer holds every rule, forever, at
+    zero context cost.</div>
+  </section>
+
   <section id="mcp">
     <h2>The MCP server</h2>
     <p><code>docket mcp</code> is a zero-config MCP server (stdio, newline-delimited
@@ -395,12 +457,56 @@ allow read: "state insurance regulations" in appeal? [y/N] y
     <div class="table-scroll"><table>
       <tr><th>Tool</th><th>What the agent gets</th></tr>
       <tr><td><code>docket_list_loops</code></td><td>discover the loops you’ve defined</td></tr>
+      <tr><td><code>docket_match_loop</code></td><td>route a task (in plain words) to the loop that covers it — ranked candidates with why, or a fail-closed “no loop covers this, ask”</td></tr>
       <tr><td><code>docket_loop_context</code></td><td>a loop’s five layers, before starting work</td></tr>
       <tr><td><code>docket_warrant_check</code></td><td>allow / ask / deny for a proposed action — auto-logged, with explicit STOP instructions on ask/deny</td></tr>
       <tr><td><code>docket_record</code></td><td>append evidence: saw / did / skipped / stopped / note</td></tr>
     </table></div>
     <p>Checks the agent makes over MCP land on the record with <code>via: "mcp"</code> —
     distinguishable from human CLI checks forever.</p>
+  </section>
+
+  <section id="hooks">
+    <h2>Hooks: hard enforcement</h2>
+    <p>Compiled context tells the agent the rules; MCP makes checking cheap. For the tool
+    calls you actually fear, make the warrant <b>mechanical</b>: <code>docket hook
+    claude</code> plugs into Claude Code’s permission system as a PreToolUse hook. Add to
+    <code>.claude/settings.json</code>:</p>
+    <div class="code"><pre>{
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash|Write|Edit",
+        "hooks": [{ "type": "command", "command": "npx docket-agent hook claude" }] }
+    ]
+  }
+}</pre></div>
+    <p>Every matched tool call is piped through the warrant <em>before it runs</em>:</p>
+    <div class="table-scroll"><table>
+      <tr><th>Verdict</th><th>What Claude Code does</th></tr>
+      <tr><td><span class="verdict-w d">deny</span></td><td>the call is blocked; the loop, rule, and reason go back to the model</td></tr>
+      <tr><td><span class="verdict-w k">ask</span></td><td>Claude Code prompts <em>you</em> before the call runs</td></tr>
+      <tr><td><span class="verdict-w a">allow</span></td><td><b>silence.</b> Docket emits no decision on allow — it only ever <em>tightens</em> the gate, never bypasses Claude Code’s own permission prompts</td></tr>
+    </table></div>
+    <h3>How calls map to the warrant</h3>
+    <ul>
+      <li>Read-shaped tools (<code>Read</code>, <code>Grep</code>, <code>WebFetch</code>, …)
+      check as <code>read</code>; file-writing tools (<code>Write</code>, <code>Edit</code>, …)
+      as <code>change</code>. Everything else — <code>Bash</code>, MCP tools, tools that
+      don’t exist yet — checks as <code>send</code>, the most consequential verb, so
+      unknown tools fall toward ask, never toward allow.</li>
+      <li>The target is the human part of the input (<code>Bash: git push origin main</code>,
+      <code>Write: appeal-letter.md</code>), so your warrant patterns match it in plain
+      words.</li>
+      <li>Without <code>--loop</code>, each call is <a href="#routing">routed</a> with the
+      same scoring as <code>docket match</code>; when no loop claims the call, the hook
+      stays silent and Claude Code’s own permissions decide. Pin one loop with
+      <code>--loop &lt;name&gt;</code>, or add <code>--strict</code> to turn no-coverage
+      into an ask.</li>
+      <li>Every check lands on the record with <code>via: "hook"</code> — enforcement and
+      evidence in one move. Misconfiguration (a bad loop name, non-JSON stdin) is loud on
+      stderr but never blocks the session; a project without a <code>.docket</code>
+      directory costs nothing.</li>
+    </ul>
   </section>
 
   <section id="integrations">
@@ -413,7 +519,9 @@ allow read: "state insurance regulations" in appeal? [y/N] y
 npx docket-agent new followup --template client-follow-up
 npx docket-agent compile --target claude --write
 <span class="c"># optional — native checks + record via MCP:</span>
-claude mcp add docket -- npx docket-agent mcp</pre></div>
+claude mcp add docket -- npx docket-agent mcp
+<span class="c"># optional — hard enforcement: wire `docket hook claude` into</span>
+<span class="c"># .claude/settings.json as a PreToolUse hook (see “Hooks” above)</span></pre></div>
 
     <h3>ChatGPT · Codex</h3>
     <div class="code"><pre>npx docket-agent compile --target agents --write   <span class="c"># → AGENTS.md</span></pre></div>
@@ -466,13 +574,15 @@ npx docket-agent compile --target agents --write</pre></div>
       <tr><td><code>docket templates</code></td><td>list the seven starter loops</td></tr>
       <tr><td><code>docket list</code></td><td>list your loops</td></tr>
       <tr><td><code>docket show &lt;loop&gt;</code></td><td>print a loop’s five layers</td></tr>
+      <tr><td><code>docket match &lt;task…&gt;</code></td><td>which loop covers this task? — ranked with why (<code>--limit N</code>); exits 0 matched / 2 no coverage</td></tr>
       <tr><td><code>docket check &lt;loop&gt; &lt;verb&gt; &lt;target…&gt;</code></td><td>verdict + rule; exits 0/2/3; logged unless <code>--no-record</code>; <code>--quiet</code> prints the bare verdict</td></tr>
       <tr><td><code>docket record add &lt;loop&gt;</code></td><td>append evidence: <code>--saw --did --skipped --stopped --note</code></td></tr>
       <tr><td><code>docket record log [loop]</code></td><td>show recent entries (<code>--n 20</code>)</td></tr>
       <tr><td><code>docket record verify</code></td><td>verify the chain end to end; <code>--head &lt;hash&gt;</code> pins against tail truncation</td></tr>
       <tr><td><code>docket review</code></td><td>propose warrant updates from repeated asks (<code>--min</code>, <code>--loop</code>, <code>--yes</code>)</td></tr>
-      <tr><td><code>docket compile</code></td><td><code>--target claude|agents|gemini|cursor|raw</code>, <code>--write</code> to update the file in place, <code>--loop</code> to preview one loop on stdout</td></tr>
+      <tr><td><code>docket compile</code></td><td><code>--target claude|agents|gemini|cursor|raw</code>, <code>--write</code> to update the file in place, <code>--loop</code> to preview one loop on stdout, <code>--index</code> to compile the routing table instead of full loops</td></tr>
       <tr><td><code>docket mcp</code></td><td>run the MCP server (<code>--dir</code> or <code>DOCKET_DIR</code> to locate the project)</td></tr>
+      <tr><td><code>docket hook claude</code></td><td>Claude Code PreToolUse hook: deny blocks, ask prompts the human, allow stays silent (<code>--loop</code> pins a loop, <code>--strict</code> asks on no coverage, <code>--dir</code> locates the project)</td></tr>
     </table></div>
   </section>
 
@@ -501,10 +611,12 @@ npx docket-agent compile --target agents --write</pre></div>
     <h3>What stops the agent from just ignoring the rules?</h3>
     <p>Three layers, in increasing strength: the compiled context tells it the rules
     (models follow explicit written boundaries far better than vibes); the MCP tools make
-    checking cheap and logged, so skipping the check is visible in the record; and the
-    exit codes let you make it <em>mechanical</em> — wrap risky tools in a shell guard
-    that calls <code>docket check</code> and refuses on exit 2/3, or wire it into your
-    agent’s hook system. Advisory for cooperative agents, enforceable where it counts.</p>
+    checking cheap and logged, so skipping the check is visible in the record; and
+    <a href="#hooks"><code>docket hook claude</code></a> makes it <em>mechanical</em> —
+    Claude Code pipes tool calls through the warrant before they run, blocking on deny
+    and prompting you on ask. On other agents, the exit codes give you the same lever:
+    wrap risky tools in a shell guard that calls <code>docket check</code> and refuses on
+    exit 2/3. Advisory for cooperative agents, enforceable where it counts.</p>
     <h3>Can the record be faked?</h3>
     <p>Edits, deletions, insertions, and reordering break the hash chain at a named
     entry. Tail truncation is caught by pinning the head hash

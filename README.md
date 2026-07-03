@@ -179,6 +179,42 @@ $ docket compile --target cursor --write    # → .cursor/rules/docket.mdc
 Same loops, every tool. **A model switch is a recompile, not a re-teach** —
 try the new tool, point it at the same files, keep working.
 
+## Fifty loops, flat context
+
+Compiling every brief and procedure into the context file stops scaling
+around a handful of loops — the rules start crowding out the work. So
+**rules scale on disk, not in context**:
+
+```console
+$ docket compile --index --target claude --write
+✓ compiled index of 23 loops → CLAUDE.md
+```
+
+`--index` compiles the protocol plus **one line per loop** — name,
+description, and the loop's `triggers` — instead of the loops themselves.
+The agent routes each task to its loop, then pulls just that loop in full:
+
+```console
+$ docket match "draft an appeal for my denied claim"
+1 candidate loop for "draft an appeal for my denied claim"
+
+  appeal                 Build the appeal, cite the policy — stop before send.
+                         score 14 — name: appeal · trigger: denied claim, denial letter
+
+$ docket match "wire funds to a vendor"
+NO LOOP  "wire funds to a vendor"
+  No loop covers this task. Work outside a loop defaults to ask
+```
+
+Routing is deterministic and scored — loop name, author-written `triggers`
+phrases, warrant targets, description overlap — and it **fails closed**: no
+match doesn't mean "best guess", it means *stop and ask*, exit code `2`,
+same as the warrant. And enforcement never needed context residency at all:
+the warrant check runs outside the model and injects the one matched rule
+exactly when it becomes relevant. What stays resident is a table of
+contents; the window holds one open chapter; the checker never forgets any
+of it.
+
 ## Agents can use it natively (MCP)
 
 `docket mcp` is a zero-config MCP server. Add it to Claude Code:
@@ -193,17 +229,47 @@ or to any MCP client:
 { "mcpServers": { "docket": { "command": "npx", "args": ["docket-agent", "mcp"] } } }
 ```
 
-The agent gets four tools:
+The agent gets five tools:
 
 | Tool | What it does |
 |---|---|
 | `docket_list_loops` | discover your loops |
+| `docket_match_loop` | route a task to the loop that covers it — ranked, fail-closed |
 | `docket_loop_context` | pull a loop's five layers before starting |
 | `docket_warrant_check` | allow / ask / deny, **before** acting — auto-logged |
 | `docket_record` | add a verifiable record entry when it finishes or stops |
 
 Warrant checks made by the agent land in the record too. *"Did the agent
 even ask?"* becomes a grep.
+
+## Make it mechanical (Claude Code hooks)
+
+Compiled context tells the agent the rules; MCP makes checking cheap. For
+the tool calls you actually fear, make the warrant **mechanical** — wire it
+into Claude Code's permission system as a PreToolUse hook, in
+`.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit",
+        "hooks": [{ "type": "command", "command": "npx docket-agent hook claude" }]
+      }
+    ]
+  }
+}
+```
+
+Every matched tool call now passes through the warrant *before it runs*:
+**deny** blocks the call and tells the model why, **ask** makes Claude Code
+prompt you, and **allow** stays silent — docket only ever *tightens* the
+gate; it never bypasses Claude Code's own permission prompts. Without
+`--loop` the hook routes each call with the same scoring as `docket match`
+and stays out of the way when no loop claims the call (pin one loop with
+`--loop <name>`; add `--strict` to force an ask instead). Every check lands
+on the record with `via: "hook"` — enforcement and evidence in one move.
 
 ## OpenClaw and Hermes
 
@@ -315,8 +381,8 @@ Read the [Loop File Spec](spec/SPEC.md) — it's short on purpose.
 
 ## Roadmap
 
+- [x] `docket check` as a Claude Code PreToolUse hook — shipped as `docket hook claude`
 - [ ] Signed record heads (attest the chain tip, share the attestation)
-- [ ] `docket check` as a Claude Code PreToolUse hook recipe
 - [ ] Loop inheritance (`extends:`) for team baselines
 - [ ] Record export → human-readable work summaries
 - [ ] Adapters: OpenAI custom instructions, Windsurf

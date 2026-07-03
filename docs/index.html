@@ -284,6 +284,7 @@ footer.site {
   <div class="links">
     <a href="#start">Get started</a>
     <a href="#how">How it works</a>
+    <a href="#scale">Scale</a>
     <a href="#record">The record</a>
     <a href="docs.html">Docs</a>
     <a class="gh" href="https://github.com/shahcolate/docket">GitHub&nbsp;★</a>
@@ -383,15 +384,17 @@ footer.site {
           <ol>
             <li><b>Create a loop</b> from a template — or answer five questions interactively.</li>
             <li><b>Compile</b> — your rules land in CLAUDE.md, which Claude Code already reads.</li>
-            <li><b>Optional:</b> add the MCP server so Claude checks warrants and writes the record itself.</li>
+            <li><b>Optional:</b> add the MCP server so Claude checks warrants and writes the record itself — or go further and <b>enforce mechanically</b>: <code>docket hook claude</code> as a PreToolUse hook blocks denied calls and prompts you on ask.</li>
           </ol>
           <div class="codeblock"><button class="copy" type="button">copy</button><pre>npx docket-agent init
 npx docket-agent new appeal --template insurance-appeal
 npx docket-agent compile --target claude --write
 <span class="c"># optional — native tools for checks + record:</span>
-claude mcp add docket -- npx docket-agent mcp</pre></div>
+claude mcp add docket -- npx docket-agent mcp
+<span class="c"># optional — hard enforcement (docs → Hooks): wire</span>
+<span class="c"># "npx docket-agent hook claude" into hooks.PreToolUse</span></pre></div>
         </div>
-        <p class="after">That’s it — Claude now starts every session knowing the rules, and asks before anything you didn’t allow.</p>
+        <p class="after">That’s it — Claude now starts every session knowing the rules, asks before anything you didn’t allow, and with the hook installed it <em>can’t</em> run a denied call.</p>
       </div>
 
       <div class="panel" id="panel-chatgpt" role="tabpanel">
@@ -471,7 +474,7 @@ npx docket-agent compile --target agents --write
         <div class="steps-mini">
           <ol>
             <li><b>Add one entry</b> to your client’s MCP config.</li>
-            <li><b>The agent gets four tools:</b> list loops, fetch context, check a warrant, write the record.</li>
+            <li><b>The agent gets five tools:</b> list loops, route a task to its loop, fetch context, check a warrant, write the record.</li>
             <li><b>Every check it makes is logged</b> — “did the agent even ask?” becomes a grep.</li>
           </ol>
           <div class="codeblock"><button class="copy" type="button">copy</button><pre>{ "mcpServers": { "docket": {
@@ -522,6 +525,43 @@ $ docket check appeal change "settle"
 <span class="ga">✓ chain intact</span> — 4 entries
   head: sha256:fd4394fc…</div>
       </div>
+    </div>
+  </div>
+</section>
+
+<section id="scale">
+  <div class="wrap">
+    <span class="klabel"><span class="tick">■</span> Scale</span>
+    <div class="record-grid" style="margin-top: 26px;">
+      <div class="record-copy">
+        <h2 style="margin-top: 0;">Fifty loops. Flat context.</h2>
+        <p style="margin-top: 16px;">Compiling every rule into the agent’s context stops
+        scaling around a handful of loops — the rules start crowding out the work. So
+        rules scale <b>on disk, not in context</b>: <code>docket compile --index</code>
+        keeps just the protocol plus one line per loop resident. The agent routes each
+        task with <code>docket match</code> (MCP: <code>docket_match_loop</code>) and
+        pulls only that loop in full.</p>
+        <p>Routing is deterministic — loop name, author-written <code>triggers</code>
+        phrases, warrant targets — and it <b>fails closed</b>: no match doesn’t mean
+        “best guess”, it means <em>no loop covers this, ask</em>. Exit 2, same as the
+        warrant. And enforcement never needed context at all — the check runs outside
+        the model and injects the one matched rule at the moment it matters.</p>
+        <p><b>The context window holds a table of contents and one open chapter. The
+        checker holds every rule, forever, at zero context cost.</b></p>
+      </div>
+      <div class="codeblock"><pre>$ docket compile --index --target claude --write
+✓ compiled index of 23 loops → CLAUDE.md
+
+$ docket match "draft an appeal for my denied claim"
+1 candidate loop for "draft an appeal for my denied claim"
+
+  appeal      Build the appeal, cite the policy — stop before send.
+              score 14 — trigger: denied claim, denial letter
+
+$ docket match "wire funds to a vendor"
+NO LOOP  "wire funds to a vendor"
+  No loop covers this task. Work outside a loop
+  defaults to ask   <span class="c"># exit 2 — hooks can gate on it</span></pre></div>
     </div>
   </div>
 </section>

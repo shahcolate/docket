@@ -2,6 +2,9 @@
 name: travel-morning
 description: Plan a morning in an unfamiliar city around how you actually travel — not how a guidebook thinks you should.
 version: 1
+triggers:
+  - plan a morning, plan the morning in a city
+  - itinerary, sightseeing plan, what to do before noon
 warrant:
   read:
     - maps and transit schedules
