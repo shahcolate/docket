@@ -471,7 +471,7 @@ npx docket-agent compile --target agents --write
         <div class="steps-mini">
           <ol>
             <li><b>Add one entry</b> to your client’s MCP config.</li>
-            <li><b>The agent gets four tools:</b> list loops, fetch context, check a warrant, write the record.</li>
+            <li><b>The agent gets five tools:</b> list loops, route a task to its loop, fetch context, check a warrant, write the record.</li>
             <li><b>Every check it makes is logged</b> — “did the agent even ask?” becomes a grep.</li>
           </ol>
           <div class="codeblock"><button class="copy" type="button">copy</button><pre>{ "mcpServers": { "docket": {
@@ -522,6 +522,43 @@ $ docket check appeal change "settle"
 <span class="ga">✓ chain intact</span> — 4 entries
   head: sha256:fd4394fc…</div>
       </div>
+    </div>
+  </div>
+</section>
+
+<section id="scale">
+  <div class="wrap">
+    <span class="klabel"><span class="tick">■</span> Scale</span>
+    <div class="record-grid" style="margin-top: 26px;">
+      <div class="record-copy">
+        <h2 style="margin-top: 0;">Fifty loops. Flat context.</h2>
+        <p style="margin-top: 16px;">Compiling every rule into the agent’s context stops
+        scaling around a handful of loops — the rules start crowding out the work. So
+        rules scale <b>on disk, not in context</b>: <code>docket compile --index</code>
+        keeps just the protocol plus one line per loop resident. The agent routes each
+        task with <code>docket match</code> (MCP: <code>docket_match_loop</code>) and
+        pulls only that loop in full.</p>
+        <p>Routing is deterministic — loop name, author-written <code>triggers</code>
+        phrases, warrant targets — and it <b>fails closed</b>: no match doesn’t mean
+        “best guess”, it means <em>no loop covers this, ask</em>. Exit 2, same as the
+        warrant. And enforcement never needed context at all — the check runs outside
+        the model and injects the one matched rule at the moment it matters.</p>
+        <p><b>The context window holds a table of contents and one open chapter. The
+        checker holds every rule, forever, at zero context cost.</b></p>
+      </div>
+      <div class="codeblock"><pre>$ docket compile --index --target claude --write
+✓ compiled index of 23 loops → CLAUDE.md
+
+$ docket match "draft an appeal for my denied claim"
+1 candidate loop for "draft an appeal for my denied claim"
+
+  appeal      Build the appeal, cite the policy — stop before send.
+              score 14 — trigger: denied claim, denial letter
+
+$ docket match "wire funds to a vendor"
+NO LOOP  "wire funds to a vendor"
+  No loop covers this task. Work outside a loop
+  defaults to ask   <span class="c"># exit 2 — hooks can gate on it</span></pre></div>
     </div>
   </div>
 </section>
