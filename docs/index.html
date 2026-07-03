@@ -170,10 +170,23 @@ h1 .r { color: var(--red); }
 .hero .fine { margin-top: 18px; font-size: 13.5px; color: var(--faint); }
 .hero .fine code { font-size: 12.5px; }
 @media (max-width: 640px) {
-  .hero { padding: 46px 0 60px; }
+  .hero { padding: 40px 0 56px; }
   .hero .sub { font-size: 17px; }
-  .hero .ctas { margin-top: 26px; }
-  .hero .ctas .btn, .closing .ctas .btn { flex: 1 1 150px; }
+  .hero .ctas { margin-top: 24px; }
+  .hero .ctas .btn, .closing .ctas .btn { flex: 1 1 100%; }
+  .hero .fine { margin-top: 14px; }
+}
+
+/* ── works-with strip ── */
+.works {
+  margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--hair);
+  display: flex; gap: 14px 32px; align-items: baseline; flex-wrap: wrap;
+}
+.works-label { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); white-space: nowrap; }
+.works-row { display: flex; flex-wrap: wrap; gap: 10px 26px; font-size: 15px; font-weight: 700; color: var(--mut); letter-spacing: -0.01em; }
+@media (max-width: 640px) {
+  .works { margin-top: 44px; padding-top: 20px; }
+  .works-row { font-size: 14px; gap: 8px 20px; }
 }
 
 /* ── verdict widget ── */
@@ -197,6 +210,10 @@ h1 .r { color: var(--red); }
 .acts button[aria-pressed="true"] { border-color: var(--ink); background: var(--bg-2); font-weight: 700; }
 .verdict { margin-top: 20px; border-top: 1px solid var(--hair); padding-top: 18px; min-height: 150px; }
 .verdict .word { font-size: 44px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .verdict .word.stamp { animation: stamp .4s cubic-bezier(.2,.9,.3,1.3); }
+}
+@keyframes stamp { 0% { opacity: 0; transform: scale(1.35); } 100% { opacity: 1; transform: scale(1); } }
 .verdict .word.allow { color: var(--allow); }
 .verdict .word.ask { color: var(--ask); }
 .verdict .word.deny { color: var(--red); }
@@ -374,11 +391,11 @@ footer.site {
   <a class="wordmark" href="#">docket</a>
   <div class="nav-right">
     <div class="links" id="site-nav">
-      <a href="#start">Get started</a>
       <a href="#how">How it works</a>
-      <a href="#scale">Scale</a>
       <a href="#record">The record</a>
+      <a href="#start">Get started</a>
       <a href="docs.html">Docs</a>
+      <a href="about.html">About</a>
     </div>
     <button class="theme-btn" type="button" aria-label="Toggle dark mode">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>
@@ -396,16 +413,15 @@ footer.site {
 <header class="hero wrap">
   <div class="hero-grid">
     <div>
-      <div class="klabel"><span class="tick">■</span> Open source · works with Claude, ChatGPT, Gemini, Cursor &amp; more</div>
+      <div class="klabel"><span class="tick">■</span> Open source · zero dependencies</div>
       <h1>Let your agent act. Decide what it&rsquo;s <span class="r">allowed</span>&nbsp;to&nbsp;do.</h1>
-      <p class="sub">AI agents act on your behalf. Docket gives yours one page of rules —
-      <b>allow, ask, or deny</b> — and tamper-proof receipts for everything it does.
-      Anything you didn’t write down, it asks first.</p>
+      <p class="sub">One page of rules — <b>allow, ask, or deny</b> — and tamper-proof
+      receipts for everything it does. Unlisted? It asks first.</p>
       <div class="ctas">
         <a class="btn primary" href="#start">Set up in 60 seconds</a>
-        <a class="btn ghost" href="https://github.com/shahcolate/docket">View on GitHub</a>
+        <a class="btn ghost" href="#how">See how it works</a>
       </div>
-      <p class="fine">MIT licensed · <code>npx docket-agent init</code> is the whole install</p>
+      <p class="fine">MIT · <code>npx docket-agent init</code> is the whole install</p>
     </div>
 
     <div class="widget" id="widget">
@@ -431,6 +447,13 @@ footer.site {
       </div>
       <div class="widget-foot">Every check lands on a tamper-evident record — exit codes <code>0/2/3</code> let hooks and CI enforce it.</div>
     </div>
+  </div>
+
+  <div class="works">
+    <span class="works-label">Works with</span>
+    <span class="works-row">
+      <span>Claude&nbsp;Code</span><span>ChatGPT&nbsp;/&nbsp;Codex</span><span>Gemini&nbsp;CLI</span><span>Cursor</span><span>OpenClaw</span><span>Hermes</span><span>any&nbsp;MCP&nbsp;client</span>
+    </span>
   </div>
 </header>
 
@@ -460,7 +483,139 @@ footer.site {
     </div>
   </div>
 </section>
+<section id="how">
+  <div class="wrap">
+    <span class="klabel"><span class="tick">■</span> How it works</span>
+    <h2>One page of rules. One verdict per action. One record of everything.</h2>
+    <div class="steps" style="margin-top: 48px;">
+      <div class="step">
+        <div class="n">01</div>
+        <h3>Write the rules once</h3>
+        <p>One plain-English file per task: what the agent should know, what it may do
+        alone, what stays yours.</p>
+        <div class="mini"><b>warrant:</b>
+  read:  [policy documents]
+  draft: [appeal letter]
+  send:  []
+  never: [accepting a settlement]</div>
+      </div>
+      <div class="step">
+        <div class="n">02</div>
+        <h3>The agent checks first</h3>
+        <p>Every action gets a verdict before it happens. Not listed? It asks.
+        Marked never? Denied — even with approval.</p>
+        <div class="mini">$ docket check appeal draft "letter"
+<span class="ga">ALLOW</span>  within the draft warrant
+$ docket check appeal send "email"
+<span class="ya">ASK</span>    unlisted means ask
+$ docket check appeal change "settle"
+<span class="ra">DENY</span>   hard stop</div>
+      </div>
+      <div class="step">
+        <div class="n">03</div>
+        <h3>Everything lands on the record</h3>
+        <p>Every check and action joins a hash-chained log. Any edit breaks the chain at
+        the exact entry. Proof, not trust.</p>
+        <div class="mini">$ docket record verify
+<span class="ga">✓ chain intact</span> — 4 entries
+  head: sha256:fd4394fc…</div>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="cases">
+  <div class="wrap">
+    <span class="klabel"><span class="tick">■</span> What people run</span>
+    <h2>Seven ready-made loops. Real work, hard stops.</h2>
+    <div style="margin-top: 44px;">
+      <div class="cases-head"><span>Loop</span><span>The agent handles alone</span><span>It always stops before</span></div>
+      <div class="cases">
+        <div class="case"><span class="name">insurance-appeal</span><span class="does"><b>✓</b> reads the policy, drafts the appeal, builds the evidence packet</span><span class="stops"><b>■</b> anything sent to the insurer; settlement decisions are never</span></div>
+        <div class="case"><span class="name">client-follow-up</span><span class="does"><b>✓</b> reconstructs history, drafts the email in approved language</span><span class="stops"><b>■</b> anything the client sees; invented discounts are never</span></div>
+        <div class="case"><span class="name">weekly-planning</span><span class="does"><b>✓</b> drafts the week, names every tradeoff</span><span class="stops"><b>■</b> moving any meeting; family time and workouts are never</span></div>
+        <div class="case"><span class="name">marketing-brain</span><span class="does"><b>✓</b> drafts from messaging that already worked</span><span class="stops"><b>■</b> publishing; invented quotes and statistics are never</span></div>
+        <div class="case"><span class="name">ticket-handoff</span><span class="does"><b>✓</b> writes tickets a stranger can pick up cold</span><span class="stops"><b>■</b> assigning people; deleting tickets is never</span></div>
+        <div class="case"><span class="name">travel-morning</span><span class="does"><b>✓</b> plans around your rules, with a rain backup</span><span class="stops"><b>■</b> bookings; nonrefundable anything is never</span></div>
+        <div class="case"><span class="name">cross-tool-memory</span><span class="does"><b>✓</b> keeps one context current across every AI tool</span><span class="stops"><b>■</b> widening its own permissions; secrets in files are never</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="record">
+  <div class="wrap">
+    <span class="klabel"><span class="tick">■</span> The record</span>
+    <div class="record-grid" style="margin-top: 26px;">
+      <div class="record-copy">
+        <h2 style="margin-top: 0;">Try to falsify it.</h2>
+        <p style="margin-top: 16px;">Every entry commits cryptographically to the one
+        before it. Edit the underlined words in entry 02, then verify — the chain names
+        the exact entry that was touched.</p>
+        <p><b>That’s the difference between “the agent says it asked” and proof that it
+        did.</b> The log is a plain file in your repo — grep it, commit it, hand it to
+        an audit.</p>
+        <p>And it feeds back: <code>docket review</code> turns repeated asks into
+        proposed rule updates. <b>You approve each one</b> — the agent never widens its
+        own permissions.</p>
+      </div>
+      <div class="ledger" id="ledger">
+        <span class="tamper-flag" aria-hidden="true">Tampered</span>
+        <div class="ledger-head"><span>No</span><span>Entry</span><span class="h-hash">Hash</span></div>
+        <div class="ledger-row" data-seq="1">
+          <span class="seq">01</span>
+          <span class="what"><span class="v allow">allow</span> draft → “appeal letter”</span>
+          <span class="hash"></span>
+        </div>
+        <div class="ledger-row" data-seq="2">
+          <span class="seq">02</span>
+          <span class="what">did: <span contenteditable="true" spellcheck="false" id="editable">drafted appeal citing §4.2(b)</span> · stopped: before send</span>
+          <span class="hash"></span>
+        </div>
+        <div class="ledger-row" data-seq="3">
+          <span class="seq">03</span>
+          <span class="what"><span class="v ask">ask</span> send → “appeal email to the insurer”</span>
+          <span class="hash"></span>
+        </div>
+        <div class="ledger-foot">
+          <span id="verify-out" role="status"></span>
+          <div class="actions">
+            <button type="button" id="verify-btn">docket record verify</button>
+            <button type="button" id="restore-btn">restore</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="scale">
+  <div class="wrap">
+    <span class="klabel"><span class="tick">■</span> Scale</span>
+    <div class="record-grid" style="margin-top: 26px;">
+      <div class="record-copy">
+        <h2 style="margin-top: 0;">Fifty loops. Flat context.</h2>
+        <p style="margin-top: 16px;">Stuffing every rule into the agent’s context stops
+        scaling after a handful of tasks. Docket keeps one line per loop in context —
+        the agent routes each task with <code>docket match</code> and pulls in only the
+        loop it needs.</p>
+        <p>Routing <b>fails closed</b>: no matching loop means <em>ask</em>, not best
+        guess. <b>The context window holds a table of contents and one open chapter;
+        the checker holds every rule, at zero context cost.</b></p>
+      </div>
+      <div class="codeblock"><pre>$ docket compile --index --target claude --write
+✓ compiled index of 23 loops → CLAUDE.md
 
+$ docket match "draft an appeal for my denied claim"
+1 candidate loop for "draft an appeal for my denied claim"
+
+  appeal      Build the appeal, cite the policy — stop before send.
+              score 14 — trigger: denied claim, denial letter
+
+$ docket match "wire funds to a vendor"
+NO LOOP  "wire funds to a vendor"
+  No loop covers this task. Work outside a loop
+  defaults to ask   <span class="c"># exit 2 — hooks can gate on it</span></pre></div>
+    </div>
+  </div>
+</section>
 <section id="start">
   <div class="wrap">
     <span class="klabel"><span class="tick">■</span> Get started</span>
@@ -587,142 +742,10 @@ npx docket-agent compile --target agents --write
   </div>
 </section>
 
-<section id="how">
-  <div class="wrap">
-    <span class="klabel"><span class="tick">■</span> How it works</span>
-    <h2>One page of rules. One verdict per action. One record of everything.</h2>
-    <div class="steps" style="margin-top: 48px;">
-      <div class="step">
-        <div class="n">01</div>
-        <h3>Write the rules once</h3>
-        <p>One plain-English file per task: what the agent should know, what it may do
-        alone, what stays yours.</p>
-        <div class="mini"><b>warrant:</b>
-  read:  [policy documents]
-  draft: [appeal letter]
-  send:  []
-  never: [accepting a settlement]</div>
-      </div>
-      <div class="step">
-        <div class="n">02</div>
-        <h3>The agent checks first</h3>
-        <p>Every action gets a verdict before it happens. Not listed? It asks.
-        Marked never? Denied — even with approval.</p>
-        <div class="mini">$ docket check appeal draft "letter"
-<span class="ga">ALLOW</span>  within the draft warrant
-$ docket check appeal send "email"
-<span class="ya">ASK</span>    unlisted means ask
-$ docket check appeal change "settle"
-<span class="ra">DENY</span>   hard stop</div>
-      </div>
-      <div class="step">
-        <div class="n">03</div>
-        <h3>Everything lands on the record</h3>
-        <p>Every check and action joins a hash-chained log. Any edit breaks the chain at
-        the exact entry. Proof, not trust.</p>
-        <div class="mini">$ docket record verify
-<span class="ga">✓ chain intact</span> — 4 entries
-  head: sha256:fd4394fc…</div>
-      </div>
-    </div>
-  </div>
-</section>
 
-<section id="scale">
-  <div class="wrap">
-    <span class="klabel"><span class="tick">■</span> Scale</span>
-    <div class="record-grid" style="margin-top: 26px;">
-      <div class="record-copy">
-        <h2 style="margin-top: 0;">Fifty loops. Flat context.</h2>
-        <p style="margin-top: 16px;">Stuffing every rule into the agent’s context stops
-        scaling after a handful of tasks. Docket keeps one line per loop in context —
-        the agent routes each task with <code>docket match</code> and pulls in only the
-        loop it needs.</p>
-        <p>Routing <b>fails closed</b>: no matching loop means <em>ask</em>, not best
-        guess. <b>The context window holds a table of contents and one open chapter;
-        the checker holds every rule, at zero context cost.</b></p>
-      </div>
-      <div class="codeblock"><pre>$ docket compile --index --target claude --write
-✓ compiled index of 23 loops → CLAUDE.md
 
-$ docket match "draft an appeal for my denied claim"
-1 candidate loop for "draft an appeal for my denied claim"
 
-  appeal      Build the appeal, cite the policy — stop before send.
-              score 14 — trigger: denied claim, denial letter
 
-$ docket match "wire funds to a vendor"
-NO LOOP  "wire funds to a vendor"
-  No loop covers this task. Work outside a loop
-  defaults to ask   <span class="c"># exit 2 — hooks can gate on it</span></pre></div>
-    </div>
-  </div>
-</section>
-
-<section id="cases">
-  <div class="wrap">
-    <span class="klabel"><span class="tick">■</span> What people run</span>
-    <h2>Seven ready-made loops. Real work, hard stops.</h2>
-    <div style="margin-top: 44px;">
-      <div class="cases-head"><span>Loop</span><span>The agent handles alone</span><span>It always stops before</span></div>
-      <div class="cases">
-        <div class="case"><span class="name">insurance-appeal</span><span class="does"><b>✓</b> reads the policy, drafts the appeal, builds the evidence packet</span><span class="stops"><b>■</b> anything sent to the insurer; settlement decisions are never</span></div>
-        <div class="case"><span class="name">client-follow-up</span><span class="does"><b>✓</b> reconstructs history, drafts the email in approved language</span><span class="stops"><b>■</b> anything the client sees; invented discounts are never</span></div>
-        <div class="case"><span class="name">weekly-planning</span><span class="does"><b>✓</b> drafts the week, names every tradeoff</span><span class="stops"><b>■</b> moving any meeting; family time and workouts are never</span></div>
-        <div class="case"><span class="name">marketing-brain</span><span class="does"><b>✓</b> drafts from messaging that already worked</span><span class="stops"><b>■</b> publishing; invented quotes and statistics are never</span></div>
-        <div class="case"><span class="name">ticket-handoff</span><span class="does"><b>✓</b> writes tickets a stranger can pick up cold</span><span class="stops"><b>■</b> assigning people; deleting tickets is never</span></div>
-        <div class="case"><span class="name">travel-morning</span><span class="does"><b>✓</b> plans around your rules, with a rain backup</span><span class="stops"><b>■</b> bookings; nonrefundable anything is never</span></div>
-        <div class="case"><span class="name">cross-tool-memory</span><span class="does"><b>✓</b> keeps one context current across every AI tool</span><span class="stops"><b>■</b> widening its own permissions; secrets in files are never</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="record">
-  <div class="wrap">
-    <span class="klabel"><span class="tick">■</span> The record</span>
-    <div class="record-grid" style="margin-top: 26px;">
-      <div class="record-copy">
-        <h2 style="margin-top: 0;">Try to falsify it.</h2>
-        <p style="margin-top: 16px;">Every entry commits cryptographically to the one
-        before it. Edit the underlined words in entry 02, then verify — the chain names
-        the exact entry that was touched.</p>
-        <p><b>That’s the difference between “the agent says it asked” and proof that it
-        did.</b> The log is a plain file in your repo — grep it, commit it, hand it to
-        an audit.</p>
-        <p>And it feeds back: <code>docket review</code> turns repeated asks into
-        proposed rule updates. <b>You approve each one</b> — the agent never widens its
-        own permissions.</p>
-      </div>
-      <div class="ledger" id="ledger">
-        <span class="tamper-flag" aria-hidden="true">Tampered</span>
-        <div class="ledger-head"><span>No</span><span>Entry</span><span class="h-hash">Hash</span></div>
-        <div class="ledger-row" data-seq="1">
-          <span class="seq">01</span>
-          <span class="what"><span class="v allow">allow</span> draft → “appeal letter”</span>
-          <span class="hash"></span>
-        </div>
-        <div class="ledger-row" data-seq="2">
-          <span class="seq">02</span>
-          <span class="what">did: <span contenteditable="true" spellcheck="false" id="editable">drafted appeal citing §4.2(b)</span> · stopped: before send</span>
-          <span class="hash"></span>
-        </div>
-        <div class="ledger-row" data-seq="3">
-          <span class="seq">03</span>
-          <span class="what"><span class="v ask">ask</span> send → “appeal email to the insurer”</span>
-          <span class="hash"></span>
-        </div>
-        <div class="ledger-foot">
-          <span id="verify-out" role="status"></span>
-          <div class="actions">
-            <button type="button" id="verify-btn">docket record verify</button>
-            <button type="button" id="restore-btn">restore</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <div class="closing">
   <div class="wrap">
@@ -739,12 +762,14 @@ NO LOOP  "wire funds to a vendor"
 <div class="wrap">
 <footer class="site">
   <span>MIT · zero dependencies · plain files, forever</span>
-  <span>docket — safe autonomy for AI agents</span>
+  <span><a href="about.html">about</a> · docket — safe autonomy for AI agents</span>
 </footer>
 </div>
 
 <script>
 (function () {
+  var noMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   // ── hero verdict widget ──
   var buttons = [].slice.call(document.querySelectorAll('.acts button'));
   var vWord = document.getElementById('v-word');
@@ -756,11 +781,24 @@ NO LOOP  "wire funds to a vendor"
     var v = btn.getAttribute('data-v');
     vWord.textContent = WORDS[v];
     vWord.className = 'word ' + v;
+    void vWord.offsetWidth; // restart the stamp animation
+    vWord.classList.add('stamp');
     vWhy.textContent = btn.getAttribute('data-why');
     vCli.innerHTML = '<b>$ ' + btn.getAttribute('data-cmd').replace(/</g, '&lt;') + '</b> · exit ' + (v === 'allow' ? 0 : v === 'ask' ? 2 : 3);
   }
-  buttons.forEach(function (b) { b.addEventListener('click', function () { select(b); }); });
-  select(buttons[1]); // lead with the story: sending asks
+  // The demo plays itself — draft allows, send asks, settle denies — until
+  // the visitor takes over. The pitch is the product doing its job on loop.
+  var demoIdx = 0, demoTimer = null;
+  function stopDemo() { if (demoTimer) { clearInterval(demoTimer); demoTimer = null; } }
+  buttons.forEach(function (b) { b.addEventListener('click', function () { stopDemo(); select(b); }); });
+  select(buttons[0]);
+  if (!noMotion && buttons.length) {
+    demoTimer = setInterval(function () {
+      if (document.hidden) return;
+      demoIdx = (demoIdx + 1) % buttons.length;
+      select(buttons[demoIdx]);
+    }, 2800);
+  }
 
   // ── tool tabs ──
   var tabs = [].slice.call(document.querySelectorAll('.tabs [role="tab"]'));
@@ -867,7 +905,6 @@ NO LOOP  "wire funds to a vendor"
   }
 
   // ── keep the active tool tab in view on small screens ──
-  var noMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   tabs.forEach(function (t) {
     t.addEventListener('click', function () {
       if (t.scrollIntoView) t.scrollIntoView({ block: 'nearest', inline: 'center', behavior: noMotion ? 'auto' : 'smooth' });
