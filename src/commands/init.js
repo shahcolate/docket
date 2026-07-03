@@ -45,7 +45,7 @@ ${dim('Unwritten answers get guessed at. Written answers get enforced.')}
 
 Next:
   ${cyan('docket templates')}              see the starter loops
-  ${cyan('docket new my-loop')}            answer the five questions interactively
+  ${cyan('docket new')}                    build a loop step by step — it teaches the five layers
   ${cyan('docket new appeal --template insurance-appeal')}
   ${cyan('docket compile --target claude --write')}   put your loops in front of the agent
 `);

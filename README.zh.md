@@ -108,6 +108,10 @@ $ docket new appeal --template insurance-appeal
 ✓ wrote .docket/loops/appeal.loop.md
 ```
 
+没有合适的模板？直接运行 `docket new`，它是一个**分步创建向导**：五步对应
+五层，每一步都边问边讲解；写盘前先预览、再确认，最后用你刚写下的授权令现场
+演示 allow / ask / deny 三种裁决——这是理解规范最快的方式。
+
 在智能体行动*之前*，先查授权令（warrant）：
 
 ```console
