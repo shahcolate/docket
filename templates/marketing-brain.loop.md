@@ -2,6 +2,9 @@
 name: marketing-brain
 description: Marketing memory that compounds week over week — the messaging that already worked, the objections that keep coming back, the founder's actual voice.
 version: 1
+triggers:
+  - marketing copy, launch post, landing page
+  - positioning, messaging, campaign draft
 warrant:
   read:
     - the positioning doc

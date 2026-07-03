@@ -6,6 +6,9 @@
 //   warrant   — what it may read / draft / change / send    (frontmatter)
 //   record    — the evidence the agent owes when it stops   (frontmatter)
 //   reserved  — what stays with the human, always           (frontmatter)
+//
+// Plus optional routing metadata:
+//   triggers  — phrases that mark a task as this loop's job (frontmatter)
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -122,6 +125,7 @@ export function parseLoop(text, { file } = {}) {
     description: typeof meta.description === 'string' ? meta.description : '',
     version,
     warrant,
+    triggers: asStringList(meta.triggers, 'triggers'),
     reserved: asStringList(meta.reserved, 'reserved'),
     record: asStringList(meta.record, 'record'),
     brief: sections.brief ?? '',

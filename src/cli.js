@@ -4,10 +4,12 @@ import { cmdInit } from './commands/init.js';
 import { cmdNew, cmdTemplates } from './commands/new.js';
 import { cmdList, cmdShow } from './commands/list.js';
 import { cmdCheck } from './commands/check.js';
+import { cmdMatch } from './commands/match.js';
 import { cmdRecord } from './commands/record.js';
 import { cmdCompile } from './commands/compile.js';
 import { cmdReview } from './commands/review.js';
 import { cmdMcp } from './commands/mcp.js';
+import { cmdHook } from './commands/hook.js';
 
 const HELP = `
 ${bold('docket')} — brief the agent, warrant the actions, keep the record
@@ -22,6 +24,8 @@ ${bold('Getting started')}
 ${bold('Working with loops')}
   ${cyan('list')}                       list your loops
   ${cyan('show')} <loop>                print a loop's five layers
+  ${cyan('match')} <task…>              which loop covers this task? ranked, with why —
+                             exit 0 = matched, 2 = no loop covers it (ask)
   ${cyan('check')} <loop> <action> <target>
                              ask the warrant: allow, ask, or deny?
                              (actions: read, draft, change, send)
@@ -37,9 +41,14 @@ ${bold('The record')}
   ${cyan('record verify')}             verify the hash chain end to end
 
 ${bold('Portability')}
-  ${cyan('compile')} [--target claude|agents|gemini|cursor|raw] [--loop <name>] [--write]
+  ${cyan('compile')} [--target claude|agents|gemini|cursor|raw] [--loop <name>] [--index] [--write]
                              render loops into CLAUDE.md / AGENTS.md / Cursor rules
+                             (--index: one line per loop + the protocol, instead of
+                             full loops — keeps context flat as rule count grows)
   ${cyan('mcp')}                        run the MCP server (stdio) for agent integration
+  ${cyan('hook')} claude [--loop <name>] [--strict]
+                             Claude Code PreToolUse hook: gate tool calls on
+                             the warrant — deny blocks, ask prompts the human
 
 ${dim('Every loop answers five questions: what must it know, how is the work')}
 ${dim('done, what may it do without asking, where does it stop, and what')}
@@ -70,6 +79,8 @@ export async function main(argv) {
       return cmdList(rest);
     case 'show':
       return cmdShow(rest);
+    case 'match':
+      return cmdMatch(rest);
     case 'check':
       return cmdCheck(rest);
     case 'record':
@@ -80,6 +91,8 @@ export async function main(argv) {
       return cmdReview(rest);
     case 'mcp':
       return cmdMcp(rest);
+    case 'hook':
+      return cmdHook(rest);
     default:
       console.error(`docket: unknown command "${command}" — try \`docket help\``);
       return 1;

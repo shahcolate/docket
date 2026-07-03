@@ -43,14 +43,14 @@ function stemCandidates(word) {
   return c;
 }
 
-function sameWord(a, b) {
+export function sameWord(a, b) {
   for (const cand of stemCandidates(a)) {
     if (stemCandidates(b).has(cand)) return true;
   }
   return false;
 }
 
-function contentWords(s) {
+export function contentWords(s) {
   return s.split(/[^a-z0-9']+/).filter((w) => w && !STOPWORDS.has(w));
 }
 
