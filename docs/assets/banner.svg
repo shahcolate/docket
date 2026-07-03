@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="190" viewBox="0 0 680 190" role="img" aria-label="docket — before your agent acts: allow, ask, or deny">
+  <rect x="1" y="1" width="678" height="188" rx="14" fill="#17181C" stroke="#27292E" stroke-width="2"/>
+  <circle cx="26" cy="27" r="6" fill="#FF5F57"/>
+  <circle cx="47" cy="27" r="6" fill="#FEBC2E"/>
+  <circle cx="68" cy="27" r="6" fill="#28C840"/>
+  <text x="352" y="32" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" fill="#83868F">docket — the permission layer for AI agents</text>
+  <line x1="1" y1="48" x2="679" y2="48" stroke="#27292E" stroke-width="1"/>
+  <text x="28" y="84" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="15" fill="#E8E9EC">$ docket check appeal send "appeal email to the insurer"</text>
+  <text x="28" y="118" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="15"><tspan fill="#E0B054" font-weight="700">ASK</tspan><tspan fill="#E8E9EC">  send → "appeal email to the insurer"</tspan></text>
+  <text x="28" y="146" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" fill="#83868F">"appeal email to the insurer" is not listed under `send`.</text>
+  <text x="28" y="170" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" fill="#83868F">Unlisted means ask — silence is never permission.</text>
+</svg>

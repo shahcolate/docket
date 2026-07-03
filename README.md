@@ -4,6 +4,16 @@
 
 **The permission layer — and the paper trail — for AI agents.**
 
+[![npm](https://img.shields.io/npm/v/docket-agent?style=flat-square&color=FF4B3A&label=npm)](https://www.npmjs.com/package/docket-agent)
+[![CI](https://img.shields.io/github/actions/workflow/status/shahcolate/docket/ci.yml?style=flat-square&label=CI)](https://github.com/shahcolate/docket/actions)
+[![node](https://img.shields.io/node/v/docket-agent?style=flat-square&color=3FB950)](package.json)
+[![zero dependencies](https://img.shields.io/badge/dependencies-0-3FB950?style=flat-square)](package.json)
+[![license](https://img.shields.io/badge/license-MIT-8B8E96?style=flat-square)](LICENSE)
+
+**English** · [简体中文](README.zh.md)
+
+<img src="docs/assets/banner.svg" alt="docket check — ASK: unlisted means ask, silence is never permission" width="680">
+
 Before your agent acts, it checks a one-page rule file you wrote: allow, ask,
 or deny. After, it leaves a tamper-evident record. Anything you didn't write
 down, the agent must ask about. Plain Markdown in your repo; works with
@@ -17,6 +27,13 @@ Zero dependencies · plain Markdown + JSONL · MIT
 </div>
 
 ---
+
+## News
+
+- **2026.07** — `v0.2.1` on npm: current README and CLI help ship in the package.
+- **2026.07** — `v0.2.0` ships **`docket review`**: the record proposes warrant amendments; applying is always a human keystroke.
+- **2026.07** — [OpenClaw](https://docs.openclaw.ai) and [Hermes](https://hermes-agent.nousresearch.com/docs/) integrations, plus the full [documentation site](https://shahcolate.github.io/docket/docs.html).
+- **2026.07** — `v0.1.0`: first public release — loops, warrants, hash-chained records, compile targets, MCP server.
 
 ## The failure mode moved
 
@@ -325,7 +342,14 @@ Read the [Loop File Spec](spec/SPEC.md) — it's short on purpose.
 
 The spec is deliberately small — issues that argue about the warrant
 algorithm are the best kind. `npm test` runs the whole suite with zero
-setup.
+setup. The fastest ways in: a new [starter template](templates/), or a
+red-team scenario that breaks the matcher — if it finds a silent allow,
+it goes straight into [the eval suite](eval/REPORT.md) with your name on
+it. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+<a href="https://github.com/shahcolate/docket/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=shahcolate/docket" alt="docket contributors" />
+</a>
 
 MIT © docket contributors
 
