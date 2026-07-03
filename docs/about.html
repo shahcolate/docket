@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>about docket — why agents need a permission layer</title>
+<meta name="description" content="Why docket exists, the principles it refuses to bend, and what the project is: an open-source, zero-dependency permission layer and paper trail for AI agents.">
+<style>
+:root {
+  --bg: #FFFFFF; --bg-2: #F6F6F7; --ink: #131417; --mut: #55585F; --faint: #8B8E96;
+  --hair: #E4E5E8; --hair-2: #C9CBD1;
+  --red: #D9291C; --red-soft: #FCEBE9;
+  --allow: #14733A; --ask: #91600A;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121316; --bg-2: #1A1B1F; --ink: #F2F2F4; --mut: #A6AAB2; --faint: #767A83;
+    --hair: #27292E; --hair-2: #3B3E45; --red: #FF4B3A; --red-soft: #37201D;
+    --allow: #4CC878; --ask: #E0B054;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121316; --bg-2: #1A1B1F; --ink: #F2F2F4; --mut: #A6AAB2; --faint: #767A83;
+  --hair: #27292E; --hair-2: #3B3E45; --red: #FF4B3A; --red-soft: #37201D;
+  --allow: #4CC878; --ask: #E0B054;
+}
+:root[data-theme="light"] {
+  --bg: #FFFFFF; --bg-2: #F6F6F7; --ink: #131417; --mut: #55585F; --faint: #8B8E96;
+  --hair: #E4E5E8; --hair-2: #C9CBD1; --red: #D9291C; --red-soft: #FCEBE9;
+  --allow: #14733A; --ask: #91600A;
+}
+
+* { box-sizing: border-box; margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--sans); font-size: 16.5px; line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration-color: var(--hair-2); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--red); }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+code { font-family: var(--mono); font-size: 0.85em; background: var(--bg-2); padding: 1px 5px; border: 1px solid var(--hair); }
+
+.frame { max-width: 860px; margin: 0 auto; padding: 0 28px; }
+@media (max-width: 640px) { .frame { padding: 0 16px; } }
+
+nav.top {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 0; border-bottom: 1px solid var(--hair);
+}
+.wordmark { font-weight: 800; font-size: 19px; letter-spacing: -0.02em; text-decoration: none; }
+.wordmark::after { content: "."; color: var(--red); }
+.wordmark span { color: var(--faint); font-weight: 600; }
+nav.top .links { display: flex; gap: 22px; align-items: center; font-size: 14px; font-weight: 600; }
+nav.top .links a { text-decoration: none; color: var(--mut); }
+nav.top .links a:hover { color: var(--ink); }
+
+.doc { padding: 48px 0 100px; }
+.doc .klabel { font-size: 11.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mut); }
+.doc .klabel .tick { color: var(--red); }
+.doc h1 { font-size: clamp(30px, 4vw, 42px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.08; margin: 10px 0 14px; }
+.doc .lede { font-size: 18.5px; color: var(--mut); max-width: 42em; }
+.doc section { border-top: 2px solid var(--ink); margin-top: 56px; padding-top: 18px; }
+.doc h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin: 10px 0 14px; }
+.doc p, .doc li { color: var(--mut); max-width: 68ch; }
+.doc p b, .doc li b { color: var(--ink); }
+.doc p + p { margin-top: 12px; }
+.doc ul { padding-left: 22px; margin: 10px 0; }
+.doc li { margin: 8px 0; }
+
+.callout { border: 1px solid var(--hair-2); border-left: 3px solid var(--red); padding: 14px 18px; margin: 18px 0; font-size: 15px; color: var(--mut); max-width: 68ch; }
+.callout b { color: var(--ink); }
+
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 1.5px solid var(--ink); margin-top: 22px; }
+.facts > div { padding: 20px 22px; border-left: 1px solid var(--hair); }
+.facts > div:first-child { border-left: none; }
+.facts .k { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); }
+.facts .v { font-size: 17px; font-weight: 700; margin-top: 4px; }
+@media (max-width: 720px) {
+  .facts { grid-template-columns: 1fr; }
+  .facts > div { border-left: none; border-top: 1px solid var(--hair); }
+  .facts > div:first-child { border-top: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="frame">
+<nav class="top">
+  <a class="wordmark" href="index.html">docket<span>&thinsp;/&thinsp;about</span></a>
+  <div class="links">
+    <a href="index.html">Home</a>
+    <a href="docs.html">Docs</a>
+    <a href="https://github.com/shahcolate/docket">GitHub</a>
+  </div>
+</nav>
+
+<main class="doc">
+  <div class="klabel"><span class="tick">■</span> About</div>
+  <h1>The permission layer — and the paper trail — for AI agents.</h1>
+  <p class="lede">Docket exists so that the answer to <i>“what exactly was the agent
+  allowed to do — and can you prove it?”</i> is a file in your repo instead of a vibe.</p>
+
+  <section id="why">
+    <h2>Why it exists</h2>
+    <p>Yesterday’s AI failure was a bad <b>answer</b>: the model got something wrong,
+    you corrected it in chat, and nothing outside the conversation changed. Today’s
+    failure is a bad <b>action</b>: agents use tools. A misread no longer comes back
+    as a wrong paragraph — it goes out as a sent email, a filed ticket, a changed
+    record.</p>
+    <div class="callout"><b>It has already happened in the wild.</b> In early 2026 a
+    user reported that his agent, having drafted an appeal for a denied insurance
+    claim, sent it to the insurer on its own when he ignored the draft — it took
+    silence plus frustration as a yes.</div>
+    <p>Docket is the layer that prevents exactly that. Before an agent acts, it checks
+    a one-page rule file a human wrote — <b>allow, ask, or deny</b> — and after, it
+    leaves a tamper-evident record. The default is the point: anything the file
+    doesn’t grant, the agent must ask about. <b>Unlisted means ask. Silence is never
+    permission.</b></p>
+  </section>
+
+  <section id="principles">
+    <h2>Principles it won’t bend</h2>
+    <ul>
+      <li><b>Allowlists, not blocklists.</b> Permission is what you wrote down, not
+      everything you forgot to forbid. The author doesn’t have to anticipate every
+      failure to be protected from it.</li>
+      <li><b>Degrade toward the human.</b> Pattern matching is asymmetric by design:
+      a phrasing difference may cause an unnecessary ask; it must never cause an
+      accidental allow.</li>
+      <li><b>On the record, not on trust.</b> Every check and every piece of finished
+      work lands in an append-only, hash-chained log. A record that can be edited
+      quietly is not a record.</li>
+      <li><b>Humans decide; the agent never widens its own permissions.</b> Rule
+      changes are proposed from the record and applied only by a human keystroke —
+      and the approval is logged too.</li>
+      <li><b>Plain text you own.</b> Loops are Markdown, the record is JSONL, both
+      live in your repo. Assistant files are build artifacts; a model switch is a
+      recompile, not a re-teach. Deleting docket loses you nothing but the tooling.</li>
+      <li><b>No execution, no secrets, no lock-in.</b> A loop describes and constrains
+      work — it is not a workflow engine, and it is meant to be committed and shared.</li>
+    </ul>
+  </section>
+
+  <section id="project">
+    <h2>The project</h2>
+    <p>Docket is open source under the MIT license, published on npm as
+    <a href="https://www.npmjs.com/package/docket-agent"><code>docket-agent</code></a>,
+    and built with <b>zero runtime dependencies</b> — a grammar small enough to audit
+    is part of the security posture. It works with Claude, ChatGPT/Codex, Gemini,
+    Cursor, OpenClaw, Hermes, and any MCP client.</p>
+    <p>The claims are red-teamed, not asserted: 42 scenarios modeled on real
+    agent-overreach incidents run against the shipped templates on every CI build —
+    zero silent allows, zero warranted work blocked. Reproduce it yourself with
+    <code>npm run eval</code>.</p>
+    <p>Start with the <a href="index.html">homepage</a>, read the
+    <a href="docs.html">docs</a> or the
+    <a href="https://github.com/shahcolate/docket/blob/main/spec/SPEC.md">loop file
+    spec</a>, and contributions are welcome via
+    <a href="https://github.com/shahcolate/docket/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>
+    <div class="facts">
+      <div><div class="k">License</div><div class="v">MIT</div></div>
+      <div><div class="k">Dependencies</div><div class="v">Zero</div></div>
+      <div><div class="k">Your data</div><div class="v">Markdown + JSONL</div></div>
+    </div>
+  </section>
+</main>
+
+<footer style="border-top:1px solid var(--hair); padding: 24px 0 48px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; font-size:13px; color:var(--faint);">
+  <span>MIT · zero dependencies · plain files, forever</span>
+  <span><a href="index.html">docket home</a> · <a href="https://github.com/shahcolate/docket">GitHub</a></span>
+</footer>
+</div>
+
+</body>
+</html>
