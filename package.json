@@ -1,0 +1,40 @@
+{
+  "name": "docket",
+  "version": "0.1.0",
+  "description": "Rent the intelligence. Own the memory. A portable, plain-file format for agent loops: memory, method, boundary, receipt, judgment.",
+  "type": "module",
+  "bin": {
+    "docket": "bin/docket.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test",
+    "eval": "node eval/run.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "templates",
+    "spec",
+    "eval"
+  ],
+  "keywords": [
+    "agents",
+    "ai",
+    "memory",
+    "context",
+    "mcp",
+    "guardrails",
+    "audit",
+    "receipts",
+    "claude",
+    "llm"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shahcolate/docket.git"
+  },
+  "license": "MIT"
+}

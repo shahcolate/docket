@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>docket — the permission layer and paper trail for AI agents</title>
+<meta name="description" content="Before your AI agent acts, it checks rules you wrote: allow, ask, or deny. After, it leaves a tamper-evident record. Plain files, any AI tool, zero dependencies.">
+<style>
+:root {
+  --paper: #FBFAF7;
+  --paper-2: #F4F2EC;
+  --ink: #232A3B;
+  --ink-2: #4E5568;
+  --ink-3: #7A8093;
+  --rule-blue: #C7D3E3;
+  --rule-strong: #9FB2CC;
+  --margin-red: #C24A40;
+  --stamp-red: #B3372E;
+  --stamp-red-soft: rgba(179, 55, 46, 0.08);
+  --allow: #2E6B44;
+  --ask: #8A6414;
+  --deny: #B3372E;
+  --term-bg: #1A1F2C;
+  --term-ink: #DCE1EC;
+  --term-dim: #79819A;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #14171F;
+    --paper-2: #101319;
+    --ink: #DCE0EA;
+    --ink-2: #A7ADBE;
+    --ink-3: #767D91;
+    --rule-blue: #2B3347;
+    --rule-strong: #3D4763;
+    --margin-red: #C25B50;
+    --stamp-red: #E0685C;
+    --stamp-red-soft: rgba(224, 104, 92, 0.1);
+    --allow: #6BC28C;
+    --ask: #D9B35E;
+    --deny: #EE8074;
+    --term-bg: #0D1017;
+    --term-ink: #DCE1EC;
+    --term-dim: #79819A;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #14171F; --paper-2: #101319; --ink: #DCE0EA; --ink-2: #A7ADBE;
+  --ink-3: #767D91; --rule-blue: #2B3347; --rule-strong: #3D4763;
+  --margin-red: #C25B50; --stamp-red: #E0685C; --stamp-red-soft: rgba(224,104,92,0.1);
+  --allow: #6BC28C; --ask: #D9B35E; --deny: #EE8074;
+  --term-bg: #0D1017; --term-ink: #DCE1EC; --term-dim: #79819A;
+}
+:root[data-theme="light"] {
+  --paper: #FBFAF7; --paper-2: #F4F2EC; --ink: #232A3B; --ink-2: #4E5568;
+  --ink-3: #7A8093; --rule-blue: #C7D3E3; --rule-strong: #9FB2CC;
+  --margin-red: #C24A40; --stamp-red: #B3372E; --stamp-red-soft: rgba(179,55,46,0.08);
+  --allow: #2E6B44; --ask: #8A6414; --deny: #B3372E;
+  --term-bg: #1A1F2C; --term-ink: #DCE1EC; --term-dim: #79819A;
+}
+
+* { box-sizing: border-box; margin: 0; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { animation: none !important; transition: none !important; }
+}
+body {
+  background: var(--paper-2);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 17.5px;
+  line-height: 1.65;
+}
+a { color: inherit; text-decoration-color: var(--rule-strong); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--margin-red); }
+a:focus-visible, button:focus-visible, [contenteditable]:focus-visible {
+  outline: 2px solid var(--margin-red); outline-offset: 2px;
+}
+code { font-family: var(--mono); font-size: 0.85em; }
+
+/* ── the sheet: pleading paper with a double red margin rule ── */
+.sheet {
+  max-width: 920px;
+  margin: 0 auto;
+  background: var(--paper);
+  border-left: 1px solid var(--rule-blue);
+  border-right: 1px solid var(--rule-blue);
+  position: relative;
+  padding: 0 64px 0 88px;
+  box-shadow: 0 0 60px rgba(35, 42, 59, 0.06);
+}
+.sheet::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; left: 52px;
+  border-left: 1px solid var(--margin-red);
+  border-right: 1px solid var(--margin-red);
+  width: 3px;
+  opacity: 0.75;
+  pointer-events: none;
+}
+@media (max-width: 700px) {
+  .sheet { padding: 0 20px 0 48px; }
+  .sheet::before { left: 26px; }
+}
+
+/* ── typographic system ── */
+.label {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+h1 {
+  font-size: clamp(34px, 5.2vw, 54px);
+  line-height: 1.12;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+h2 {
+  font-size: 15px;
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+h2 .no { color: var(--margin-red); margin-right: 10px; }
+.lede { font-size: 20px; color: var(--ink-2); max-width: 34em; text-wrap: pretty; }
+p { max-width: 62ch; }
+section { padding: 64px 0; border-top: 1px solid var(--rule-blue); }
+.sec-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 28px; }
+.sec-head::after { content: ""; flex: 1; border-top: 1px solid var(--rule-blue); transform: translateY(-4px); }
+
+/* ── caption header ── */
+.caption {
+  padding: 28px 0 22px;
+  border-bottom: 3px double var(--ink);
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap;
+}
+.caption .left { display: flex; flex-direction: column; gap: 4px; }
+.caption .title { font-family: var(--mono); font-weight: 700; font-size: 18px; letter-spacing: 0.08em; }
+.caption nav { display: flex; gap: 18px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+.caption nav a { text-decoration: none; color: var(--ink-2); }
+.caption nav a:hover { color: var(--margin-red); }
+
+/* ── hero ── */
+.hero { padding: 64px 0 72px; border-top: none; position: relative; }
+.hero .inre { margin-bottom: 18px; }
+.hero h1 em { font-style: italic; font-weight: 600; }
+.hero .lede { margin-top: 22px; }
+.hero-row { margin-top: 34px; display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+.cmd {
+  display: inline-flex; align-items: center; gap: 12px;
+  font-family: var(--mono); font-size: 13.5px;
+  border: 1px solid var(--rule-strong);
+  background: var(--paper);
+  padding: 11px 16px;
+}
+.cmd button {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  border: 1px solid var(--rule-strong); background: transparent; color: var(--ink-2);
+  padding: 4px 9px; cursor: pointer;
+}
+.cmd button:hover { color: var(--margin-red); border-color: var(--margin-red); }
+.btn {
+  font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase;
+  text-decoration: none; padding: 13px 22px; border: 1px solid var(--ink);
+}
+.btn.primary { background: var(--ink); color: var(--paper); }
+.btn.primary:hover { background: var(--margin-red); border-color: var(--margin-red); }
+.btn.ghost:hover { border-color: var(--margin-red); color: var(--margin-red); }
+
+/* ── rubber stamps ── */
+.stamp {
+  display: inline-block;
+  font-family: var(--mono); font-weight: 700;
+  font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--stamp-red);
+  border: 3px double var(--stamp-red);
+  padding: 8px 16px;
+  transform: rotate(-3.5deg);
+  background: var(--stamp-red-soft);
+}
+.hero .stamp { position: absolute; right: 0; top: 26px; }
+.hero h1 { max-width: 15em; }
+@media (max-width: 860px) { .hero .stamp { position: static; display: inline-block; margin-bottom: 20px; } }
+
+/* ── exhibits ── */
+.exhibit { margin-top: 36px; }
+.exhibit-tag {
+  display: flex; align-items: baseline; gap: 14px; margin-bottom: 10px;
+}
+.exhibit-tag .label { color: var(--margin-red); }
+.exhibit-tag .desc { font-style: italic; color: var(--ink-2); font-size: 15.5px; }
+
+.term {
+  background: var(--term-bg); color: var(--term-ink);
+  font-family: var(--mono); font-size: 13px; line-height: 1.85;
+  padding: 20px 22px; overflow-x: auto;
+  border: 1px solid var(--rule-strong);
+}
+.term .ln { white-space: pre; display: block; min-height: 1.85em; }
+.term .ps1 { color: var(--term-dim); }
+.term .dim { color: var(--term-dim); }
+.term .v-allow { color: #6CC993; font-weight: 700; }
+.term .v-ask { color: #E3BC61; font-weight: 700; }
+.term .v-deny { color: #F08578; font-weight: 700; }
+
+/* ── two audiences ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--rule-blue); }
+.two-col > div { padding: 26px 28px 30px; }
+.two-col > div + div { border-left: 1px solid var(--rule-blue); }
+.two-col h3 { font-size: 19px; font-weight: 600; font-style: italic; margin-bottom: 12px; }
+.two-col ul { margin: 0; padding: 0; list-style: none; }
+.two-col li { padding: 9px 0; border-top: 1px solid var(--rule-blue); font-size: 16px; color: var(--ink-2); }
+.two-col li b { color: var(--ink); font-weight: 600; }
+@media (max-width: 700px) {
+  .two-col { grid-template-columns: 1fr; }
+  .two-col > div + div { border-left: none; border-top: 1px solid var(--rule-blue); }
+}
+
+/* ── the five-layer docket sheet ── */
+.form { border: 1px solid var(--rule-strong); }
+.form-row { display: grid; grid-template-columns: 150px 1fr; border-top: 1px solid var(--rule-blue); }
+.form-row:first-child { border-top: none; }
+.form-row dt {
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 18px 20px; color: var(--margin-red);
+  border-right: 1px solid var(--rule-blue);
+}
+.form-row dd { padding: 16px 20px; color: var(--ink-2); font-size: 16.5px; }
+.form-row dd b { color: var(--ink); font-weight: 600; }
+@media (max-width: 620px) {
+  .form-row { grid-template-columns: 1fr; }
+  .form-row dt { border-right: none; padding-bottom: 2px; }
+  .form-row dd { padding-top: 4px; }
+}
+
+/* ── record ledger (exhibit B) ── */
+.ledger { border: 1px solid var(--rule-strong); font-family: var(--mono); font-size: 13px; position: relative; }
+.ledger-head, .ledger-row {
+  display: grid; grid-template-columns: 44px 1fr 190px; gap: 12px;
+  padding: 11px 16px; align-items: baseline;
+}
+.ledger-head {
+  font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-3); border-bottom: 1px solid var(--rule-strong);
+}
+.ledger-row { border-top: 1px solid var(--rule-blue); }
+.ledger-row:nth-of-type(2) { border-top: none; }
+.ledger-row .seq { color: var(--ink-3); }
+.ledger-row .what { overflow-wrap: anywhere; }
+.ledger-row .what .v { font-weight: 700; }
+.ledger-row .what .v.allow { color: var(--allow); }
+.ledger-row .what .v.ask { color: var(--ask); }
+.ledger-row .hash { color: var(--ink-3); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ledger-row.bad .hash { color: var(--deny); font-weight: 700; }
+.ledger-row.bad { background: var(--stamp-red-soft); }
+.ledger-row .what [contenteditable] { border-bottom: 1px dashed var(--ink-3); cursor: text; }
+.ledger-foot {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 13px 16px; border-top: 1px solid var(--rule-strong);
+}
+#verify-out { font-size: 12.5px; }
+#verify-out.ok { color: var(--allow); }
+#verify-out.bad { color: var(--deny); font-weight: 700; }
+.ledger-foot .actions { display: flex; gap: 10px; }
+.ledger-foot button {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.06em; cursor: pointer;
+  border: 1px solid var(--rule-strong); background: transparent; color: var(--ink-2); padding: 7px 13px;
+}
+.ledger-foot button:hover { border-color: var(--margin-red); color: var(--margin-red); }
+.ledger .tampered {
+  display: none;
+  position: absolute; right: 18px; top: -18px;
+  font-size: 15px; padding: 10px 20px; transform: rotate(4deg);
+}
+.ledger.broken .tampered { display: inline-block; }
+@media (max-width: 620px) {
+  .ledger-head, .ledger-row { grid-template-columns: 36px 1fr; }
+  .hash, .ledger-head .h-hash { display: none; }
+}
+
+/* ── findings ── */
+.findings { border-top: 1px solid var(--rule-strong); border-bottom: 1px solid var(--rule-strong); display: grid; grid-template-columns: repeat(4, 1fr); }
+.finding { padding: 24px 20px 22px; border-left: 1px solid var(--rule-blue); }
+.finding:first-child { border-left: none; }
+.finding .num {
+  font-family: var(--serif); font-weight: 600; font-size: 44px; line-height: 1;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+}
+.finding .num.good { color: var(--allow); }
+.finding .cap { margin-top: 10px; font-size: 14px; color: var(--ink-2); line-height: 1.45; }
+@media (max-width: 760px) {
+  .findings { grid-template-columns: 1fr 1fr; }
+  .finding:nth-child(3) { border-left: none; }
+  .finding:nth-child(n+3) { border-top: 1px solid var(--rule-blue); }
+}
+.findings-note { margin-top: 18px; font-size: 15px; color: var(--ink-3); font-style: italic; }
+
+/* ── portability line ── */
+.pipeline {
+  font-family: var(--mono); font-size: 13.5px; color: var(--ink-2);
+  border: 1px solid var(--rule-blue); padding: 18px 20px;
+  overflow-x: auto; white-space: nowrap;
+}
+.pipeline b { color: var(--ink); }
+.pipeline .arrow { color: var(--margin-red); padding: 0 6px; }
+
+/* ── index of templates ── */
+.index { border-top: 1px solid var(--rule-strong); }
+.index-row { display: grid; grid-template-columns: 44px 200px 1fr; gap: 16px; padding: 14px 4px; border-bottom: 1px solid var(--rule-blue); align-items: baseline; }
+.index-row .n { font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+.index-row .name { font-family: var(--mono); font-size: 13.5px; font-weight: 700; }
+.index-row .gist { color: var(--ink-2); font-size: 16px; }
+@media (max-width: 620px) {
+  .index-row { grid-template-columns: 36px 1fr; }
+  .index-row .gist { grid-column: 2; }
+}
+
+/* ── closing & footer ── */
+.closing { text-align: center; padding: 84px 0; border-top: 1px solid var(--rule-blue); }
+.closing .line { font-size: clamp(22px, 3.4vw, 30px); font-style: italic; text-wrap: balance; }
+.closing .sig { margin-top: 26px; }
+footer.site {
+  border-top: 3px double var(--ink);
+  padding: 26px 0 48px;
+  display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; color: var(--ink-3);
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header class="caption">
+  <div class="left">
+    <span class="title">DOCKET</span>
+    <span class="label">No. 0001-AI &nbsp;·&nbsp; In re: what your agent is allowed to do</span>
+  </div>
+  <nav aria-label="site">
+    <a href="#audiences">why</a>
+    <a href="#loop">the loop</a>
+    <a href="#record">the record</a>
+    <a href="#findings">findings</a>
+    <a href="https://github.com/shahcolate/docket">github ↗</a>
+  </nav>
+</header>
+
+<div class="hero">
+  <span class="stamp" aria-hidden="true">Red-teamed · 0 silent allows</span>
+  <div class="inre label">Open source · zero dependencies · MIT</div>
+  <h1>The permission layer — and the paper trail — for AI&nbsp;agents.</h1>
+  <p class="lede">Agents don’t just answer anymore. They send the email, move the
+  meeting, file the ticket. Docket makes them check a one-page rule file
+  <em>before</em> they act — allow, ask, or deny — and leave a tamper-evident
+  record <em>after</em>. Anything you didn’t write down, the agent must ask about.</p>
+  <div class="hero-row">
+    <span class="cmd"><code id="install-cmd">npm install -g github:shahcolate/docket</code>
+      <button type="button" id="copy-btn" aria-label="copy install command">copy</button></span>
+    <a class="btn primary" href="https://github.com/shahcolate/docket">Star on GitHub</a>
+    <a class="btn ghost" href="https://github.com/shahcolate/docket/blob/main/spec/SPEC.md">Read the spec</a>
+  </div>
+
+  <figure class="exhibit">
+    <figcaption class="exhibit-tag">
+      <span class="label">Exhibit A</span>
+      <span class="desc">a warrant check, exactly as it runs</span>
+    </figcaption>
+    <div class="term" id="hero-term" aria-label="terminal demo of docket check">
+      <span class="ln" data-line='<span class="ps1">$</span> docket check appeal draft "appeal letter"'></span>
+      <span class="ln" data-line='<span class="v-allow">ALLOW</span>  within the draft warrant.'></span>
+      <span class="ln" data-line=''></span>
+      <span class="ln" data-line='<span class="ps1">$</span> docket check appeal send "email to the insurer"'></span>
+      <span class="ln" data-line='<span class="v-ask">ASK</span>  unlisted means ask. silence isn&#39;t permission.'></span>
+      <span class="ln" data-line=''></span>
+      <span class="ln" data-line='<span class="ps1">$</span> docket check appeal change "accept settlement"'></span>
+      <span class="ln" data-line='<span class="v-deny">DENY</span>  hard stop, even with approval.'></span>
+      <span class="ln" data-line='<span class="dim"># every check lands on the record · exit codes 0/2/3</span>'></span>
+    </div>
+  </figure>
+</div>
+
+<section id="audiences">
+  <div class="sec-head"><h2><span class="no">I.</span>Two readers, one page</h2></div>
+  <div class="two-col">
+    <div>
+      <h3>If you run the business</h3>
+      <ul>
+        <li><b>Agent autonomy becomes governed.</b> What each agent may do is written, versioned, and reviewable — not buried in a prompt.</li>
+        <li><b>Every action is auditable.</b> A tamper-evident record of what the agent saw, did, and where it stopped. Hand it to a client or a compliance review.</li>
+        <li><b>No vendor lock-in.</b> The rules and the record are plain files in your repo. Switch AI vendors without losing either.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>If you build the product</h3>
+      <ul>
+        <li><b>A file format, not a platform.</b> One Markdown file per recurring task. Deterministic allow/ask/deny verdicts with exit codes 0/2/3 — gate hooks and CI on them.</li>
+        <li><b>Hash-chained JSONL record.</b> <code>docket record verify</code> catches any edit, deletion, or reordering.</li>
+        <li><b>Works where agents work.</b> Compiles to CLAUDE.md, AGENTS.md, Cursor rules; ships an MCP server. Zero dependencies, node ≥ 18.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="loop">
+  <div class="sec-head"><h2><span class="no">II.</span>One loop, five layers</h2></div>
+  <p class="lede" style="margin-bottom: 30px;">Don’t configure an assistant. Bound one
+  recurring task — the insurance appeal, the client follow-up, the weekly plan —
+  with five layers the agent must obey.</p>
+  <dl class="form">
+    <div class="form-row"><dt>Brief</dt><dd>Everything that must be true in the agent’s head before it starts — <b>the context that changes the answer</b>.</dd></div>
+    <div class="form-row"><dt>Procedure</dt><dd>How this job is done properly: which sources count, what finished looks like, the known ways it goes wrong.</dd></div>
+    <div class="form-row"><dt>Warrant</dt><dd>What it may <b>read / draft / change / send</b> on its own, and what always needs approval. <b>No warrant, no action.</b></dd></div>
+    <div class="form-row"><dt>Record</dt><dd>Verifiable evidence of what it saw, did, skipped, and where it stopped — hash-chained, so history can’t be quietly rewritten.</dd></div>
+    <div class="form-row"><dt>Reserved</dt><dd>The calls that stay human: accounts, secrets, spending, final sign-off.</dd></div>
+  </dl>
+</section>
+
+<section id="record">
+  <div class="sec-head"><h2><span class="no">III.</span>On the record, not on trust</h2></div>
+  <p class="lede" style="margin-bottom: 34px;">Every warrant check and every piece of
+  finished work is appended to a hash-chained log. Try to falsify it: edit the
+  underlined words in entry № 2, then verify.</p>
+  <figure class="exhibit" style="margin-top:0">
+    <figcaption class="exhibit-tag">
+      <span class="label">Exhibit B</span>
+      <span class="desc">the record — live, editable, and unforgiving</span>
+    </figcaption>
+    <div class="ledger" id="ledger">
+      <span class="stamp tampered" aria-hidden="true">Tampered</span>
+      <div class="ledger-head"><span>№</span><span>entry</span><span class="h-hash">hash</span></div>
+      <div class="ledger-row" data-seq="1">
+        <span class="seq">1</span>
+        <span class="what"><span class="v allow">allow</span> draft → “appeal letter”</span>
+        <span class="hash"></span>
+      </div>
+      <div class="ledger-row" data-seq="2">
+        <span class="seq">2</span>
+        <span class="what">did: <span contenteditable="true" spellcheck="false" id="editable">drafted appeal citing §4.2(b)</span> · stopped: before send</span>
+        <span class="hash"></span>
+      </div>
+      <div class="ledger-row" data-seq="3">
+        <span class="seq">3</span>
+        <span class="what"><span class="v ask">ask</span> send → “appeal email to the insurer”</span>
+        <span class="hash"></span>
+      </div>
+      <div class="ledger-foot">
+        <span id="verify-out" role="status"></span>
+        <div class="actions">
+          <button type="button" id="verify-btn">docket record verify</button>
+          <button type="button" id="restore-btn">restore</button>
+        </div>
+      </div>
+    </div>
+  </figure>
+</section>
+
+<section id="findings">
+  <div class="sec-head"><h2><span class="no">IV.</span>Findings</h2></div>
+  <p class="lede" style="margin-bottom: 34px;">42 scenarios modeled on real
+  agent-overreach incidents — unauthorized emails, calendar “tidying”, invented
+  commitments, agents widening their own permissions — run against the shipped
+  templates on every build.</p>
+  <div class="findings">
+    <div class="finding"><div class="num good">0</div><div class="cap">silent allows on risky actions — the failure that ships the email</div></div>
+    <div class="finding"><div class="num">24/24</div><div class="cap">consequence-bearing actions stopped at ask or deny</div></div>
+    <div class="finding"><div class="num">18/18</div><div class="cap">warranted work allowed — safety without friction</div></div>
+    <div class="finding"><div class="num">0</div><div class="cap">runtime dependencies — a supply chain you can read</div></div>
+  </div>
+  <p class="findings-note">Matching is asymmetric by construction: a phrasing
+  difference can cause an unnecessary ask — never an accidental allow. The numbers
+  regenerate with <code>npm run eval</code>; the invariant fails the build if it breaks.</p>
+</section>
+
+<section id="portability">
+  <div class="sec-head"><h2><span class="no">V.</span>Your rules, every model</h2></div>
+  <p class="lede" style="margin-bottom: 30px;">Loops are the source of truth; assistant
+  files are build artifacts. One compile puts the same rules in front of every tool,
+  and <code>docket mcp</code> lets agents check warrants and write the record natively.</p>
+  <div class="pipeline">.docket/loops/*.loop.md
+    <span class="arrow">→</span><b>CLAUDE.md</b>
+    <span class="arrow">→</span><b>AGENTS.md</b>
+    <span class="arrow">→</span><b>.cursor/rules</b>
+    <span class="arrow">→</span><b>MCP tools</b></div>
+</section>
+
+<section id="index">
+  <div class="sec-head"><h2><span class="no">VI.</span>Index of starter loops</h2></div>
+  <div class="index">
+    <div class="index-row"><span class="n">01</span><span class="name">insurance-appeal</span><span class="gist">Build the appeal, cite the policy, assemble the evidence — stop before send.</span></div>
+    <div class="index-row"><span class="n">02</span><span class="name">client-follow-up</span><span class="gist">Promises made, approved language, tone — approval rules built in.</span></div>
+    <div class="index-row"><span class="n">03</span><span class="name">weekly-planning</span><span class="gist">Propose the week and its tradeoffs. Change nothing. Family is untouchable.</span></div>
+    <div class="index-row"><span class="n">04</span><span class="name">marketing-brain</span><span class="gist">Messaging memory that compounds; confident vs. unsupportable, in writing.</span></div>
+    <div class="index-row"><span class="n">05</span><span class="name">ticket-handoff</span><span class="gist">Tickets a stranger can pick up cold: source, owner, status, blocker, warrant, record.</span></div>
+    <div class="index-row"><span class="n">06</span><span class="name">travel-morning</span><span class="gist">Your walking tolerance and food rules, not a guidebook’s top ten.</span></div>
+    <div class="index-row"><span class="n">07</span><span class="name">cross-tool-memory</span><span class="gist">One context you own, readable from Claude, GPT, Kimi, or Codex.</span></div>
+  </div>
+</section>
+
+<div class="closing">
+  <p class="line">“Silence is never permission.”</p>
+  <div class="sig"><span class="stamp">docket · exit 2</span></div>
+</div>
+
+<footer class="site">
+  <span>MIT · zero dependencies · plain files, forever</span>
+  <span><a href="https://github.com/shahcolate/docket">github.com/shahcolate/docket</a></span>
+</footer>
+
+</div>
+<script>
+(function () {
+  var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Exhibit A: terminal typing
+  var lines = [].slice.call(document.querySelectorAll('#hero-term .ln'));
+  function showAll() { lines.forEach(function (l) { l.innerHTML = l.getAttribute('data-line'); }); }
+  if (reduced) { showAll(); }
+  else {
+    var li = 0;
+    (function nextLine() {
+      if (li >= lines.length) return;
+      var el = lines[li], html = el.getAttribute('data-line');
+      li++;
+      if (!html) { el.innerHTML = ''; return void setTimeout(nextLine, 120); }
+      if (html.indexOf('ps1') !== -1) {
+        var tmp = document.createElement('span'); tmp.innerHTML = html;
+        var text = tmp.textContent, ci = 0;
+        (function typeChar() {
+          ci++;
+          el.textContent = text.slice(0, ci);
+          if (ci < text.length) setTimeout(typeChar, 18);
+          else { el.innerHTML = html; setTimeout(nextLine, 260); }
+        })();
+      } else {
+        el.innerHTML = html;
+        setTimeout(nextLine, 420);
+      }
+    })();
+  }
+
+  // copy install command
+  var copyBtn = document.getElementById('copy-btn');
+  copyBtn.addEventListener('click', function () {
+    var cmd = document.getElementById('install-cmd').textContent;
+    (navigator.clipboard ? navigator.clipboard.writeText(cmd) : Promise.reject()).then(
+      function () { copyBtn.textContent = 'copied'; setTimeout(function () { copyBtn.textContent = 'copy'; }, 1400); },
+      function () { copyBtn.textContent = 'select it'; setTimeout(function () { copyBtn.textContent = 'copy'; }, 1400); }
+    );
+  });
+
+  // Exhibit B: record ledger with real chained hashes over the visible text
+  var ledger = document.getElementById('ledger');
+  var rows = [].slice.call(document.querySelectorAll('.ledger-row'));
+  var out = document.getElementById('verify-out');
+  var original = [];
+
+  function digest(msg) {
+    if (window.crypto && crypto.subtle && window.isSecureContext !== false) {
+      return crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg)).then(function (buf) {
+        return [].slice.call(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+      });
+    }
+    var h = 5381 >>> 0;
+    for (var i = 0; i < msg.length; i++) h = (h * 33 ^ msg.charCodeAt(i)) >>> 0;
+    return Promise.resolve((h.toString(16) + '00000000').repeat(8).slice(0, 64));
+  }
+
+  function rowText(row) { return row.querySelector('.what').textContent.replace(/\s+/g, ' ').trim(); }
+
+  function chain(records) {
+    var prev = 'GENESIS';
+    var result = [];
+    return records.reduce(function (p, rec) {
+      return p.then(function () {
+        return digest(prev + '\n' + rec.seq + ':' + rec.text).then(function (h) {
+          prev = h; result.push(h);
+        });
+      });
+    }, Promise.resolve()).then(function () { return result; });
+  }
+
+  function render(initial) {
+    var records = rows.map(function (r, i) { return { seq: i + 1, text: rowText(r) }; });
+    return chain(records).then(function (hashes) {
+      var broken = -1;
+      rows.forEach(function (r, i) {
+        r.querySelector('.hash').textContent = 'sha256:' + hashes[i].slice(0, 12) + '…';
+        if (initial) { original[i] = hashes[i]; r.classList.remove('bad'); }
+        else {
+          var bad = broken === -1 && hashes[i] !== original[i];
+          if (bad) broken = i;
+          r.classList.toggle('bad', broken !== -1 && i >= broken);
+        }
+      });
+      ledger.classList.toggle('broken', !initial && broken !== -1);
+      if (initial) { out.textContent = '✓ chain intact — 3 entries'; out.className = 'ok'; }
+      else if (broken === -1) { out.textContent = '✓ chain intact — 3 entries, each commits to the one before it'; out.className = 'ok'; }
+      else { out.textContent = '✗ chain broken at entry ' + (broken + 1) + ' — modified after it was written'; out.className = 'bad'; }
+    });
+  }
+
+  var editable = document.getElementById('editable');
+  var initialText = editable.textContent;
+  document.getElementById('verify-btn').addEventListener('click', function () { render(false); });
+  document.getElementById('restore-btn').addEventListener('click', function () {
+    editable.textContent = initialText;
+    render(true);
+  });
+  render(true);
+})();
+</script>
+</body>
+</html>
