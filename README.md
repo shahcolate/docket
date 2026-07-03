@@ -112,6 +112,11 @@ $ docket new appeal --template insurance-appeal
 ✓ wrote .docket/loops/appeal.loop.md
 ```
 
+No template that fits? Bare `docket new` is a **step-by-step creator**: five
+steps, one per layer, each explained as you answer. It previews the finished
+file, asks before writing, then runs live allow/ask/deny checks against the
+warrant you just wrote — the fastest way to *feel* how the spec works.
+
 Ask the warrant *before* the agent acts:
 
 ```console
