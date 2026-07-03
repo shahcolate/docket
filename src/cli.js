@@ -6,6 +6,7 @@ import { cmdList, cmdShow } from './commands/list.js';
 import { cmdCheck } from './commands/check.js';
 import { cmdRecord } from './commands/record.js';
 import { cmdCompile } from './commands/compile.js';
+import { cmdReview } from './commands/review.js';
 import { cmdMcp } from './commands/mcp.js';
 
 const HELP = `
@@ -24,6 +25,11 @@ ${bold('Working with loops')}
   ${cyan('check')} <loop> <action> <target>
                              ask the warrant: allow, ask, or deny?
                              (actions: read, draft, change, send)
+
+${bold('Iterating')}
+  ${cyan('review')} [--min 2] [--loop <name>] [--yes]
+                             propose warrant updates from repeated asks —
+                             you approve each one; approvals go on the record
 
 ${bold('The record')}
   ${cyan('record add')} <loop> [--did ..] [--saw ..] [--skipped ..] [--stopped ..] [--note ..]
@@ -70,6 +76,8 @@ export async function main(argv) {
       return cmdRecord(rest);
     case 'compile':
       return cmdCompile(rest);
+    case 'review':
+      return cmdReview(rest);
     case 'mcp':
       return cmdMcp(rest);
     default:

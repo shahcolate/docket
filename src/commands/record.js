@@ -16,6 +16,9 @@ function formatEntry(e) {
     const style = VERDICT_STYLE[e.verdict] ?? { color: (s) => s, badge: e.verdict };
     return `${head} ${style.color(style.badge.toLowerCase())} ${e.action} → "${e.target}" ${dim(`(${e.rule})`)}`;
   }
+  if (e.kind === 'amend') {
+    return `${head} amended warrant: ${e.action} now covers "${e.added}" ${dim(`(after ${e.asks} asks)`)}`;
+  }
   const parts = [];
   if (e.saw) parts.push(`saw: ${e.saw}`);
   if (e.did) parts.push(`did: ${e.did}`);

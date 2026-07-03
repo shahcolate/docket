@@ -215,6 +215,32 @@ even ask?"* becomes a grep.
 Unwritten answers get guessed at. Written answers get enforced — the
 questions *are* the schema: brief, procedure, warrant, reserved, record.
 
+## It iterates itself — with a human veto
+
+The record knows where the warrant chafes: every time the agent hit an
+unlisted action, a default-ask was logged. `docket review` mines those and
+proposes the exact amendments:
+
+```console
+$ docket review
+2 proposed amendments — from repeated asks in the record
+
+  1. appeal — allow read: "state insurance regulations" (asked 4×)
+  2. appeal — allow draft: "timeline summary" (asked 2×)
+
+allow read: "state insurance regulations" in appeal? [y/N] y
+✓ appeal: read now covers "state insurance regulations"
+```
+
+Three rules keep it honest: the analysis is automatic but **applying is
+always a human keystroke** (an agent that widens its own permissions is the
+exact failure docket exists to prevent — it's in our red-team suite);
+anything on the `ask` or `never` lists is **never proposed**, however often
+it recurs — those are policy, not friction; and every approved amendment is
+**appended to the record**, so even the evolution of the rules is auditable.
+
+Run it weekly, or wire it into a cron — the proposals wait for you.
+
 ## Starter loops
 
 Seven templates, each a complete worked example (`docket templates`):

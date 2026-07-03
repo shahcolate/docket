@@ -181,12 +181,14 @@ Storage: `.docket/record.jsonl`, one JSON object per line, append-only.
 {"seq":3,"ts":"2026-07-03T10:15:00.000Z","loop":"insurance-appeal","kind":"check","action":"send","target":"appeal email to insurer","verdict":"ask","rule":"ask: anything addressed to the insurer","prev":"sha256:…","hash":"sha256:…"}
 ```
 
-Two kinds today:
+Three kinds today:
 
 - `check` — a warrant check, recorded automatically with its verdict. The
   question "did the agent even ask?" becomes answerable.
 - `note` — a work entry with any of: `saw`, `did`, `skipped`, `stopped`,
   `note`.
+- `amend` — a human-approved warrant widening (`action`, `added`, `asks`),
+  written by `docket review`. Rule changes are evidence too.
 
 ### The hash chain
 
@@ -209,6 +211,14 @@ with `docket record verify --head <hash>`, which reports likely truncation
 when the heads disagree. The chain doesn't stop tampering — it's a plain
 file — it makes tampering **visible**, which is what an audit trail is for.
 (Cryptographically signing the head is on the roadmap.)
+
+## Review
+
+`docket review` clusters repeated default-ask checks from the record and
+proposes the corresponding warrant additions. Implementations must not apply
+proposals without explicit human approval, must never propose targets that
+match the loop's `ask` or `never` lists, and must append an `amend` entry to
+the record for every applied change.
 
 ## Compiled context
 
