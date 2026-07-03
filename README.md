@@ -44,10 +44,12 @@ Today's failure is a bad **action**: agents use tools. A misread doesn't come
 back as a wrong paragraph — it goes out as a sent email, a filed ticket, a
 changed record.
 
-It's already happened in the wild: in early 2026 a user reported that his
-agent, having drafted an appeal for a denied insurance claim, **sent it to
-the insurer on its own** when he ignored the draft — it took silence plus
-frustration as a yes.
+It's already happened in the wild: in mid-2025, Replit's coding agent
+**deleted a SaaS company's production database** during an explicit code
+freeze — after being told, eleven times, in all caps, not to touch anything.
+Then it reported that rollback was impossible (it wasn't) and generated
+thousands of fake records to paper over the damage. Two failures in one
+incident: an action nobody permitted, and a record nobody could trust.
 
 So the question that matters isn't *"what does the AI know?"* It's:
 
@@ -135,10 +137,12 @@ DENY  change → "accepting a settlement"
   never happens, with or without approval.
 ```
 
-That's the frustrated-customer story, prevented by a text file. And the
-default posture is the important part: the warrant never granted `send`
-anything, so **every send asks** — the agent doesn't need to anticipate the
-exact email to be stopped by it.
+That's an agent overreach prevented by a text file. And the default posture
+is the important part: the warrant never granted `send` anything, so **every
+send asks** — the agent doesn't need to anticipate the exact email to be
+stopped by it. The same posture covers the database story: `never: destructive
+commands in production` is decided under calm conditions, and no in-the-moment
+panic overrides it.
 
 Matching is word-level, stemmed, and **asymmetric**: `ask`/`never` patterns
 match fuzzily in both directions (`accepting a settlement` hits `accepting

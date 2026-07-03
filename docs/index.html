@@ -430,14 +430,14 @@ footer.site {
         <span class="live">● try it</span>
       </div>
       <div class="widget-body">
-        <p class="q">Your agent is handling an insurance appeal. It wants to…</p>
+        <p class="q">Your agent is shipping a Friday hotfix. It wants to…</p>
         <div class="acts" role="group" aria-label="choose an action">
-          <button type="button" data-v="allow" data-cmd='docket check appeal draft "appeal letter"'
-            data-why="The rules list drafting — the agent proceeds, and the check is logged.">draft the appeal letter</button>
-          <button type="button" data-v="ask" data-cmd='docket check appeal send "appeal email to the insurer"'
-            data-why="Sending isn’t listed, and unlisted always means ask — the agent stops and brings it to you.">send the appeal to the insurer</button>
-          <button type="button" data-v="deny" data-cmd='docket check appeal change "accept the settlement offer"'
-            data-why="You wrote “never: accepting a settlement.” No in-the-moment persuasion overrides a never.">accept the settlement offer</button>
+          <button type="button" data-v="allow" data-cmd='docket check hotfix read "production error logs"'
+            data-why="The rules list reading logs — the agent proceeds, and the check is logged.">read the production error logs</button>
+          <button type="button" data-v="ask" data-cmd='docket check hotfix change "migration on production"'
+            data-why="Production isn’t in the warrant, and unlisted always means ask — the agent stops and brings it to you.">run the migration on production</button>
+          <button type="button" data-v="deny" data-cmd='docket check hotfix change "drop the old users table"'
+            data-why="You wrote “never: destructive commands in production.” No in-the-moment panic overrides a never.">drop the old users table</button>
         </div>
         <div class="verdict" aria-live="polite">
           <div class="word" id="v-word"></div>
@@ -494,21 +494,21 @@ footer.site {
         <p>One plain-English file per task: what the agent should know, what it may do
         alone, what stays yours.</p>
         <div class="mini"><b>warrant:</b>
-  read:  [policy documents]
-  draft: [appeal letter]
-  send:  []
-  never: [accepting a settlement]</div>
+  read:   [error logs, schema]
+  change: [staging]
+  send:   []
+  never:  [destructive commands in prod]</div>
       </div>
       <div class="step">
         <div class="n">02</div>
         <h3>The agent checks first</h3>
         <p>Every action gets a verdict before it happens. Not listed? It asks.
         Marked never? Denied — even with approval.</p>
-        <div class="mini">$ docket check appeal draft "letter"
-<span class="ga">ALLOW</span>  within the draft warrant
-$ docket check appeal send "email"
+        <div class="mini">$ docket check hotfix change "staging"
+<span class="ga">ALLOW</span>  within the change warrant
+$ docket check hotfix change "prod"
 <span class="ya">ASK</span>    unlisted means ask
-$ docket check appeal change "settle"
+$ docket check hotfix change "drop table"
 <span class="ra">DENY</span>   hard stop</div>
       </div>
       <div class="step">
@@ -550,9 +550,9 @@ $ docket check appeal change "settle"
         <p style="margin-top: 16px;">Every entry commits cryptographically to the one
         before it. Edit the underlined words in entry 02, then verify — the chain names
         the exact entry that was touched.</p>
-        <p><b>That’s the difference between “the agent says it asked” and proof that it
-        did.</b> The log is a plain file in your repo — grep it, commit it, hand it to
-        an audit.</p>
+        <p><b>That’s the difference between “the agent says it rolled back” and proof
+        of what it actually ran.</b> The log is a plain file in your repo — grep it,
+        commit it, hand it to an audit.</p>
         <p>And it feeds back: <code>docket review</code> turns repeated asks into
         proposed rule updates. <b>You approve each one</b> — the agent never widens its
         own permissions.</p>
@@ -562,17 +562,17 @@ $ docket check appeal change "settle"
         <div class="ledger-head"><span>No</span><span>Entry</span><span class="h-hash">Hash</span></div>
         <div class="ledger-row" data-seq="1">
           <span class="seq">01</span>
-          <span class="what"><span class="v allow">allow</span> draft → “appeal letter”</span>
+          <span class="what"><span class="v allow">allow</span> read → “production error logs”</span>
           <span class="hash"></span>
         </div>
         <div class="ledger-row" data-seq="2">
           <span class="seq">02</span>
-          <span class="what">did: <span contenteditable="true" spellcheck="false" id="editable">drafted appeal citing §4.2(b)</span> · stopped: before send</span>
+          <span class="what">did: <span contenteditable="true" spellcheck="false" id="editable">ran the migration on staging</span> · stopped: before prod</span>
           <span class="hash"></span>
         </div>
         <div class="ledger-row" data-seq="3">
           <span class="seq">03</span>
-          <span class="what"><span class="v ask">ask</span> send → “appeal email to the insurer”</span>
+          <span class="what"><span class="v ask">ask</span> change → “migration on production”</span>
           <span class="hash"></span>
         </div>
         <div class="ledger-foot">

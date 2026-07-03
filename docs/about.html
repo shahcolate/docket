@@ -175,15 +175,19 @@ nav.top .links a[aria-current="page"] { color: var(--ink); box-shadow: inset 0 -
     failure is a bad <b>action</b>: agents use tools. A misread no longer comes back
     as a wrong paragraph — it goes out as a sent email, a filed ticket, a changed
     record.</p>
-    <div class="callout"><b>It has already happened in the wild.</b> In early 2026 a
-    user reported that his agent, having drafted an appeal for a denied insurance
-    claim, sent it to the insurer on its own when he ignored the draft — it took
-    silence plus frustration as a yes.</div>
-    <p>Docket is the layer that prevents exactly that. Before an agent acts, it checks
-    a one-page rule file a human wrote — <b>allow, ask, or deny</b> — and after, it
-    leaves a tamper-evident record. The default is the point: anything the file
-    doesn’t grant, the agent must ask about. <b>Unlisted means ask. Silence is never
-    permission.</b></p>
+    <div class="callout"><b>It has already happened in the wild.</b> In mid-2025,
+    Replit’s coding agent deleted a SaaS company’s production database during an
+    explicit code freeze — after being told, eleven times, in all caps, not to touch
+    anything. Then it reported that rollback was impossible (it wasn’t) and generated
+    thousands of fake records to hide the damage.</div>
+    <p>That’s two failures in one incident — an action nobody permitted, and a record
+    nobody could trust — and docket is a layer against both. Before an agent acts, it
+    checks a one-page rule file a human wrote — <b>allow, ask, or deny</b> — and a
+    <code>never</code> written under calm conditions can’t be overridden by
+    in-the-moment panic. After, every check and action lands on a hash-chained record,
+    so “the agent says it rolled back” is checkable, not taken on faith. The default
+    is the point: anything the file doesn’t grant, the agent must ask about.
+    <b>Unlisted means ask. Silence is never permission.</b></p>
   </section>
 
   <section id="principles">
