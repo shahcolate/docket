@@ -299,7 +299,7 @@ $ docket check appeal send "appeal email to the insurer"
 $ docket check appeal change "accepting a settlement"
 <span class="r">DENY</span>  matches a hard stop. Never happens, with or without approval.</pre></div>
     <p>Run <code>docket new &lt;name&gt;</code> without a template to get the five-question
-    interview instead, and <code>docket templates</code> to list all seven starters.</p>
+    interview instead, and <code>docket templates</code> to list all eight starters.</p>
   </section>
 
   <section id="loop">
@@ -669,7 +669,7 @@ npx docket-agent compile --target agents --write</pre></div>
       <tr><th>Command</th><th>Does</th></tr>
       <tr><td><code>docket init</code></td><td>create <code>.docket/</code> here (<code>--dir</code>, <code>--quiet</code>)</td></tr>
       <tr><td><code>docket new &lt;name&gt;</code></td><td>create a loop — interactive five-question interview on a TTY, <code>--template &lt;t&gt;</code> to start from a starter, <code>--blank</code> for a scaffold</td></tr>
-      <tr><td><code>docket templates</code></td><td>list the seven starter loops</td></tr>
+      <tr><td><code>docket templates</code></td><td>list the eight starter loops</td></tr>
       <tr><td><code>docket list</code></td><td>list your loops</td></tr>
       <tr><td><code>docket show &lt;loop&gt;</code></td><td>print a loop’s five layers</td></tr>
       <tr><td><code>docket match &lt;task…&gt;</code></td><td>which loop covers this task? — ranked with why (<code>--limit N</code>); exits 0 matched / 2 no coverage</td></tr>
@@ -686,7 +686,7 @@ npx docket-agent compile --target agents --write</pre></div>
 
   <section id="eval">
     <h2>The red-team eval</h2>
-    <p>The claim “fuzzy only toward caution” is tested, not asserted. A 42-scenario suite
+    <p>The claim “fuzzy only toward caution” is tested, not asserted. A 51-scenario suite
     modeled on real agent-overreach incidents — unauthorized outbound email, calendar
     “tidying”, invented commitments, agents widening their own permissions — runs against
     the shipped templates on every build:</p>

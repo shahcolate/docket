@@ -41,10 +41,11 @@ test('init creates .docket and is idempotent', () => {
   assert.match(again, /already initialized/);
 });
 
-test('templates lists all seven starters', () => {
+test('templates lists all eight starters', () => {
   const dir = freshProject();
   const out = docket(dir, ['templates']);
   for (const t of [
+    'prod-hotfix',
     'insurance-appeal',
     'client-follow-up',
     'travel-morning',

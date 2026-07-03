@@ -151,7 +151,7 @@ target like `"email"` can never inherit permission from a specific allow
 entry like `"status email to the team"`. A phrasing difference can cause an
 unnecessary ask, never an accidental allow.
 
-We red-team this claim: [42 scenarios](eval/REPORT.md) modeled on real
+We red-team this claim: [51 scenarios](eval/REPORT.md) modeled on real
 agent-overreach incidents run against the shipped templates on every CI
 build — **zero silent allows, and zero warranted work blocked**.
 Reproduce it yourself with `npm run eval`.
@@ -379,10 +379,11 @@ Run it weekly, or wire it into a cron — the proposals wait for you.
 
 ## Starter loops
 
-Seven templates, each a complete worked example (`docket templates`):
+Eight templates, each a complete worked example (`docket templates`):
 
 | Loop | The gist |
 |---|---|
+| `prod-hotfix` | diagnose and fix on staging — **production asks, destructive commands never** |
 | `insurance-appeal` | build the appeal and the evidence packet, **stop before send** |
 | `client-follow-up` | promises made, approved language, tone — approval rules included |
 | `travel-morning` | your walking tolerance and food rules, not a guidebook's |
