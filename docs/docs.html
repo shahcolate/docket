@@ -77,20 +77,20 @@ pre code { background: none; border: none; padding: 0; }
     -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6);
   }
 }
-nav.top { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 15px 0; }
+nav.top { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 15px 0; }
 .wordmark { font-weight: 800; font-size: 19px; letter-spacing: -0.02em; text-decoration: none; white-space: nowrap; }
 .wordmark::after { content: "."; color: var(--red); }
 .wordmark span { color: var(--faint); font-weight: 600; }
-nav.top .links { display: flex; gap: 22px; align-items: center; font-size: 14px; font-weight: 600; }
+.nav-right { display: flex; align-items: center; gap: 20px; }
+nav.top .links { display: flex; gap: 24px; align-items: center; font-size: 14px; font-weight: 600; }
 nav.top .links a { text-decoration: none; color: var(--mut); padding: 6px 0; }
 nav.top .links a:hover { color: var(--ink); }
-@media (max-width: 640px) { nav.top .links { gap: 16px; } }
-@media (max-width: 500px) {
-  nav.top { gap: 10px; }
-  nav.top .links { gap: 13px; font-size: 13px; }
-  nav.top .links a[href*="SPEC"] { display: none; }
-  .theme-btn { width: 34px; height: 34px; }
+nav.top .links a[aria-current="page"] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--red); }
+.nav-right .gh {
+  font-size: 14px; font-weight: 600; text-decoration: none;
+  color: var(--bg); background: var(--ink); padding: 9px 16px; white-space: nowrap;
 }
+.nav-right .gh:hover { background: var(--red); }
 .theme-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 36px; height: 36px; padding: 0; cursor: pointer;
@@ -98,6 +98,31 @@ nav.top .links a:hover { color: var(--ink); }
 }
 .theme-btn:hover { color: var(--ink); border-color: var(--ink); }
 .theme-btn svg { width: 15px; height: 15px; display: block; }
+.menu-btn { display: none; }
+@media (max-width: 720px) {
+  nav.top { padding: 12px 0; }
+  .nav-right { gap: 10px; }
+  .nav-right .gh { font-size: 13px; padding: 10px 13px; }
+  .menu-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; padding: 0; cursor: pointer;
+    background: transparent; border: 1.5px solid var(--ink); color: var(--ink);
+  }
+  .menu-btn svg { width: 17px; height: 17px; display: block; }
+  .menu-btn .ic-close { display: none; }
+  nav.top.open .menu-btn .ic-menu { display: none; }
+  nav.top.open .menu-btn .ic-close { display: block; }
+  nav.top .links {
+    display: none; position: absolute; left: 0; right: 0; top: 100%;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--bg); border-bottom: 1.5px solid var(--ink);
+    padding: 4px max(18px, env(safe-area-inset-right)) 14px max(18px, env(safe-area-inset-left));
+  }
+  nav.top.open .links { display: flex; }
+  nav.top .links a { font-size: 16px; font-weight: 600; padding: 14px 2px; border-bottom: 1px solid var(--hair); }
+  nav.top .links a:last-child { border-bottom: none; }
+  nav.top .links a[aria-current="page"] { box-shadow: inset 3px 0 0 var(--red); padding-left: 12px; }
+}
 
 .layout { display: grid; grid-template-columns: 250px 1fr; gap: 56px; padding: 40px 0 100px; }
 @media (max-width: 900px) { .layout { grid-template-columns: 1fr; gap: 28px; padding: 28px 0 80px; } }
@@ -173,15 +198,22 @@ nav.top .links a:hover { color: var(--ink); }
 
 <div class="nav-shell">
 <div class="frame">
-<nav class="top">
+<nav class="top" id="topnav">
   <a class="wordmark" href="index.html">docket<span>&thinsp;/&thinsp;docs</span></a>
-  <div class="links">
-    <a href="index.html">Home</a>
-    <a href="about.html">About</a>
-    <a href="https://github.com/shahcolate/docket/blob/main/spec/SPEC.md">Spec</a>
-    <a href="https://github.com/shahcolate/docket">GitHub</a>
+  <div class="nav-right">
+    <div class="links" id="site-nav">
+      <a href="index.html">Home</a>
+      <a href="docs.html" aria-current="page">Docs</a>
+      <a href="about.html">About</a>
+      <a href="https://github.com/shahcolate/docket/blob/main/spec/SPEC.md">Spec</a>
+    </div>
     <button class="theme-btn" type="button" aria-label="Toggle dark mode">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>
+    </button>
+    <a class="gh" href="https://github.com/shahcolate/docket">GitHub&nbsp;★</a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">
+      <svg class="ic-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <svg class="ic-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
     </button>
   </div>
 </nav>
@@ -723,6 +755,24 @@ npx docket-agent compile --target agents --write</pre></div>
     rootEl.setAttribute('data-theme', next);
     try { localStorage.setItem('docket-theme', next); } catch (e) {}
   });
+
+  // ── mobile menu ──
+  var nav = document.getElementById('topnav');
+  var menuBtn = document.querySelector('.menu-btn');
+  if (nav && menuBtn) {
+    menuBtn.addEventListener('click', function () {
+      var open = nav.classList.toggle('open');
+      menuBtn.setAttribute('aria-expanded', String(open));
+      menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    });
+    [].slice.call(nav.querySelectorAll('.links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        nav.classList.remove('open');
+        menuBtn.setAttribute('aria-expanded', 'false');
+        menuBtn.setAttribute('aria-label', 'Open menu');
+      });
+    });
+  }
 
   // ── contents: collapsed by default on small screens, always open on desktop ──
   var toc = document.getElementById('toc');
