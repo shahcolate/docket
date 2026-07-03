@@ -285,6 +285,7 @@ footer.site {
     <a href="#start">Get started</a>
     <a href="#how">How it works</a>
     <a href="#record">The record</a>
+    <a href="docs.html">Docs</a>
     <a class="gh" href="https://github.com/shahcolate/docket">GitHub&nbsp;★</a>
   </div>
 </nav>
@@ -293,7 +294,7 @@ footer.site {
 <header class="hero wrap">
   <div class="hero-grid">
     <div>
-      <div class="klabel"><span class="tick">■</span> Open source · zero dependencies · works with Claude, ChatGPT, Gemini, Cursor</div>
+      <div class="klabel"><span class="tick">■</span> Open source · zero dependencies · works with Claude, ChatGPT, Gemini, Cursor, OpenClaw, Hermes</div>
       <h1>Let your agent act. Decide what it&rsquo;s <span class="r">allowed</span>&nbsp;to&nbsp;do.</h1>
       <p class="sub">AI agents now send emails, move meetings, and change records on your
       behalf. Docket gives each recurring task a one-page rule file the agent must
@@ -372,6 +373,8 @@ footer.site {
         <button role="tab" aria-selected="false" data-tab="chatgpt">ChatGPT · Codex</button>
         <button role="tab" aria-selected="false" data-tab="gemini">Gemini CLI</button>
         <button role="tab" aria-selected="false" data-tab="cursor">Cursor</button>
+        <button role="tab" aria-selected="false" data-tab="openclaw">OpenClaw</button>
+        <button role="tab" aria-selected="false" data-tab="hermes">Hermes</button>
         <button role="tab" aria-selected="false" data-tab="mcp">Any MCP client</button>
       </div>
 
@@ -431,6 +434,37 @@ npx docket-agent new appeal --template insurance-appeal
 npx docket-agent compile --target cursor --write</pre></div>
         </div>
         <p class="after">Commit <code>.docket/</code> and the compiled rules — your whole team inherits them.</p>
+      </div>
+
+      <div class="panel" id="panel-openclaw" role="tabpanel">
+        <div class="steps-mini">
+          <ol>
+            <li><b>Run docket inside the OpenClaw workspace</b> — its <code>AGENTS.md</code> is injected into the system prompt every session.</li>
+            <li><b>Compile</b> — docket manages only its own marked block; your existing rules and <code>SOUL.md</code> stay untouched.</li>
+            <li><b>Optional:</b> add docket as an MCP server in your OpenClaw config for native checks and record entries.</li>
+          </ol>
+          <div class="codeblock"><button class="copy" type="button">copy</button><pre>cd ~/.openclaw/workspace
+npx docket-agent init
+npx docket-agent new followup --template client-follow-up
+npx docket-agent compile --target agents --write</pre></div>
+        </div>
+        <p class="after">Your OpenClaw agent now starts every session under the warrant — and every send-shaped action has to ask first.</p>
+      </div>
+
+      <div class="panel" id="panel-hermes" role="tabpanel">
+        <div class="steps-mini">
+          <ol>
+            <li><b>Run docket where Hermes works</b> — it reads <code>AGENTS.md</code> context files.</li>
+            <li><b>Compile</b> — same three commands, same rules.</li>
+            <li><b>Optional:</b> register the MCP server in <code>~/.hermes/config.yaml</code> so Hermes checks warrants natively.</li>
+          </ol>
+          <div class="codeblock"><button class="copy" type="button">copy</button><pre>npx docket-agent init
+npx docket-agent new followup --template client-follow-up
+npx docket-agent compile --target agents --write
+<span class="c"># ~/.hermes/config.yaml — under your MCP servers:</span>
+<span class="c">#   docket: { command: npx, args: ["-y", "docket-agent", "mcp", "--dir", "."] }</span></pre></div>
+        </div>
+        <p class="after">Hermes builds skills from experience — docket makes sure the experience stays inside the warrant, on the record.</p>
       </div>
 
       <div class="panel" id="panel-mcp" role="tabpanel">

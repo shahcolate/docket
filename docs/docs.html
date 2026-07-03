@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>docket docs — how it works</title>
+<meta name="description" content="Full documentation for docket: concepts, loop file reference, the verdict algorithm, the record, review, compile targets, MCP server, CLI reference, and per-tool setup.">
+<style>
+:root {
+  --bg: #FFFFFF; --bg-2: #F6F6F7; --ink: #131417; --mut: #55585F; --faint: #8B8E96;
+  --hair: #E4E5E8; --hair-2: #C9CBD1;
+  --red: #D9291C; --red-soft: #FCEBE9;
+  --allow: #14733A; --ask: #91600A;
+  --term-bg: #17181C; --term-ink: #E8E9EC; --term-dim: #83868F;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121316; --bg-2: #1A1B1F; --ink: #F2F2F4; --mut: #A6AAB2; --faint: #767A83;
+    --hair: #27292E; --hair-2: #3B3E45;
+    --red: #FF4B3A; --red-soft: #37201D;
+    --allow: #4CC878; --ask: #E0B054;
+    --term-bg: #0C0D10; --term-ink: #E8E9EC; --term-dim: #83868F;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121316; --bg-2: #1A1B1F; --ink: #F2F2F4; --mut: #A6AAB2; --faint: #767A83;
+  --hair: #27292E; --hair-2: #3B3E45; --red: #FF4B3A; --red-soft: #37201D;
+  --allow: #4CC878; --ask: #E0B054;
+  --term-bg: #0C0D10; --term-ink: #E8E9EC; --term-dim: #83868F;
+}
+:root[data-theme="light"] {
+  --bg: #FFFFFF; --bg-2: #F6F6F7; --ink: #131417; --mut: #55585F; --faint: #8B8E96;
+  --hair: #E4E5E8; --hair-2: #C9CBD1; --red: #D9291C; --red-soft: #FCEBE9;
+  --allow: #14733A; --ask: #91600A;
+  --term-bg: #17181C; --term-ink: #E8E9EC; --term-dim: #83868F;
+}
+
+* { box-sizing: border-box; margin: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--sans); font-size: 16.5px; line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration-color: var(--hair-2); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--red); }
+a:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+code { font-family: var(--mono); font-size: 0.85em; background: var(--bg-2); padding: 1px 5px; border: 1px solid var(--hair); }
+pre { font-family: var(--mono); }
+pre code { background: none; border: none; padding: 0; }
+
+.frame { max-width: 1200px; margin: 0 auto; padding: 0 28px; }
+@media (max-width: 640px) { .frame { padding: 0 16px; } }
+
+nav.top {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 0; border-bottom: 1px solid var(--hair);
+}
+.wordmark { font-weight: 800; font-size: 19px; letter-spacing: -0.02em; text-decoration: none; }
+.wordmark::after { content: "."; color: var(--red); }
+.wordmark span { color: var(--faint); font-weight: 600; }
+nav.top .links { display: flex; gap: 22px; align-items: center; font-size: 14px; font-weight: 600; }
+nav.top .links a { text-decoration: none; color: var(--mut); }
+nav.top .links a:hover { color: var(--ink); }
+
+.layout { display: grid; grid-template-columns: 250px 1fr; gap: 56px; padding: 40px 0 100px; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; gap: 24px; } }
+
+/* ── sidebar ── */
+.side { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; padding: 16px 0 40px; }
+@media (max-width: 900px) { .side { position: static; max-height: none; border: 1px solid var(--hair); padding: 16px; } }
+.side .group { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); margin: 22px 0 8px; }
+.side .group:first-child { margin-top: 0; }
+.side a { display: block; font-size: 14px; color: var(--mut); text-decoration: none; padding: 4px 0 4px 12px; border-left: 2px solid var(--hair); }
+.side a:hover { color: var(--ink); border-left-color: var(--red); }
+
+/* ── content ── */
+.doc h1 { font-size: clamp(30px, 4vw, 42px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.08; margin: 10px 0 14px; }
+.doc .lede { font-size: 18.5px; color: var(--mut); max-width: 42em; }
+.doc section { border-top: 2px solid var(--ink); margin-top: 56px; padding-top: 18px; }
+.doc h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin: 10px 0 14px; }
+.doc h3 { font-size: 18px; font-weight: 700; margin: 30px 0 8px; }
+.doc p, .doc li { color: var(--mut); max-width: 68ch; }
+.doc p b, .doc li b { color: var(--ink); }
+.doc p + p { margin-top: 12px; }
+.doc ul, .doc ol { padding-left: 22px; margin: 10px 0; }
+.doc li { margin: 6px 0; }
+.klabel { font-size: 11.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mut); }
+.klabel .tick { color: var(--red); }
+
+.doc .code {
+  background: var(--term-bg); color: var(--term-ink);
+  padding: 16px 18px; margin: 16px 0; overflow-x: auto;
+  font-size: 12.5px; line-height: 1.8;
+}
+.doc .code .c { color: var(--term-dim); }
+.doc .code .g { color: #6CC993; font-weight: 700; }
+.doc .code .y { color: #E3BC61; font-weight: 700; }
+.doc .code .r { color: #F08578; font-weight: 700; }
+
+.doc table { border-collapse: collapse; margin: 16px 0; width: 100%; font-size: 14.5px; }
+.doc th { text-align: left; font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); font-weight: 700; padding: 8px 14px 8px 0; border-bottom: 1.5px solid var(--ink); }
+.doc td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--hair); color: var(--mut); vertical-align: top; }
+.doc td:first-child { white-space: nowrap; }
+.doc td b { color: var(--ink); }
+.table-scroll { overflow-x: auto; }
+
+.callout { border: 1px solid var(--hair-2); border-left: 3px solid var(--red); padding: 14px 18px; margin: 18px 0; font-size: 15px; color: var(--mut); max-width: 68ch; }
+.callout b { color: var(--ink); }
+.verdict-w { font-weight: 800; }
+.verdict-w.a { color: var(--allow); }
+.verdict-w.k { color: var(--ask); }
+.verdict-w.d { color: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="frame">
+<nav class="top">
+  <a class="wordmark" href="index.html">docket<span>&thinsp;/&thinsp;docs</span></a>
+  <div class="links">
+    <a href="index.html">Home</a>
+    <a href="https://github.com/shahcolate/docket/blob/main/spec/SPEC.md">Spec</a>
+    <a href="https://github.com/shahcolate/docket">GitHub</a>
+  </div>
+</nav>
+
+<div class="layout">
+<aside class="side" aria-label="documentation navigation">
+  <div class="group">Start</div>
+  <a href="#intro">What docket is</a>
+  <a href="#quickstart">Quickstart</a>
+  <div class="group">Concepts</div>
+  <a href="#loop">Loops &amp; the five layers</a>
+  <a href="#loopfile">Writing a loop file</a>
+  <a href="#warrant">The warrant</a>
+  <a href="#record">The record</a>
+  <a href="#review">Review: iteration</a>
+  <div class="group">Using it</div>
+  <a href="#compile">Compiling to your tools</a>
+  <a href="#mcp">The MCP server</a>
+  <a href="#integrations">Per-tool setup</a>
+  <a href="#cli">CLI reference</a>
+  <div class="group">Trust</div>
+  <a href="#eval">The red-team eval</a>
+  <a href="#faq">FAQ</a>
+</aside>
+
+<main class="doc">
+  <span class="klabel"><span class="tick">■</span> Documentation · v0.2</span>
+  <h1>How docket works</h1>
+  <p class="lede">Everything on this page is implemented, tested, and reproducible from the
+  repo. The normative format definition is the
+  <a href="https://github.com/shahcolate/docket/blob/main/spec/SPEC.md">Loop File Spec</a>;
+  this page is the guided tour.</p>
+
+  <section id="intro">
+    <h2>What docket is</h2>
+    <p>AI agents act now — they send email, move meetings, file tickets, change records.
+    When an agent misreads you, you don’t get a wrong paragraph back; you get a wrong
+    <em>action</em> with your name on it.</p>
+    <p>Docket is <b>the permission layer and the paper trail</b>. You describe each
+    recurring task in one Markdown file (a <b>loop</b>). Before the agent acts, it checks
+    the loop’s <b>warrant</b> and gets a deterministic verdict —
+    <span class="verdict-w a">allow</span>, <span class="verdict-w k">ask</span>, or
+    <span class="verdict-w d">deny</span>. After it acts (or stops), it appends what
+    happened to a hash-chained <b>record</b> that exposes any tampering.</p>
+    <p>Three design commitments shape everything else:</p>
+    <ul>
+      <li><b>Unlisted means ask.</b> The default verdict is the safety property. An agent
+      that encounters something you didn’t anticipate has, by definition, encountered
+      something that needs a human.</li>
+      <li><b>Plain files, no platform.</b> Rules and record live in your repo as Markdown
+      and JSONL. <code>grep</code> works, <code>git diff</code> works, deleting docket
+      loses you nothing but the tooling. Zero runtime dependencies.</li>
+      <li><b>Describe, don’t execute.</b> Docket is not an agent framework. It’s the layer
+      underneath whichever agent you already use — Claude, ChatGPT/Codex, Gemini, Cursor,
+      OpenClaw, Hermes, or anything that speaks MCP.</li>
+    </ul>
+  </section>
+
+  <section id="quickstart">
+    <h2>Quickstart</h2>
+    <div class="code"><pre>npm install -g docket-agent        <span class="c"># or use npx docket-agent &lt;command&gt;</span>
+cd your-project
+docket init                        <span class="c"># creates .docket/</span>
+docket new appeal --template insurance-appeal
+docket compile --target claude --write   <span class="c"># or agents / gemini / cursor</span></pre></div>
+    <p>Then try the boundary:</p>
+    <div class="code"><pre>$ docket check appeal draft "appeal letter"
+<span class="g">ALLOW</span>  "appeal letter" is within the draft warrant.
+
+$ docket check appeal send "appeal email to the insurer"
+<span class="y">ASK</span>  unlisted means ask — silence is never permission.
+
+$ docket check appeal change "accepting a settlement"
+<span class="r">DENY</span>  matches a hard stop. Never happens, with or without approval.</pre></div>
+    <p>Run <code>docket new &lt;name&gt;</code> without a template to get the five-question
+    interview instead, and <code>docket templates</code> to list all seven starters.</p>
+  </section>
+
+  <section id="loop">
+    <h2>Loops &amp; the five layers</h2>
+    <p>Don’t configure an assistant. Bound <b>one recurring task</b> — the insurance
+    appeal, the client follow-up, the weekly plan. Each loop wraps that task in five
+    layers:</p>
+    <div class="table-scroll"><table>
+      <tr><th>Layer</th><th>Question it answers</th><th>Lives in</th></tr>
+      <tr><td><b>brief</b></td><td>What must the agent know before it starts? The context that changes the answer: people, history, constraints, standards, past decisions.</td><td>Markdown body</td></tr>
+      <tr><td><b>procedure</b></td><td>How is this job done properly? Which sources count, what finished looks like, the known ways it goes wrong.</td><td>Markdown body</td></tr>
+      <tr><td><b>warrant</b></td><td>What may it do without asking? Read / draft / change / send lists, plus always-ask and never.</td><td>YAML frontmatter</td></tr>
+      <tr><td><b>record</b></td><td>What evidence must it leave behind when it finishes or stops?</td><td>YAML frontmatter</td></tr>
+      <tr><td><b>reserved</b></td><td>What stays with the human, always? Accounts, secrets, spending, final sign-off.</td><td>YAML frontmatter</td></tr>
+    </table></div>
+    <p>Prose layers live in the body because humans write and diff prose well; machine
+    layers live in frontmatter because tools enforce structure well.</p>
+  </section>
+
+  <section id="loopfile">
+    <h2>Writing a loop file</h2>
+    <p>A loop is a single file, <code>&lt;name&gt;.loop.md</code>, in
+    <code>.docket/loops/</code>:</p>
+    <div class="code"><pre>---
+name: insurance-appeal
+description: Build the appeal, cite the policy — stop before send.
+warrant:
+  read:  [policy documents, denial letter, claim correspondence]
+  draft: [appeal letter, evidence summary]
+  change: []
+  send:  []
+  ask:   [contacting the insurer, requesting new records]
+  never: [accepting or rejecting a settlement]
+reserved:
+  - signing and sending
+record:
+  - every policy clause cited, with section numbers
+  - where the draft stopped and what a human must do next
+---
+
+# Brief
+The denial reason code, the claim timeline, the appeal deadline…
+
+# Procedure
+Read the denial letter first. Answer the stated reason, not a
+general sense of unfairness. Stop before send.</pre></div>
+    <h3>Rules the parser enforces</h3>
+    <ul>
+      <li><code>name</code> must be lowercase letters, digits, and dashes — and must
+      <b>match the filename</b>, or record entries would point at a loop that can’t be
+      loaded. Mismatches are rejected.</li>
+      <li>Headings named exactly <code>Brief</code> or <code>Procedure</code> (any of
+      <code>#</code>/<code>##</code>/<code>###</code>, case-insensitive) open the prose
+      layers. Every other line — subheadings, code fences, comments inside fences — is
+      <b>content</b> and stays with its section. Nothing you write is silently dropped.</li>
+      <li>Frontmatter is a deliberately small YAML subset: nested maps, lists of scalars,
+      quoted strings, numbers, booleans. No anchors, no multi-line scalars — a grammar
+      small enough to audit is part of the security posture.</li>
+      <li>A <code>version</code> the tool doesn’t understand is rejected, never silently
+      misread.</li>
+    </ul>
+  </section>
+
+  <section id="warrant">
+    <h2>The warrant</h2>
+    <p>Four verbs, in escalating order of consequence:</p>
+    <div class="table-scroll"><table>
+      <tr><th>Verb</th><th>Meaning</th></tr>
+      <tr><td><b>read</b></td><td>look at it</td></tr>
+      <tr><td><b>draft</b></td><td>produce it, but it goes nowhere on its own</td></tr>
+      <tr><td><b>change</b></td><td>mutate state that stays inside the sandbox</td></tr>
+      <tr><td><b>send</b></td><td>consequences leave the sandbox: email, publish, file, deploy, pay</td></tr>
+    </table></div>
+    <p>Plus two cross-cutting lists: <code>ask</code> (always needs human approval,
+    whatever the verb) and <code>never</code> (does not happen, even with approval — you,
+    under calm conditions, pre-deciding what no in-the-moment persuasion may undo).</p>
+    <h3>The verdict algorithm</h3>
+    <p>Given a loop, an action verb, and a target (a plain-language description of what
+    the action touches), the verdict is the <b>first</b> rule that matches:</p>
+    <ol>
+      <li>target matches <code>never</code> → <span class="verdict-w d">deny</span></li>
+      <li>target matches <code>ask</code> → <span class="verdict-w k">ask</span></li>
+      <li>target matches the action’s own list → <span class="verdict-w a">allow</span></li>
+      <li>otherwise → <span class="verdict-w k">ask</span></li>
+    </ol>
+    <div class="callout"><b>Rule 4 is the whole point.</b> Unlisted means ask. Silence is
+    never permission.</div>
+    <h3>Matching semantics</h3>
+    <p>Matching is case-insensitive and <b>asymmetric by design</b>: a phrasing
+    difference may cause an unnecessary ask; it must never cause an accidental allow.</p>
+    <ul>
+      <li>A pattern containing <code>*</code> is a glob over the whole target.</li>
+      <li>Commas, <code>or</code>, and <code>and</code> split a pattern into alternatives
+      (<code>secrets, tokens, or passwords</code> is three patterns).</li>
+      <li>Words compare under light stemming (<code>quotes</code> ≈ <code>quote</code>,
+      <code>contacting</code> ≈ <code>contact</code>), and filler words
+      (<code>a</code>, <code>the</code>, <code>anything</code>…) don’t count.</li>
+      <li><b>Cautious mode</b> (ask/never): substring or word-subset match in either
+      direction — ambiguity escalates to you.</li>
+      <li><b>Strict mode</b> (allow lists): the target must <em>cover</em> the pattern.
+      The vague target <code>"email"</code> never inherits permission from the specific
+      entry <code>"status email to the team"</code>.</li>
+      <li>An all-filler pattern like <code>never: [anything]</code> matches everything —
+      its plain meaning.</li>
+    </ul>
+    <h3>Exit codes are the contract</h3>
+    <p><code>docket check</code> exits <b>0</b> for allow, <b>2</b> for ask, <b>3</b> for
+    deny (1 for usage errors) — so shell hooks, wrappers, and CI can gate on the warrant
+    directly.</p>
+  </section>
+
+  <section id="record">
+    <h2>The record</h2>
+    <p>Every warrant check and every piece of finished work is appended to
+    <code>.docket/record.jsonl</code> — one JSON object per line, append-only. Three
+    entry kinds:</p>
+    <div class="table-scroll"><table>
+      <tr><th>Kind</th><th>What it captures</th></tr>
+      <tr><td><b>check</b></td><td>a warrant check with its verdict and the rule that fired — written automatically. “Did the agent even ask?” becomes a grep.</td></tr>
+      <tr><td><b>note</b></td><td>work evidence: <code>saw</code>, <code>did</code>, <code>skipped</code>, <code>stopped</code>, <code>note</code></td></tr>
+      <tr><td><b>amend</b></td><td>a human-approved warrant widening from <code>docket review</code> — rule changes are evidence too</td></tr>
+    </table></div>
+    <h3>The hash chain</h3>
+    <p>Each entry commits to the previous one:
+    <code>hash = sha256(prev + canonical(entry))</code>. Any edit, deletion, insertion, or
+    reordering breaks the chain at a specific entry, and
+    <code>docket record verify</code> names it.</p>
+    <p>One case a chain alone can’t see: <b>cutting off the tail</b> leaves a valid
+    shorter chain. So <code>verify</code> prints the current head hash — pin it somewhere
+    the log can’t reach (a password manager, a commit message, another machine), then
+    <code>docket record verify --head &lt;hash&gt;</code> detects truncation too.</p>
+    <div class="callout">The chain doesn’t <b>stop</b> tampering — it’s a plain file. It
+    makes tampering <b>visible</b>, which is what an audit trail is for. It’s the
+    difference between “the agent says it asked” and proof that it did.</div>
+  </section>
+
+  <section id="review">
+    <h2>Review: iteration with a human veto</h2>
+    <p>The record already knows where the warrant chafes: every unlisted action the agent
+    was stopped on is a logged default-ask. <code>docket review</code> clusters the
+    repeats and proposes the exact amendments:</p>
+    <div class="code"><pre>$ docket review
+2 proposed amendments — from repeated asks in the record
+
+  1. appeal — allow read: "state insurance regulations" (asked 4×)
+  2. appeal — allow draft: "timeline summary" (asked 2×)
+
+allow read: "state insurance regulations" in appeal? [y/N] y
+<span class="g">✓</span> appeal: read now covers "state insurance regulations"</pre></div>
+    <p>Three guardrails keep the automation honest:</p>
+    <ul>
+      <li><b>Applying is always a human keystroke.</b> An agent that widens its own
+      permissions is the exact failure docket exists to prevent — it’s a scenario in the
+      red-team suite.</li>
+      <li><b>Deliberate policy is never proposed.</b> Targets matching the loop’s
+      <code>ask</code> or <code>never</code> lists don’t appear, however often they
+      recur.</li>
+      <li><b>Every approved amendment lands on the record</b> as an <code>amend</code>
+      entry — the evolution of your rules is itself auditable.</li>
+    </ul>
+    <p>Flags: <code>--min N</code> (repeat threshold, default 2), <code>--loop name</code>
+    (one loop), <code>--yes</code> (apply all — for when <em>you</em> run it in a script
+    or cron). After approving, recompile so your tools see the new warrant.</p>
+  </section>
+
+  <section id="compile">
+    <h2>Compiling to your tools</h2>
+    <p>Loops are the source of truth; assistant context files are build artifacts:</p>
+    <div class="table-scroll"><table>
+      <tr><th>Target</th><th>Writes</th><th>Read by</th></tr>
+      <tr><td><code>claude</code></td><td>CLAUDE.md</td><td>Claude Code</td></tr>
+      <tr><td><code>agents</code></td><td>AGENTS.md</td><td>ChatGPT/Codex, OpenClaw, Hermes, Zed, …</td></tr>
+      <tr><td><code>gemini</code></td><td>GEMINI.md</td><td>Gemini CLI</td></tr>
+      <tr><td><code>cursor</code></td><td>.cursor/rules/docket.mdc</td><td>Cursor</td></tr>
+      <tr><td><code>raw</code></td><td>stdout</td><td>anything else</td></tr>
+    </table></div>
+    <p>Docket writes between <code>&lt;!-- docket:begin --&gt;</code> /
+    <code>&lt;!-- docket:end --&gt;</code> markers and manages <b>only that block</b> —
+    your hand-written content in the same file is never touched. Recompiling is
+    idempotent; loop content that quotes the markers is neutralized so it can’t corrupt
+    the block; an orphaned marker is an error, never silent data loss.</p>
+    <p>Because every target renders from the same loops, moving to a new tool is a
+    recompile, not a re-teach.</p>
+  </section>
+
+  <section id="mcp">
+    <h2>The MCP server</h2>
+    <p><code>docket mcp</code> is a zero-config MCP server (stdio, newline-delimited
+    JSON-RPC). MCP hosts often launch servers with a working directory far from your
+    project, so pass <code>--dir /path/to/project</code> (or set
+    <code>DOCKET_DIR</code>); the server always answers <code>initialize</code> and
+    reports a missing project as a tool error instead of dying silently.</p>
+    <div class="table-scroll"><table>
+      <tr><th>Tool</th><th>What the agent gets</th></tr>
+      <tr><td><code>docket_list_loops</code></td><td>discover the loops you’ve defined</td></tr>
+      <tr><td><code>docket_loop_context</code></td><td>a loop’s five layers, before starting work</td></tr>
+      <tr><td><code>docket_warrant_check</code></td><td>allow / ask / deny for a proposed action — auto-logged, with explicit STOP instructions on ask/deny</td></tr>
+      <tr><td><code>docket_record</code></td><td>append evidence: saw / did / skipped / stopped / note</td></tr>
+    </table></div>
+    <p>Checks the agent makes over MCP land on the record with <code>via: "mcp"</code> —
+    distinguishable from human CLI checks forever.</p>
+  </section>
+
+  <section id="integrations">
+    <h2>Per-tool setup</h2>
+    <p>The pattern is the same everywhere: <code>init</code> → <code>new</code> →
+    <code>compile</code> into the file that tool already reads. Sixty seconds each.</p>
+
+    <h3>Claude Code</h3>
+    <div class="code"><pre>npx docket-agent init
+npx docket-agent new followup --template client-follow-up
+npx docket-agent compile --target claude --write
+<span class="c"># optional — native checks + record via MCP:</span>
+claude mcp add docket -- npx docket-agent mcp</pre></div>
+
+    <h3>ChatGPT · Codex</h3>
+    <div class="code"><pre>npx docket-agent compile --target agents --write   <span class="c"># → AGENTS.md</span></pre></div>
+    <p>AGENTS.md is an open convention — the same compile covers Zed, Amp, and other
+    tools that read it.</p>
+
+    <h3>Gemini CLI</h3>
+    <div class="code"><pre>npx docket-agent compile --target gemini --write   <span class="c"># → GEMINI.md</span></pre></div>
+    <p>Gemini CLI loads GEMINI.md as project context on launch. Running Claude and Gemini
+    side by side? Compile both targets — one rule file governs both.</p>
+
+    <h3>Cursor</h3>
+    <div class="code"><pre>npx docket-agent compile --target cursor --write   <span class="c"># → .cursor/rules/docket.mdc</span></pre></div>
+
+    <h3>OpenClaw</h3>
+    <p>OpenClaw injects the workspace’s <code>AGENTS.md</code> into the system prompt at
+    the start of every session — so run docket inside the workspace:</p>
+    <div class="code"><pre>cd ~/.openclaw/workspace
+npx docket-agent init
+npx docket-agent new followup --template client-follow-up
+npx docket-agent compile --target agents --write</pre></div>
+    <p>Docket manages only its own marked block — your existing AGENTS.md rules,
+    SOUL.md, and the rest of the workspace stay untouched. For native checks, add docket
+    as an MCP server in your OpenClaw config:
+    <code>command: npx</code>, <code>args: ["-y", "docket-agent", "mcp", "--dir",
+    "~/.openclaw/workspace"]</code>.</p>
+
+    <h3>Hermes (Nous Research)</h3>
+    <p>Hermes reads <code>AGENTS.md</code> context files — run the same three commands in
+    the directory Hermes works from, then optionally register the MCP server in
+    <code>~/.hermes/config.yaml</code> under your MCP servers section:</p>
+    <div class="code"><pre>docket:
+  command: npx
+  args: ["-y", "docket-agent", "mcp", "--dir", "/path/to/your/project"]</pre></div>
+    <p>Hermes builds skills from experience; docket keeps the experience inside the
+    warrant, on the record.</p>
+
+    <h3>Any other MCP client</h3>
+    <div class="code"><pre>{ "mcpServers": { "docket": {
+    "command": "npx",
+    "args": ["-y", "docket-agent", "mcp", "--dir", "/path/to/project"] } } }</pre></div>
+  </section>
+
+  <section id="cli">
+    <h2>CLI reference</h2>
+    <div class="table-scroll"><table>
+      <tr><th>Command</th><th>Does</th></tr>
+      <tr><td><code>docket init</code></td><td>create <code>.docket/</code> here (<code>--dir</code>, <code>--quiet</code>)</td></tr>
+      <tr><td><code>docket new &lt;name&gt;</code></td><td>create a loop — interactive five-question interview on a TTY, <code>--template &lt;t&gt;</code> to start from a starter, <code>--blank</code> for a scaffold</td></tr>
+      <tr><td><code>docket templates</code></td><td>list the seven starter loops</td></tr>
+      <tr><td><code>docket list</code></td><td>list your loops</td></tr>
+      <tr><td><code>docket show &lt;loop&gt;</code></td><td>print a loop’s five layers</td></tr>
+      <tr><td><code>docket check &lt;loop&gt; &lt;verb&gt; &lt;target…&gt;</code></td><td>verdict + rule; exits 0/2/3; logged unless <code>--no-record</code>; <code>--quiet</code> prints the bare verdict</td></tr>
+      <tr><td><code>docket record add &lt;loop&gt;</code></td><td>append evidence: <code>--saw --did --skipped --stopped --note</code></td></tr>
+      <tr><td><code>docket record log [loop]</code></td><td>show recent entries (<code>--n 20</code>)</td></tr>
+      <tr><td><code>docket record verify</code></td><td>verify the chain end to end; <code>--head &lt;hash&gt;</code> pins against tail truncation</td></tr>
+      <tr><td><code>docket review</code></td><td>propose warrant updates from repeated asks (<code>--min</code>, <code>--loop</code>, <code>--yes</code>)</td></tr>
+      <tr><td><code>docket compile</code></td><td><code>--target claude|agents|gemini|cursor|raw</code>, <code>--write</code> to update the file in place, <code>--loop</code> to preview one loop on stdout</td></tr>
+      <tr><td><code>docket mcp</code></td><td>run the MCP server (<code>--dir</code> or <code>DOCKET_DIR</code> to locate the project)</td></tr>
+    </table></div>
+  </section>
+
+  <section id="eval">
+    <h2>The red-team eval</h2>
+    <p>The claim “fuzzy only toward caution” is tested, not asserted. A 42-scenario suite
+    modeled on real agent-overreach incidents — unauthorized outbound email, calendar
+    “tidying”, invented commitments, agents widening their own permissions — runs against
+    the shipped templates on every build:</p>
+    <ul>
+      <li><b>24/24</b> consequence-bearing actions contained (ask or deny)</li>
+      <li><b>0</b> silent allows — the failure that ships the email</li>
+      <li><b>18/18</b> warranted work allowed — safety without friction</li>
+    </ul>
+    <p>The safety invariant is enforced in CI (<code>test/scenarios.test.js</code>): if a
+    risky scenario is ever silently allowed, the build fails. Reproduce everything with
+    <code>npm run eval</code>; the full table is in
+    <a href="https://github.com/shahcolate/docket/blob/main/eval/REPORT.md">eval/REPORT.md</a>.</p>
+  </section>
+
+  <section id="faq">
+    <h2>FAQ</h2>
+    <h3>Does docket execute anything?</h3>
+    <p>No. It describes and constrains work; your agent does the work. That’s deliberate —
+    it means docket works with every agent, including ones that don’t exist yet.</p>
+    <h3>What stops the agent from just ignoring the rules?</h3>
+    <p>Three layers, in increasing strength: the compiled context tells it the rules
+    (models follow explicit written boundaries far better than vibes); the MCP tools make
+    checking cheap and logged, so skipping the check is visible in the record; and the
+    exit codes let you make it <em>mechanical</em> — wrap risky tools in a shell guard
+    that calls <code>docket check</code> and refuses on exit 2/3, or wire it into your
+    agent’s hook system. Advisory for cooperative agents, enforceable where it counts.</p>
+    <h3>Can the record be faked?</h3>
+    <p>Edits, deletions, insertions, and reordering break the hash chain at a named
+    entry. Tail truncation is caught by pinning the head hash
+    (<code>verify --head</code>). What a local file can’t prove is authorship — signing
+    the head is on the roadmap.</p>
+    <h3>What goes in a loop vs. what stays out?</h3>
+    <p>In: the context that changes answers, standards, hard limits. Out: secrets, tokens,
+    passwords — loop files are meant to be committed and shared. The
+    <code>cross-tool-memory</code> template marks storing secrets as <code>never</code>.</p>
+    <h3>Multiple people, one repo?</h3>
+    <p>Commit <code>.docket/</code> and the compiled files. Everyone who clones inherits
+    the same warrant, and every agent working the repo is under the same rules.</p>
+    <h3>What if two patterns conflict?</h3>
+    <p>Order decides: never beats ask beats allow, and unlisted always asks. A target
+    matching both an allow and an ask pattern asks.</p>
+  </section>
+
+</main>
+</div>
+
+<footer style="border-top:1px solid var(--hair); padding: 24px 0 48px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; font-size:13px; color:var(--faint);">
+  <span>MIT · zero dependencies · plain files, forever</span>
+  <span><a href="index.html">docket home</a> · <a href="https://github.com/shahcolate/docket">GitHub</a></span>
+</footer>
+</div>
+
+</body>
+</html>

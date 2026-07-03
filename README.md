@@ -202,6 +202,47 @@ The agent gets four tools:
 Warrant checks made by the agent land in the record too. *"Did the agent
 even ask?"* becomes a grep.
 
+## OpenClaw and Hermes
+
+**[OpenClaw](https://docs.openclaw.ai)** injects your workspace's `AGENTS.md`
+into the agent's system prompt at the start of every session — so compile
+straight into the workspace (fitting, given the story that opens this README):
+
+```console
+$ cd ~/.openclaw/workspace
+$ npx docket-agent init
+$ npx docket-agent new followup --template client-follow-up
+$ npx docket-agent compile --target agents --write
+```
+
+Docket only manages its own marked block inside `AGENTS.md` — your existing
+rules, `SOUL.md`, and the rest of the workspace stay untouched. OpenClaw can
+also run the MCP server for native checks and record entries: add `docket`
+as an MCP server in your OpenClaw config with
+`command: npx, args: ["-y", "docket-agent", "mcp", "--dir", "~/.openclaw/workspace"]`.
+
+**[Hermes](https://hermes-agent.nousresearch.com/docs/)** (Nous Research)
+reads `AGENTS.md` context files too — run the same three commands in the
+directory Hermes works from. For native tools, add docket under the MCP
+servers section of `~/.hermes/config.yaml`:
+
+```yaml
+docket:
+  command: npx
+  args: ["-y", "docket-agent", "mcp", "--dir", "/path/to/your/project"]
+```
+
+Any other agent that reads `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, or speaks
+MCP gets the same treatment — one loop file, every agent under the same
+warrant.
+
+## Documentation
+
+The full guide — concepts, loop-file reference, the verdict algorithm,
+matching semantics, record internals, CLI reference, and per-tool setup —
+lives at **[the docs site](https://shahcolate.github.io/docket/docs.html)**.
+The normative format definition is the [Loop File Spec](spec/SPEC.md).
+
 ## Five questions, then the loop exists
 
 `docket new <name>` interviews you:
