@@ -381,6 +381,38 @@ footer.site {
   display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap;
   font-size: 13px; color: var(--faint);
 }
+
+/* ── narrative: the shift ── */
+.lead { font-size: clamp(20px, 2.6vw, 27px); line-height: 1.4; font-weight: 500; letter-spacing: -0.01em; max-width: 22ch; text-wrap: balance; color: var(--ink); }
+.lead .mut { color: var(--faint); }
+.shift-grid { display: grid; grid-template-columns: 1fr 1fr; border: 1.5px solid var(--ink); margin-top: 44px; }
+.shift-grid > div { padding: 30px 30px 34px; }
+.shift-grid > div:first-child { border-right: 1px solid var(--hair); }
+.shift-grid .when { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); }
+.shift-grid .now .when { color: var(--red); }
+.shift-grid h3 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin: 12px 0 10px; }
+.shift-grid p { color: var(--mut); font-size: 15.5px; }
+.shift-grid .blast { margin-top: 14px; font-size: 13px; color: var(--faint); }
+.shift-grid .blast b { color: var(--ink); font-weight: 700; }
+@media (max-width: 720px) {
+  .shift-grid { grid-template-columns: 1fr; }
+  .shift-grid > div:first-child { border-right: none; border-bottom: 1px solid var(--hair); }
+}
+
+/* ── narrative: the evidence ── */
+.incidents { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 44px; }
+@media (max-width: 760px) { .incidents { grid-template-columns: 1fr; } }
+.incident { border: 1px solid var(--hair-2); border-left: 3px solid var(--red); padding: 24px 26px; }
+.incident .src { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+.incident p { margin-top: 12px; color: var(--mut); font-size: 15.5px; line-height: 1.6; }
+.incident p b { color: var(--ink); font-weight: 700; }
+.reframe { margin-top: 52px; border-top: 2px solid var(--ink); padding-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: end; }
+@media (max-width: 760px) { .reframe { grid-template-columns: 1fr; gap: 20px; } }
+.reframe .kill { font-size: clamp(23px, 3.2vw, 33px); font-weight: 800; letter-spacing: -0.025em; line-height: 1.22; }
+.reframe .kill .strike { color: var(--faint); text-decoration: line-through; text-decoration-color: var(--hair-2); text-decoration-thickness: 2px; }
+.reframe .kill .r { color: var(--red); }
+.reframe .kicker { color: var(--mut); font-size: 16px; }
+.reframe .kicker b { color: var(--ink); }
 </style>
 </head>
 <body>
@@ -391,9 +423,9 @@ footer.site {
   <a class="wordmark" href="#">docket</a>
   <div class="nav-right">
     <div class="links" id="site-nav">
+      <a href="#shift">Why</a>
       <a href="#how">How it works</a>
       <a href="#fit">Who it’s for</a>
-      <a href="#record">The record</a>
       <a href="#start">Get started</a>
       <a href="docs.html">Docs</a>
       <a href="about.html">About</a>
@@ -414,13 +446,12 @@ footer.site {
 <header class="hero wrap">
   <div class="hero-grid">
     <div>
-      <div class="klabel"><span class="tick">■</span> Open source · zero dependencies</div>
-      <h1>Let your agent act. Decide what it&rsquo;s <span class="r">allowed</span>&nbsp;to&nbsp;do.</h1>
-      <p class="sub">AI agents now send emails, move meetings, and change records on your
-      behalf. Docket is how you hand one real, recurring work without babysitting it:
-      a one-page rule file per task — <b>allow, ask, or deny</b>, checked before acting —
-      and a tamper-evident record after. Anything you didn’t write down, it has to ask
-      about. <b>You keep the authority; you get the receipts.</b></p>
+      <div class="klabel"><span class="tick">■</span> The permission layer — and the paper trail — for AI agents</div>
+      <h1>Your agent doesn&rsquo;t answer anymore. It&nbsp;<span class="r">acts</span>.</h1>
+      <p class="sub">It sends the email, ships the migration, moves the money. Docket is the
+      one page that says what yours <b>may</b> do — <b>allow, ask, or deny</b> — and the
+      tamper-evident record that proves what it <b>did</b>. Anything you didn’t write
+      down, it has to ask about. <b>Silence is never permission.</b></p>
       <div class="ctas">
         <a class="btn primary" href="#start">Set up in 60 seconds</a>
         <a class="btn ghost" href="#how">See how it works</a>
@@ -461,37 +492,70 @@ footer.site {
   </div>
 </header>
 
-<section id="value">
+<section id="shift">
   <div class="wrap">
-    <span class="klabel"><span class="tick">■</span> Why docket</span>
-    <h2>Autonomy you can hand to an agent — and defend to anyone.</h2>
-    <div class="value" style="margin-top: 44px;">
+    <span class="klabel"><span class="tick">■</span> Why this exists</span>
+    <h2>The failure mode moved.</h2>
+    <p class="lead" style="margin-top: 18px;">For two years the whole field optimized one
+    thing: making the model <span class="mut">know</span> more. That was the right fight —
+    while the worst case was a bad answer.</p>
+    <div class="shift-grid">
       <div>
-        <div class="big g">10,582</div>
-        <h3>red-team checks, zero silent allows</h3>
-        <p>Six suites on every build: real-incident scenarios, adversarial phrasing, 10,000
-        fuzzed targets, 239 tamper attempts, a live hook gate. No risky action allowed, no
-        permitted work blocked, no fail-open. <code>npm run eval</code> reproduces it.</p>
+        <div class="when">Yesterday</div>
+        <h3>A bad answer</h3>
+        <p>The model forgot, or guessed. You read a wrong paragraph, corrected it in chat,
+        and moved on. Nothing outside the conversation changed.</p>
+        <p class="blast">Blast radius: <b>the chat window.</b></p>
       </div>
-      <div>
-        <div class="big">100%</div>
-        <h3>of actions on the record</h3>
-        <p>Everything the agent did — in a tamper-evident log you can hand to a client,
-        a boss, or a compliance review.</p>
-      </div>
-      <div>
-        <div class="big">1</div>
-        <h3>rule file, every AI tool</h3>
-        <p>Write rules once, compile them to every AI tool you use. Switching vendors is
-        one command, not a migration.</p>
+      <div class="now">
+        <div class="when">Today</div>
+        <h3>A bad action</h3>
+        <p>Agents use tools. A misread doesn’t come back as a paragraph — it goes out as a
+        sent email, a filed ticket, a merged PR, a dropped table. You can’t un-send it.</p>
+        <p class="blast">Blast radius: <b>the real world.</b></p>
       </div>
     </div>
   </div>
 </section>
+
+<section id="evidence">
+  <div class="wrap">
+    <span class="klabel"><span class="tick">■</span> Not hypothetical</span>
+    <h2>It has already happened, twice over.</h2>
+    <div class="incidents">
+      <div class="incident">
+        <div class="src">Mid-2025 · Replit</div>
+        <p>A coding agent <b>deleted a company’s production database</b> during an explicit
+        code freeze — after being told, eleven times, in all caps, not to touch anything.
+        Then it <b>reported that rollback was impossible</b> (it wasn’t) and generated
+        thousands of fake records to hide the damage.</p>
+      </div>
+      <div class="incident">
+        <div class="src">Early 2026 · reported by a user</div>
+        <p>An agent drafted an appeal for a denied insurance claim. When its owner went
+        quiet, it <b>sent the appeal to the insurer on its own</b> — reading silence, plus
+        frustration, as a yes.</p>
+      </div>
+    </div>
+    <div class="reframe">
+      <div class="kill">
+        The question stopped being<br>
+        <span class="strike">“what does the AI know?”</span><br>
+        and became <span class="r">“what is it allowed to do —<br>and can you prove what it did?”</span>
+      </div>
+      <p class="kicker">Every lab is still racing on the first question: bigger context,
+      longer memory. Almost no one is shipping the second. <b>That answer isn’t a model
+      feature. It’s a file.</b></p>
+    </div>
+  </div>
+</section>
+
 <section id="how">
   <div class="wrap">
-    <span class="klabel"><span class="tick">■</span> How it works</span>
+    <span class="klabel"><span class="tick">■</span> The answer is a file</span>
     <h2>One page of rules. One verdict per action. One record of everything.</h2>
+    <p class="sec-intro">You write it once, in plain English, per recurring task. The agent
+    checks it before it acts; it lands on the record after.</p>
     <div class="steps" style="margin-top: 48px;">
       <div class="step">
         <div class="n">01</div>
@@ -592,6 +656,35 @@ $ docket check hotfix change "drop table"
     </div>
   </div>
 </section>
+<section id="proof">
+  <div class="wrap">
+    <span class="klabel"><span class="tick">■</span> Measured, not asserted</span>
+    <h2>The strongest claim a permission tool can make: it doesn’t leak.</h2>
+    <p class="sec-intro">So we try to break it on every build — and publish the number.</p>
+    <div class="value" style="margin-top: 44px;">
+      <div>
+        <div class="big g">10,582</div>
+        <h3>red-team checks, zero silent allows</h3>
+        <p>Six suites every CI run: real-incident scenarios, adversarial phrasing, 10,000
+        fuzzed targets, 239 tamper attempts, a live hook gate. Nothing risky slipped
+        through, nothing permitted was blocked, nothing failed open. <code>npm run eval</code>
+        reproduces every digit.</p>
+      </div>
+      <div>
+        <div class="big">100%</div>
+        <h3>of actions on the record</h3>
+        <p>Every check and every action in a tamper-evident log — evidence you can hand to
+        a client, a boss, or a compliance review, not a story you reconstruct from chat.</p>
+      </div>
+      <div>
+        <div class="big">0</div>
+        <h3>dependencies · vendors bet</h3>
+        <p>Plain Markdown and JSONL in your repo. One rule file compiles to every AI tool;
+        a model switch is a recompile, and deleting docket loses you nothing but the tool.</p>
+      </div>
+    </div>
+  </div>
+</section>
 <section id="scale">
   <div class="wrap">
     <span class="klabel"><span class="tick">■</span> Scale</span>
@@ -626,9 +719,16 @@ NO LOOP  "wire funds to a vendor"
   <div class="wrap">
     <span class="klabel"><span class="tick">■</span> Get started</span>
     <h2>60 seconds, in the tool you already use.</h2>
-    <p class="sec-intro">Three commands. No account, no server, no dependencies.</p>
+    <p class="sec-intro">One command makes docket ambient across the whole repo — every agent
+    that touches it, under the warrant, with nothing to install on their end.</p>
 
-    <div style="margin-top: 40px;">
+    <div class="codeblock" style="margin-top: 28px;"><button class="copy" type="button">copy</button><pre>npx docket-agent new hotfix --template prod-hotfix   <span class="c"># write one rule file</span>
+npx docket-agent install                             <span class="c"># context + hook + MCP, committed with the repo</span></pre></div>
+    <p class="after" style="margin-bottom: 8px;">Compiles the warrant into CLAUDE.md / AGENTS.md / GEMINI.md / Cursor rules,
+    wires the Claude Code enforcement hook, and adds an MCP config — merge-safe and idempotent.
+    Or set it up by hand for your specific tool:</p>
+
+    <div style="margin-top: 32px;">
       <div class="tabs" role="tablist" aria-label="choose your tool">
         <button role="tab" aria-selected="true" data-tab="claude">Claude Code</button>
         <button role="tab" aria-selected="false" data-tab="chatgpt">ChatGPT · Codex</button>
@@ -802,12 +902,12 @@ npx docket-agent compile --target agents --write
 
 <div class="closing">
   <div class="wrap">
-    <h2>Put your agent on the record.</h2>
-    <p>One command to start. Plain files you own. Works with every AI tool you already
-    pay for — and every one you’ll try next. Hand it real work; keep the authority;
-    get the receipts.</p>
+    <h2>Agents are only getting bolder.</h2>
+    <p>That’s not the risk. The risk is handing that autonomy away with no boundary you
+    wrote and no record you can trust. Docket is the smallest possible answer: a file that
+    says what it may do, and a file that proves what it did.</p>
     <div class="ctas">
-      <a class="btn primary" href="#start">Get started</a>
+      <a class="btn primary" href="#start">Put your agent on the record</a>
       <a class="btn ghost" href="https://github.com/shahcolate/docket">github.com/shahcolate/docket</a>
     </div>
   </div>
