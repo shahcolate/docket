@@ -2,9 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>docket — safe autonomy for AI agents</title>
 <meta name="description" content="Your agent checks a rule file before it acts — allow, ask, or deny — and leaves a tamper-evident record after. Set up in 60 seconds in Claude, ChatGPT, Gemini, or Cursor.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121316" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="docket — safe autonomy for AI agents">
+<meta property="og:description" content="Your agent checks a rule file before it acts — allow, ask, or deny — and leaves a tamper-evident record after.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://shahcolate.github.io/docket/">
+<script>(function(){try{var t=localStorage.getItem('docket-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <style>
 :root {
   --bg: #FFFFFF;
@@ -54,18 +64,23 @@
 }
 
 * { box-sizing: border-box; margin: 0; }
-html { scroll-behavior: smooth; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+html { scroll-behavior: smooth; scroll-padding-top: 82px; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition: none !important; animation: none !important; } }
 body {
   background: var(--bg); color: var(--ink);
   font-family: var(--sans); font-size: 17px; line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
 }
+::selection { background: var(--red); color: #FFFFFF; }
 a { color: inherit; }
+a, button { transition: color .16s ease, background-color .16s ease, border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
 code, pre { font-family: var(--mono); }
 .wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; }
-@media (max-width: 640px) { .wrap { padding: 0 18px; } }
+@media (max-width: 640px) {
+  body { font-size: 16px; }
+  .wrap { padding: 0 max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left)); }
+}
 
 .klabel {
   font-size: 11.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
@@ -73,29 +88,73 @@ code, pre { font-family: var(--mono); }
 }
 .klabel .tick { color: var(--red); }
 
-/* ── nav ── */
-nav.top {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 22px 0; border-bottom: 1px solid var(--hair);
+/* ── reveal on scroll (classes added by JS; page renders normally without it) ── */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .65s cubic-bezier(.22,.61,.36,1) var(--rd, 0ms), transform .65s cubic-bezier(.22,.61,.36,1) var(--rd, 0ms); }
+  .reveal.in { opacity: 1; transform: none; }
 }
+@media print { .reveal { opacity: 1 !important; transform: none !important; } }
+
+/* ── nav ── */
+.nav-shell { position: sticky; top: 0; z-index: 60; background: var(--bg); border-bottom: 1px solid var(--hair); }
+@supports ((backdrop-filter: blur(1px)) and (background: color-mix(in srgb, red 50%, blue))) {
+  .nav-shell {
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6);
+  }
+}
+nav.top { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 15px 0; }
 .wordmark { font-weight: 800; font-size: 19px; letter-spacing: -0.02em; text-decoration: none; }
 .wordmark::after { content: "."; color: var(--red); }
-nav.top .links { display: flex; gap: 26px; align-items: center; font-size: 14px; font-weight: 600; }
-nav.top .links a { text-decoration: none; color: var(--mut); }
+.nav-right { display: flex; align-items: center; gap: 20px; }
+nav.top .links { display: flex; gap: 24px; align-items: center; font-size: 14px; font-weight: 600; }
+nav.top .links a { text-decoration: none; color: var(--mut); padding: 6px 0; }
 nav.top .links a:hover { color: var(--ink); }
-nav.top .links a.gh {
-  color: var(--bg); background: var(--ink); padding: 9px 16px;
+.nav-right .gh {
+  font-size: 14px; font-weight: 600; text-decoration: none;
+  color: var(--bg); background: var(--ink); padding: 9px 16px; white-space: nowrap;
 }
-nav.top .links a.gh:hover { background: var(--red); }
-@media (max-width: 720px) { nav.top .links a:not(.gh) { display: none; } }
+.nav-right .gh:hover { background: var(--red); }
+.theme-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; padding: 0; cursor: pointer;
+  background: transparent; border: 1px solid var(--hair-2); color: var(--mut);
+}
+.theme-btn:hover { color: var(--ink); border-color: var(--ink); }
+.theme-btn svg { width: 15px; height: 15px; display: block; }
+.menu-btn { display: none; }
+@media (max-width: 720px) {
+  nav.top { padding: 12px 0; }
+  .nav-right { gap: 10px; }
+  .nav-right .gh { font-size: 13px; padding: 10px 13px; }
+  .menu-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; padding: 0; cursor: pointer;
+    background: transparent; border: 1.5px solid var(--ink); color: var(--ink);
+  }
+  .menu-btn svg { width: 17px; height: 17px; display: block; }
+  .menu-btn .ic-close { display: none; }
+  nav.top.open .menu-btn .ic-menu { display: none; }
+  nav.top.open .menu-btn .ic-close { display: block; }
+  nav.top .links {
+    display: none; position: absolute; left: 0; right: 0; top: 100%;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--bg); border-bottom: 1.5px solid var(--ink);
+    padding: 4px max(20px, env(safe-area-inset-right)) 14px max(20px, env(safe-area-inset-left));
+  }
+  nav.top.open .links { display: flex; }
+  nav.top .links a { font-size: 16px; font-weight: 600; padding: 14px 2px; border-bottom: 1px solid var(--hair); }
+  nav.top .links a:last-child { border-bottom: none; }
+}
 
 /* ── hero ── */
-.hero { padding: 88px 0 84px; }
+.hero { padding: 84px 0; }
 .hero-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 64px; align-items: center; }
-@media (max-width: 940px) { .hero-grid { grid-template-columns: 1fr; gap: 48px; } }
+@media (max-width: 940px) { .hero-grid { grid-template-columns: 1fr; gap: 44px; } }
+.hero-grid > *, .record-grid > *, .steps-mini > *, .steps > *, .value > * { min-width: 0; }
 h1 {
-  font-size: clamp(38px, 4.8vw, 58px);
-  line-height: 1.03; font-weight: 800; letter-spacing: -0.033em;
+  font-size: clamp(34px, 5vw, 58px);
+  line-height: 1.04; font-weight: 800; letter-spacing: -0.033em;
   text-wrap: balance; margin: 18px 0 22px;
 }
 h1 .r { color: var(--red); }
@@ -103,16 +162,36 @@ h1 .r { color: var(--red); }
 .hero .ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 32px; align-items: center; }
 .btn {
   font-size: 14.5px; font-weight: 700; text-decoration: none; letter-spacing: 0.01em;
-  padding: 14px 24px; border: 1.5px solid var(--ink); display: inline-block;
+  padding: 14px 24px; border: 1.5px solid var(--ink); display: inline-block; text-align: center;
 }
+.btn:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--red); }
+.btn:active { transform: none; box-shadow: none; }
 .btn.primary { background: var(--ink); color: var(--bg); }
-.btn.primary:hover { background: var(--red); border-color: var(--red); }
-.btn.ghost:hover { border-color: var(--red); color: var(--red); }
 .hero .fine { margin-top: 18px; font-size: 13.5px; color: var(--faint); }
 .hero .fine code { font-size: 12.5px; }
+@media (max-width: 640px) {
+  .hero { padding: 40px 0 56px; }
+  .hero .sub { font-size: 17px; }
+  .hero .ctas { margin-top: 24px; }
+  .hero .ctas .btn, .closing .ctas .btn { flex: 1 1 100%; }
+  .hero .fine { margin-top: 14px; }
+}
+
+/* ── works-with strip ── */
+.works {
+  margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--hair);
+  display: flex; gap: 14px 32px; align-items: baseline; flex-wrap: wrap;
+}
+.works-label { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); white-space: nowrap; }
+.works-row { display: flex; flex-wrap: wrap; gap: 10px 26px; font-size: 15px; font-weight: 700; color: var(--mut); letter-spacing: -0.01em; }
+@media (max-width: 640px) {
+  .works { margin-top: 44px; padding-top: 20px; }
+  .works-row { font-size: 14px; gap: 8px 20px; }
+}
 
 /* ── verdict widget ── */
-.widget { border: 1.5px solid var(--ink); background: var(--bg); }
+.widget { border: 1.5px solid var(--ink); background: var(--bg); box-shadow: 12px 12px 0 var(--bg-2); }
+@media (max-width: 640px) { .widget { box-shadow: 8px 8px 0 var(--bg-2); } }
 .widget-head {
   display: flex; justify-content: space-between; align-items: center;
   padding: 14px 18px; border-bottom: 1px solid var(--hair);
@@ -125,12 +204,16 @@ h1 .r { color: var(--red); }
 .acts button {
   font-family: var(--mono); font-size: 13px; text-align: left; cursor: pointer;
   border: 1px solid var(--hair-2); background: var(--bg); color: var(--ink);
-  padding: 11px 14px;
+  padding: 12px 14px; min-height: 44px;
 }
 .acts button:hover { border-color: var(--ink); }
 .acts button[aria-pressed="true"] { border-color: var(--ink); background: var(--bg-2); font-weight: 700; }
 .verdict { margin-top: 20px; border-top: 1px solid var(--hair); padding-top: 18px; min-height: 150px; }
 .verdict .word { font-size: 44px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .verdict .word.stamp { animation: stamp .4s cubic-bezier(.2,.9,.3,1.3); }
+}
+@keyframes stamp { 0% { opacity: 0; transform: scale(1.35); } 100% { opacity: 1; transform: scale(1); } }
 .verdict .word.allow { color: var(--allow); }
 .verdict .word.ask { color: var(--ask); }
 .verdict .word.deny { color: var(--red); }
@@ -145,6 +228,10 @@ section { border-top: 2px solid var(--ink); padding: 26px 0 88px; }
 .sec-bar { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 48px; }
 h2 { font-size: clamp(26px, 3.4vw, 40px); font-weight: 800; letter-spacing: -0.025em; line-height: 1.1; text-wrap: balance; margin-top: 26px; }
 .sec-intro { margin-top: 14px; font-size: 18px; color: var(--mut); max-width: 38em; }
+@media (max-width: 640px) {
+  section { padding: 20px 0 64px; }
+  .sec-intro { font-size: 16.5px; }
+}
 
 /* ── value strip ── */
 .value { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 1.5px solid var(--ink); }
@@ -156,7 +243,7 @@ h2 { font-size: clamp(26px, 3.4vw, 40px); font-weight: 800; letter-spacing: -0.0
 .value p { font-size: 14.5px; color: var(--mut); }
 @media (max-width: 800px) {
   .value { grid-template-columns: 1fr; }
-  .value > div { border-left: none; border-top: 1px solid var(--hair); }
+  .value > div { border-left: none; border-top: 1px solid var(--hair); padding: 22px 20px 24px; }
   .value > div:first-child { border-top: none; }
 }
 
@@ -168,15 +255,23 @@ h2 { font-size: clamp(26px, 3.4vw, 40px); font-weight: 800; letter-spacing: -0.0
   border-bottom: 1.5px solid var(--ink); padding: 14px 20px; flex: 1 1 auto;
 }
 .tabs button:last-child { border-right: none; }
+.tabs button:hover { color: var(--ink); }
 .tabs button[aria-selected="true"] { background: var(--bg); color: var(--ink); border-bottom-color: transparent; box-shadow: inset 0 3px 0 var(--red); }
+@media (max-width: 720px) {
+  .tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs button { flex: 0 0 auto; padding: 14px 16px; white-space: nowrap; min-height: 46px; }
+}
 .panel { border: 1.5px solid var(--ink); border-top: none; padding: 28px; display: none; }
+@media (max-width: 640px) { .panel { padding: 20px 16px; } }
 .panel.active { display: block; }
 .panel .steps-mini { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
 @media (max-width: 860px) { .panel .steps-mini { grid-template-columns: 1fr; } }
 .panel ol { margin: 0; padding: 0; list-style: none; counter-reset: st; }
-.panel ol li { counter-increment: st; padding: 12px 0; border-top: 1px solid var(--hair); font-size: 15px; color: var(--mut); display: flex; gap: 14px; }
+.panel ol li { counter-increment: st; padding: 12px 0 12px 34px; border-top: 1px solid var(--hair); font-size: 15px; color: var(--mut); position: relative; }
 .panel ol li:first-child { border-top: none; padding-top: 0; }
-.panel ol li::before { content: counter(st, decimal-leading-zero); font-family: var(--mono); font-size: 12px; color: var(--red); font-weight: 700; padding-top: 3px; }
+.panel ol li::before { content: counter(st, decimal-leading-zero); font-family: var(--mono); font-size: 12px; color: var(--red); font-weight: 700; position: absolute; left: 0; top: 15px; }
+.panel ol li:first-child::before { top: 3px; }
 .panel ol li b { color: var(--ink); }
 .codeblock { position: relative; background: var(--term-bg); color: var(--term-ink); padding: 18px 18px 20px; overflow-x: auto; }
 .codeblock pre { font-size: 12.5px; line-height: 1.8; }
@@ -184,15 +279,16 @@ h2 { font-size: clamp(26px, 3.4vw, 40px); font-weight: 800; letter-spacing: -0.0
 .codeblock .copy {
   position: absolute; top: 10px; right: 10px; cursor: pointer;
   font-family: var(--sans); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-  background: transparent; color: var(--term-dim); border: 1px solid var(--term-dim); padding: 4px 9px;
+  background: var(--term-bg); color: var(--term-dim); border: 1px solid var(--term-dim); padding: 6px 11px;
 }
 .codeblock .copy:hover { color: var(--term-ink); border-color: var(--term-ink); }
 .panel .after { margin-top: 16px; font-size: 14px; color: var(--faint); }
 
 /* ── how it works ── */
 .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
-@media (max-width: 860px) { .steps { grid-template-columns: 1fr; } }
+@media (max-width: 860px) { .steps { grid-template-columns: 1fr; gap: 36px; } }
 .step .n { font-size: 84px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; color: var(--hair-2); }
+@media (max-width: 640px) { .step .n { font-size: 60px; } }
 .step h3 { font-size: 19px; font-weight: 700; margin: 14px 0 8px; }
 .step p { font-size: 15px; color: var(--mut); }
 .step .mini {
@@ -215,14 +311,21 @@ h2 { font-size: clamp(26px, 3.4vw, 40px); font-weight: 800; letter-spacing: -0.0
 .cases-head { display: grid; grid-template-columns: 220px 1fr 1fr; gap: 24px; padding: 12px 0; }
 .cases-head span { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); }
 @media (max-width: 800px) {
-  .case, .cases-head { grid-template-columns: 1fr; gap: 6px; padding: 16px 0; }
-  .cases-head span:not(:first-child) { display: none; }
+  .case { grid-template-columns: 1fr; gap: 10px; padding: 18px 0; }
+  .cases-head { display: none; }
+  .case .does::before { content: "Handles alone"; }
+  .case .stops::before { content: "Always stops before"; }
+  .case .does::before, .case .stops::before {
+    display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--faint); margin-bottom: 2px;
+  }
 }
 
 /* ── record demo ── */
 .record-grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 56px; align-items: start; }
 @media (max-width: 940px) { .record-grid { grid-template-columns: 1fr; gap: 36px; } }
-.ledger { border: 1.5px solid var(--ink); font-family: var(--mono); font-size: 13px; position: relative; }
+.ledger { border: 1.5px solid var(--ink); font-family: var(--mono); font-size: 13px; position: relative; box-shadow: 12px 12px 0 var(--bg-2); }
+@media (max-width: 640px) { .ledger { box-shadow: 8px 8px 0 var(--bg-2); } }
 .ledger-head, .ledger-row {
   display: grid; grid-template-columns: 40px 1fr 170px; gap: 12px;
   padding: 11px 16px; align-items: baseline;
@@ -246,7 +349,7 @@ h2 { font-size: clamp(26px, 3.4vw, 40px); font-weight: 800; letter-spacing: -0.0
 .ledger-foot .actions { display: flex; gap: 10px; }
 .ledger-foot button {
   font-family: var(--mono); font-size: 11.5px; cursor: pointer;
-  border: 1px solid var(--hair-2); background: transparent; color: var(--mut); padding: 7px 13px;
+  border: 1px solid var(--hair-2); background: transparent; color: var(--mut); padding: 9px 14px; min-height: 40px;
 }
 .ledger-foot button:hover { border-color: var(--red); color: var(--red); }
 .tamper-flag {
@@ -266,11 +369,15 @@ h2 { font-size: clamp(26px, 3.4vw, 40px); font-weight: 800; letter-spacing: -0.0
 
 /* ── closing ── */
 .closing { border-top: 2px solid var(--ink); padding: 96px 0 100px; text-align: center; }
-.closing h2 { font-size: clamp(34px, 5vw, 60px); margin: 0 0 18px; }
+.closing h2 { font-size: clamp(30px, 5vw, 60px); margin: 0 0 18px; }
 .closing p { color: var(--mut); font-size: 18px; max-width: 34em; margin: 0 auto; }
 .closing .ctas { margin-top: 34px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+@media (max-width: 640px) {
+  .closing { padding: 64px 0 72px; }
+  .closing p { font-size: 16.5px; }
+}
 footer.site {
-  border-top: 1px solid var(--hair); padding: 26px 0 54px;
+  border-top: 1px solid var(--hair); padding: 26px 0 max(54px, env(safe-area-inset-bottom));
   display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap;
   font-size: 13px; color: var(--faint);
 }
@@ -278,25 +385,36 @@ footer.site {
 </head>
 <body>
 
+<div class="nav-shell">
 <div class="wrap">
-<nav class="top">
+<nav class="top" id="topnav">
   <a class="wordmark" href="#">docket</a>
-  <div class="links">
-    <a href="#start">Get started</a>
-    <a href="#how">How it works</a>
-    <a href="#fit">Who it’s for</a>
-    <a href="#record">The record</a>
-    <a href="docs.html">Docs</a>
-    <a href="about.html">About</a>
+  <div class="nav-right">
+    <div class="links" id="site-nav">
+      <a href="#how">How it works</a>
+      <a href="#fit">Who it’s for</a>
+      <a href="#record">The record</a>
+      <a href="#start">Get started</a>
+      <a href="docs.html">Docs</a>
+      <a href="about.html">About</a>
+    </div>
+    <button class="theme-btn" type="button" aria-label="Toggle dark mode">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>
+    </button>
     <a class="gh" href="https://github.com/shahcolate/docket">GitHub&nbsp;★</a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">
+      <svg class="ic-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <svg class="ic-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
+    </button>
   </div>
 </nav>
+</div>
 </div>
 
 <header class="hero wrap">
   <div class="hero-grid">
     <div>
-      <div class="klabel"><span class="tick">■</span> Open source · zero dependencies · works with Claude, ChatGPT, Gemini, Cursor, OpenClaw, Hermes</div>
+      <div class="klabel"><span class="tick">■</span> Open source · zero dependencies</div>
       <h1>Let your agent act. Decide what it&rsquo;s <span class="r">allowed</span>&nbsp;to&nbsp;do.</h1>
       <p class="sub">AI agents now send emails, move meetings, and change records on your
       behalf. Docket is how you hand one real, recurring work without babysitting it:
@@ -305,9 +423,9 @@ footer.site {
       about. <b>You keep the authority; you get the receipts.</b></p>
       <div class="ctas">
         <a class="btn primary" href="#start">Set up in 60 seconds</a>
-        <a class="btn ghost" href="https://github.com/shahcolate/docket">View on GitHub</a>
+        <a class="btn ghost" href="#how">See how it works</a>
       </div>
-      <p class="fine">MIT licensed · <code>npx docket-agent init</code> is the whole install</p>
+      <p class="fine">MIT · <code>npx docket-agent init</code> is the whole install</p>
     </div>
 
     <div class="widget" id="widget">
@@ -316,14 +434,14 @@ footer.site {
         <span class="live">● try it</span>
       </div>
       <div class="widget-body">
-        <p class="q">Your agent is handling an insurance appeal. It wants to…</p>
+        <p class="q">Your agent is shipping a Friday hotfix. It wants to…</p>
         <div class="acts" role="group" aria-label="choose an action">
-          <button type="button" data-v="allow" data-cmd='docket check appeal draft "appeal letter"'
-            data-why="Drafting the appeal is exactly what this loop is for. The warrant lists it — the agent proceeds, and the check is logged.">draft the appeal letter</button>
-          <button type="button" data-v="ask" data-cmd='docket check appeal send "appeal email to the insurer"'
-            data-why="Sending leaves the sandbox. Nothing under send is listed, and unlisted always means ask — the agent stops and brings it to you.">send the appeal to the insurer</button>
-          <button type="button" data-v="deny" data-cmd='docket check appeal change "accept the settlement offer"'
-            data-why="You wrote 'never: accepting or rejecting a settlement.' No amount of in-the-moment persuasion overrides a never.">accept the settlement offer</button>
+          <button type="button" data-v="allow" data-cmd='docket check hotfix read "production error logs"'
+            data-why="The rules list reading logs — the agent proceeds, and the check is logged.">read the production error logs</button>
+          <button type="button" data-v="ask" data-cmd='docket check hotfix change "migration on production"'
+            data-why="Production isn’t in the warrant, and unlisted always means ask — the agent stops and brings it to you.">run the migration on production</button>
+          <button type="button" data-v="deny" data-cmd='docket check hotfix change "drop the old users table"'
+            data-why="You wrote “never: destructive commands in production.” No in-the-moment panic overrides a never.">drop the old users table</button>
         </div>
         <div class="verdict" aria-live="polite">
           <div class="word" id="v-word"></div>
@@ -331,18 +449,25 @@ footer.site {
           <p class="cli" id="v-cli"></p>
         </div>
       </div>
-      <div class="widget-foot">Every check is appended to a hash-chained record — and in Claude Code, <code>docket hook</code> makes the verdict the harness’s own permission decision.</div>
+      <div class="widget-foot">Every check is appended to a hash-chained record — and in Claude Code, <code>docket hook claude</code> makes the verdict the harness’s own permission decision.</div>
     </div>
+  </div>
+
+  <div class="works">
+    <span class="works-label">Works with</span>
+    <span class="works-row">
+      <span>Claude&nbsp;Code</span><span>ChatGPT&nbsp;/&nbsp;Codex</span><span>Gemini&nbsp;CLI</span><span>Cursor</span><span>OpenClaw</span><span>Hermes</span><span>any&nbsp;MCP&nbsp;client</span>
+    </span>
   </div>
 </header>
 
 <section id="value">
   <div class="wrap">
-    <span class="klabel"><span class="tick">■</span> Why teams adopt it</span>
+    <span class="klabel"><span class="tick">■</span> Why docket</span>
     <h2>Autonomy you can hand to an agent — and defend to anyone.</h2>
     <div class="value" style="margin-top: 44px;">
       <div>
-        <div class="big g">10,545</div>
+        <div class="big g">10,582</div>
         <h3>red-team checks, zero silent allows</h3>
         <p>Six suites on every build: real-incident scenarios, adversarial phrasing, 10,000
         fuzzed targets, 239 tamper attempts, a live hook gate. No risky action allowed, no
@@ -351,25 +476,157 @@ footer.site {
       <div>
         <div class="big">100%</div>
         <h3>of actions on the record</h3>
-        <p>What the agent saw, did, skipped, and where it stopped — in a hash-chained log
-        that exposes any edit. Evidence you can hand to a client or a compliance review.</p>
+        <p>Everything the agent did — in a tamper-evident log you can hand to a client,
+        a boss, or a compliance review.</p>
       </div>
       <div>
         <div class="big">1</div>
         <h3>rule file, every AI tool</h3>
-        <p>Write rules once; compile them to Claude, ChatGPT/Codex, Gemini, Cursor,
-        OpenClaw, and Hermes. Switching vendors is one command, not a migration.</p>
+        <p>Write rules once, compile them to every AI tool you use. Switching vendors is
+        one command, not a migration.</p>
       </div>
     </div>
   </div>
 </section>
+<section id="how">
+  <div class="wrap">
+    <span class="klabel"><span class="tick">■</span> How it works</span>
+    <h2>One page of rules. One verdict per action. One record of everything.</h2>
+    <div class="steps" style="margin-top: 48px;">
+      <div class="step">
+        <div class="n">01</div>
+        <h3>Write the rules once</h3>
+        <p>One plain-English file per task: what the agent should know, what it may do
+        alone, what stays yours.</p>
+        <div class="mini"><b>warrant:</b>
+  read:   [error logs, schema]
+  change: [staging]
+  send:   []
+  never:  [destructive commands in prod]</div>
+      </div>
+      <div class="step">
+        <div class="n">02</div>
+        <h3>The agent checks first</h3>
+        <p>Every action gets a verdict before it happens. Not listed? It asks.
+        Marked never? Denied — even with approval.</p>
+        <div class="mini">$ docket check hotfix change "staging"
+<span class="ga">ALLOW</span>  within the change warrant
+$ docket check hotfix change "prod"
+<span class="ya">ASK</span>    unlisted means ask
+$ docket check hotfix change "drop table"
+<span class="ra">DENY</span>   hard stop</div>
+      </div>
+      <div class="step">
+        <div class="n">03</div>
+        <h3>Everything lands on the record</h3>
+        <p>Every check and action joins a hash-chained log. Any edit breaks the chain at
+        the exact entry. Proof, not trust.</p>
+        <div class="mini">$ docket record verify
+<span class="ga">✓ chain intact</span> — 4 entries
+  head: sha256:fd4394fc…</div>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="cases">
+  <div class="wrap">
+    <span class="klabel"><span class="tick">■</span> What people run</span>
+    <h2>Eight ready-made loops. Real work, hard stops.</h2>
+    <div style="margin-top: 44px;">
+      <div class="cases-head"><span>Loop</span><span>The agent handles alone</span><span>It always stops before</span></div>
+      <div class="cases">
+        <div class="case"><span class="name">prod-hotfix</span><span class="does"><b>✓</b> reads the logs, fixes on staging, ships every migration with a rollback</span><span class="stops"><b>■</b> anything that changes production; destructive commands are never</span></div>
+        <div class="case"><span class="name">insurance-appeal</span><span class="does"><b>✓</b> reads the policy, drafts the appeal, builds the evidence packet</span><span class="stops"><b>■</b> anything sent to the insurer; settlement decisions are never</span></div>
+        <div class="case"><span class="name">client-follow-up</span><span class="does"><b>✓</b> reconstructs history, drafts the email in approved language</span><span class="stops"><b>■</b> anything the client sees; invented discounts are never</span></div>
+        <div class="case"><span class="name">weekly-planning</span><span class="does"><b>✓</b> drafts the week, names every tradeoff</span><span class="stops"><b>■</b> moving any meeting; family time and workouts are never</span></div>
+        <div class="case"><span class="name">marketing-brain</span><span class="does"><b>✓</b> drafts from messaging that already worked</span><span class="stops"><b>■</b> publishing; invented quotes and statistics are never</span></div>
+        <div class="case"><span class="name">ticket-handoff</span><span class="does"><b>✓</b> writes tickets a stranger can pick up cold</span><span class="stops"><b>■</b> assigning people; deleting tickets is never</span></div>
+        <div class="case"><span class="name">travel-morning</span><span class="does"><b>✓</b> plans around your rules, with a rain backup</span><span class="stops"><b>■</b> bookings; nonrefundable anything is never</span></div>
+        <div class="case"><span class="name">cross-tool-memory</span><span class="does"><b>✓</b> keeps one context current across every AI tool</span><span class="stops"><b>■</b> widening its own permissions; secrets, git hooks, and CI jobs are never</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="record">
+  <div class="wrap">
+    <span class="klabel"><span class="tick">■</span> The record</span>
+    <div class="record-grid" style="margin-top: 26px;">
+      <div class="record-copy">
+        <h2 style="margin-top: 0;">Try to falsify it.</h2>
+        <p style="margin-top: 16px;">Every entry commits cryptographically to the one
+        before it. Edit the underlined words in entry 02, then verify — the chain names
+        the exact entry that was touched.</p>
+        <p><b>That’s the difference between “the agent says it rolled back” and proof
+        of what it actually ran.</b> The log is a plain file in your repo — grep it,
+        commit it, hand it to an audit.</p>
+        <p>And it feeds back: <code>docket review</code> turns repeated asks into
+        proposed rule updates. <b>You approve each one</b> — the agent never widens its
+        own permissions.</p>
+      </div>
+      <div class="ledger" id="ledger">
+        <span class="tamper-flag" aria-hidden="true">Tampered</span>
+        <div class="ledger-head"><span>No</span><span>Entry</span><span class="h-hash">Hash</span></div>
+        <div class="ledger-row" data-seq="1">
+          <span class="seq">01</span>
+          <span class="what"><span class="v allow">allow</span> read → “production error logs”</span>
+          <span class="hash"></span>
+        </div>
+        <div class="ledger-row" data-seq="2">
+          <span class="seq">02</span>
+          <span class="what">did: <span contenteditable="true" spellcheck="false" id="editable">ran the migration on staging</span> · stopped: before prod</span>
+          <span class="hash"></span>
+        </div>
+        <div class="ledger-row" data-seq="3">
+          <span class="seq">03</span>
+          <span class="what"><span class="v ask">ask</span> change → “migration on production”</span>
+          <span class="hash"></span>
+        </div>
+        <div class="ledger-foot">
+          <span id="verify-out" role="status"></span>
+          <div class="actions">
+            <button type="button" id="verify-btn">docket record verify</button>
+            <button type="button" id="restore-btn">restore</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="scale">
+  <div class="wrap">
+    <span class="klabel"><span class="tick">■</span> Scale</span>
+    <div class="record-grid" style="margin-top: 26px;">
+      <div class="record-copy">
+        <h2 style="margin-top: 0;">Fifty loops. Flat context.</h2>
+        <p style="margin-top: 16px;">Stuffing every rule into the agent’s context stops
+        scaling after a handful of tasks. Docket keeps one line per loop in context —
+        the agent routes each task with <code>docket match</code> and pulls in only the
+        loop it needs.</p>
+        <p>Routing <b>fails closed</b>: no matching loop means <em>ask</em>, not best
+        guess. <b>The context window holds a table of contents and one open chapter;
+        the checker holds every rule, at zero context cost.</b></p>
+      </div>
+      <div class="codeblock"><pre>$ docket compile --index --target claude --write
+✓ compiled index of 23 loops → CLAUDE.md
 
+$ docket match "draft an appeal for my denied claim"
+1 candidate loop for "draft an appeal for my denied claim"
+
+  appeal      Build the appeal, cite the policy — stop before send.
+              score 14 — trigger: denied claim, denial letter
+
+$ docket match "wire funds to a vendor"
+NO LOOP  "wire funds to a vendor"
+  No loop covers this task. Work outside a loop
+  defaults to ask   <span class="c"># exit 2 — hooks can gate on it</span></pre></div>
+    </div>
+  </div>
+</section>
 <section id="start">
   <div class="wrap">
     <span class="klabel"><span class="tick">■</span> Get started</span>
     <h2>60 seconds, in the tool you already use.</h2>
-    <p class="sec-intro">Three commands: create your rules from a template, then compile them into
-    the file your AI tool already reads. No account, no server, no dependencies.</p>
+    <p class="sec-intro">Three commands. No account, no server, no dependencies.</p>
 
     <div style="margin-top: 40px;">
       <div class="tabs" role="tablist" aria-label="choose your tool">
@@ -388,17 +645,17 @@ footer.site {
             <li><b>Create a loop</b> from a template — or let bare <code>docket new</code> walk you through the five layers step by step.</li>
             <li><b>Compile</b> — your rules land in CLAUDE.md, which Claude Code already reads.</li>
             <li><b>Optional:</b> add the MCP server so Claude checks warrants and writes the record itself.</li>
-            <li><b>Optional:</b> wire <code>docket hook</code> as a PreToolUse hook — the harness enforces allow/ask/deny on every tool call, whether or not the model cooperates.</li>
+            <li><b>Optional:</b> wire <code>docket hook claude</code> into PreToolUse — the harness enforces allow/ask/deny on every tool call, and denied calls are <b>mechanically blocked</b>, whether or not the model cooperates.</li>
           </ol>
           <div class="codeblock"><button class="copy" type="button">copy</button><pre>npx docket-agent init
-npx docket-agent new appeal --template insurance-appeal
+npx docket-agent new hotfix --template prod-hotfix
 npx docket-agent compile --target claude --write
 <span class="c"># optional — native tools for checks + record:</span>
 claude mcp add docket -- npx docket-agent mcp
 <span class="c"># optional — enforce the warrant (.claude/settings.json):</span>
-<span class="c">#   hooks.PreToolUse: npx -y docket-agent hook --loop appeal</span></pre></div>
+<span class="c">#   hooks.PreToolUse: npx -y docket-agent hook claude --loop hotfix</span></pre></div>
         </div>
-        <p class="after">That’s it — Claude now starts every session knowing the rules, and asks before anything you didn’t allow. With the hook, the warrant isn’t advice — it’s the harness’s own permission decision.</p>
+        <p class="after">That’s it — Claude starts every session knowing the rules, and asks before anything you didn’t allow. With the hook installed, the warrant isn’t advice — it’s the harness’s own permission decision, and a denied call <em>can’t</em> run.</p>
       </div>
 
       <div class="panel" id="panel-chatgpt" role="tabpanel">
@@ -437,7 +694,7 @@ npx docket-agent compile --target gemini --write</pre></div>
             <li><b>Done.</b> Cursor’s agent sees the warrant on every request.</li>
           </ol>
           <div class="codeblock"><button class="copy" type="button">copy</button><pre>npx docket-agent init
-npx docket-agent new appeal --template insurance-appeal
+npx docket-agent new hotfix --template prod-hotfix
 npx docket-agent compile --target cursor --write</pre></div>
         </div>
         <p class="after">Commit <code>.docket/</code> and the compiled rules — your whole team inherits them.</p>
@@ -478,7 +735,7 @@ npx docket-agent compile --target agents --write
         <div class="steps-mini">
           <ol>
             <li><b>Add one entry</b> to your client’s MCP config.</li>
-            <li><b>The agent gets four tools:</b> list loops, fetch context, check a warrant, write the record.</li>
+            <li><b>The agent gets five tools:</b> list loops, route a task to its loop, fetch context, check a warrant, write the record.</li>
             <li><b>Every check it makes is logged</b> — “did the agent even ask?” becomes a grep.</li>
           </ol>
           <div class="codeblock"><button class="copy" type="button">copy</button><pre>{ "mcpServers": { "docket": {
@@ -487,68 +744,6 @@ npx docket-agent compile --target agents --write
              "--dir", "/path/to/your/project"] } } }</pre></div>
         </div>
         <p class="after">Works with Claude Desktop, and any other MCP-capable client.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="how">
-  <div class="wrap">
-    <span class="klabel"><span class="tick">■</span> How it works</span>
-    <h2>One page of rules. One verdict per action. One record of everything.</h2>
-    <div class="steps" style="margin-top: 48px;">
-      <div class="step">
-        <div class="n">01</div>
-        <h3>Write the rules once</h3>
-        <p>One Markdown file per recurring task: what the agent must know, how the job is
-        done, what it may do alone, what stays human. Plain English — no DSL.</p>
-        <div class="mini"><b>warrant:</b>
-  read:  [policy documents]
-  draft: [appeal letter]
-  send:  []
-  never: [accepting a settlement]</div>
-      </div>
-      <div class="step">
-        <div class="n">02</div>
-        <h3>The agent must check first</h3>
-        <p>Before acting, it gets a deterministic verdict. Not listed? It asks.
-        Marked never? Denied — even with approval. No guessing, ever. In Claude
-        Code, the PreToolUse hook enforces the verdict even if the agent never
-        checks.</p>
-        <div class="mini">$ docket check appeal draft "letter"
-<span class="ga">ALLOW</span>  within the draft warrant
-$ docket check appeal send "email"
-<span class="ya">ASK</span>    unlisted means ask
-$ docket check appeal change "settle"
-<span class="ra">DENY</span>   hard stop</div>
-      </div>
-      <div class="step">
-        <div class="n">03</div>
-        <h3>Everything lands on the record</h3>
-        <p>Checks and completed work append to a hash-chained log. Any edit, deletion, or
-        reorder breaks the chain at the exact entry. Proof, not trust.</p>
-        <div class="mini">$ docket record verify
-<span class="ga">✓ chain intact</span> — 4 entries
-  head: sha256:fd4394fc…</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="cases">
-  <div class="wrap">
-    <span class="klabel"><span class="tick">■</span> What people run</span>
-    <h2>Seven ready-made loops. Real work, hard stops.</h2>
-    <div style="margin-top: 44px;">
-      <div class="cases-head"><span>Loop</span><span>The agent handles alone</span><span>It always stops before</span></div>
-      <div class="cases">
-        <div class="case"><span class="name">insurance-appeal</span><span class="does"><b>✓</b> reads the policy, drafts the appeal, builds the evidence packet</span><span class="stops"><b>■</b> anything sent to the insurer; settlement decisions are never</span></div>
-        <div class="case"><span class="name">client-follow-up</span><span class="does"><b>✓</b> reconstructs history, drafts the email in approved language</span><span class="stops"><b>■</b> anything the client sees; invented discounts are never</span></div>
-        <div class="case"><span class="name">weekly-planning</span><span class="does"><b>✓</b> drafts the week, names every tradeoff</span><span class="stops"><b>■</b> moving any meeting; family time and workouts are never</span></div>
-        <div class="case"><span class="name">marketing-brain</span><span class="does"><b>✓</b> drafts from messaging that already worked</span><span class="stops"><b>■</b> publishing; invented quotes and statistics are never</span></div>
-        <div class="case"><span class="name">ticket-handoff</span><span class="does"><b>✓</b> writes tickets a stranger can pick up cold</span><span class="stops"><b>■</b> assigning people; deleting tickets is never</span></div>
-        <div class="case"><span class="name">travel-morning</span><span class="does"><b>✓</b> plans around your rules, with a rain backup</span><span class="stops"><b>■</b> bookings; nonrefundable anything is never</span></div>
-        <div class="case"><span class="name">cross-tool-memory</span><span class="does"><b>✓</b> keeps one context current across every AI tool</span><span class="stops"><b>■</b> widening its own permissions; secrets, git hooks, and CI jobs are never</span></div>
       </div>
     </div>
   </div>
@@ -605,53 +800,6 @@ $ docket check appeal change "settle"
   </div>
 </section>
 
-<section id="record">
-  <div class="wrap">
-    <span class="klabel"><span class="tick">■</span> The record</span>
-    <div class="record-grid" style="margin-top: 26px;">
-      <div class="record-copy">
-        <h2 style="margin-top: 0;">Try to falsify it.</h2>
-        <p style="margin-top: 16px;">Every entry commits cryptographically to the one before it.
-        Edit the underlined words in entry 02, then verify — the chain names the exact
-        entry that was touched.</p>
-        <p><b>This is the difference between “the agent says it asked” and proof that it
-        did.</b> The log is a plain JSONL file in your repo: grep it, commit it, hand it
-        to an audit — but never quietly rewrite it.</p>
-        <p>And the record feeds back: <code>docket review</code> finds the actions your
-        agent kept asking about and proposes the exact rule updates — <b>you approve
-        each one</b>, and the approval is logged too. The rules improve weekly; the
-        agent never widens its own permissions.</p>
-      </div>
-      <div class="ledger" id="ledger">
-        <span class="tamper-flag" aria-hidden="true">Tampered</span>
-        <div class="ledger-head"><span>No</span><span>Entry</span><span class="h-hash">Hash</span></div>
-        <div class="ledger-row" data-seq="1">
-          <span class="seq">01</span>
-          <span class="what"><span class="v allow">allow</span> draft → “appeal letter”</span>
-          <span class="hash"></span>
-        </div>
-        <div class="ledger-row" data-seq="2">
-          <span class="seq">02</span>
-          <span class="what">did: <span contenteditable="true" spellcheck="false" id="editable">drafted appeal citing §4.2(b)</span> · stopped: before send</span>
-          <span class="hash"></span>
-        </div>
-        <div class="ledger-row" data-seq="3">
-          <span class="seq">03</span>
-          <span class="what"><span class="v ask">ask</span> send → “appeal email to the insurer”</span>
-          <span class="hash"></span>
-        </div>
-        <div class="ledger-foot">
-          <span id="verify-out" role="status"></span>
-          <div class="actions">
-            <button type="button" id="verify-btn">docket record verify</button>
-            <button type="button" id="restore-btn">restore</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <div class="closing">
   <div class="wrap">
     <h2>Put your agent on the record.</h2>
@@ -674,6 +822,8 @@ $ docket check appeal change "settle"
 
 <script>
 (function () {
+  var noMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   // ── hero verdict widget ──
   var buttons = [].slice.call(document.querySelectorAll('.acts button'));
   var vWord = document.getElementById('v-word');
@@ -685,11 +835,24 @@ $ docket check appeal change "settle"
     var v = btn.getAttribute('data-v');
     vWord.textContent = WORDS[v];
     vWord.className = 'word ' + v;
+    void vWord.offsetWidth; // restart the stamp animation
+    vWord.classList.add('stamp');
     vWhy.textContent = btn.getAttribute('data-why');
     vCli.innerHTML = '<b>$ ' + btn.getAttribute('data-cmd').replace(/</g, '&lt;') + '</b> · exit ' + (v === 'allow' ? 0 : v === 'ask' ? 2 : 3);
   }
-  buttons.forEach(function (b) { b.addEventListener('click', function () { select(b); }); });
-  select(buttons[1]); // lead with the story: sending asks
+  // The demo plays itself — draft allows, send asks, settle denies — until
+  // the visitor takes over. The pitch is the product doing its job on loop.
+  var demoIdx = 0, demoTimer = null;
+  function stopDemo() { if (demoTimer) { clearInterval(demoTimer); demoTimer = null; } }
+  buttons.forEach(function (b) { b.addEventListener('click', function () { stopDemo(); select(b); }); });
+  select(buttons[0]);
+  if (!noMotion && buttons.length) {
+    demoTimer = setInterval(function () {
+      if (document.hidden) return;
+      demoIdx = (demoIdx + 1) % buttons.length;
+      select(buttons[demoIdx]);
+    }, 2800);
+  }
 
   // ── tool tabs ──
   var tabs = [].slice.call(document.querySelectorAll('.tabs [role="tab"]'));
@@ -763,6 +926,59 @@ $ docket check appeal change "settle"
   document.getElementById('verify-btn').addEventListener('click', function () { render(false); });
   document.getElementById('restore-btn').addEventListener('click', function () { editable.textContent = initialText; render(true); });
   render(true);
+
+  // ── theme toggle ──
+  var rootEl = document.documentElement;
+  var themeBtn = document.querySelector('.theme-btn');
+  function currentTheme() {
+    return rootEl.getAttribute('data-theme') ||
+      (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  }
+  if (themeBtn) themeBtn.addEventListener('click', function () {
+    var next = currentTheme() === 'dark' ? 'light' : 'dark';
+    rootEl.setAttribute('data-theme', next);
+    try { localStorage.setItem('docket-theme', next); } catch (e) {}
+  });
+
+  // ── mobile menu ──
+  var nav = document.getElementById('topnav');
+  var menuBtn = document.querySelector('.menu-btn');
+  if (nav && menuBtn) {
+    menuBtn.addEventListener('click', function () {
+      var open = nav.classList.toggle('open');
+      menuBtn.setAttribute('aria-expanded', String(open));
+      menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    });
+    [].slice.call(nav.querySelectorAll('.links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        nav.classList.remove('open');
+        menuBtn.setAttribute('aria-expanded', 'false');
+        menuBtn.setAttribute('aria-label', 'Open menu');
+      });
+    });
+  }
+
+  // ── keep the active tool tab in view on small screens ──
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () {
+      if (t.scrollIntoView) t.scrollIntoView({ block: 'nearest', inline: 'center', behavior: noMotion ? 'auto' : 'smooth' });
+    });
+  });
+
+  // ── reveal on scroll ──
+  if (!noMotion && 'IntersectionObserver' in window) {
+    var revealEls = [].slice.call(document.querySelectorAll('.hero-grid > *, section .wrap > *, .closing .wrap > *'));
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
+    revealEls.forEach(function (el, i) {
+      el.classList.add('reveal');
+      el.style.setProperty('--rd', (i % 3) * 70 + 'ms');
+      io.observe(el);
+    });
+  }
 })();
 </script>
 </body>

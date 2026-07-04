@@ -2,10 +2,13 @@
 name: cross-tool-memory
 description: One context you own, readable from Claude, GPT, Kimi, or Codex — a model switch is a recompile, not a re-teach.
 version: 1
+triggers:
+  - update the shared memory, remember this across tools
+  - regenerate CLAUDE.md, AGENTS.md, or rules files
 warrant:
   read:
     - the loops in this .docket directory
-    - CLAUDE.md, AGENTS.md, and other rules files
+    - CLAUDE.md, AGENTS.md, and rules files
   draft:
     - updates to loop brief sections
     - compiled context blocks

@@ -7,14 +7,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runTamper } from '../eval/tamper.js';
 
+// Deterministic — run the 239-mutation torture once, assert on the shared result.
+const r = runTamper();
+
 test('every tampering attempt is detected with a pinned head', () => {
-  const r = runTamper();
   assert.ok(r.total > 200, 'the mutation generator must not quietly shrink');
   assert.equal(r.detectedWithHead, r.total);
 });
 
 test('interior tampers are caught by the chain alone — no head needed', () => {
-  const r = runTamper();
   // Only tail-rewrite/truncation classes may depend on the pinned head.
   for (const [kind, k] of Object.entries(r.byKind)) {
     const headDependent = k.total - k.chainAlone;

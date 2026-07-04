@@ -74,14 +74,32 @@ test('initialize, list tools, check boundary, leave receipt', async () => {
         arguments: { loop: 'appeal', did: 'drafted appeal', stopped: 'before send' },
       },
     },
+    {
+      jsonrpc: '2.0',
+      id: 5,
+      method: 'tools/call',
+      params: {
+        name: 'docket_match_loop',
+        arguments: { intent: 'draft an appeal for the denied claim' },
+      },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 6,
+      method: 'tools/call',
+      params: { name: 'docket_match_loop', arguments: { intent: 'wire funds to a vendor' } },
+    },
   ]);
 
   const byId = Object.fromEntries(responses.map((r) => [r.id, r]));
   assert.equal(byId[1].result.serverInfo.name, 'docket');
-  assert.equal(byId[2].result.tools.length, 4);
+  assert.equal(byId[2].result.tools.length, 5);
   assert.match(byId[3].result.content[0].text, /verdict: ask/);
   assert.match(byId[3].result.content[0].text, /STOP/);
   assert.match(byId[4].result.content[0].text, /record #\d+ appended/);
+  assert.match(byId[5].result.content[0].text, /1\. appeal/);
+  assert.match(byId[5].result.content[0].text, /docket_loop_context/);
+  assert.match(byId[6].result.content[0].text, /No loop covers/);
 
   // Both the check and the note landed in the chain, verifiably.
   const verify = execFileSync(process.execPath, [BIN, 'record', 'verify'], {

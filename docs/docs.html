@@ -2,9 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>docket docs — how it works</title>
 <meta name="description" content="Full documentation for docket: concepts, loop file reference, the verdict algorithm, the record, review, compile targets, MCP server, CLI reference, and per-tool setup.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121316" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="docket docs — how it works">
+<meta property="og:description" content="Full documentation for docket: concepts, loop files, the verdict algorithm, the record, compile targets, MCP server, and CLI reference.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://shahcolate.github.io/docket/docs.html">
+<script>(function(){try{var t=localStorage.getItem('docket-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <style>
 :root {
   --bg: #FFFFFF; --bg-2: #F6F6F7; --ink: #131417; --mut: #55585F; --faint: #8B8E96;
@@ -38,44 +48,109 @@
 }
 
 * { box-sizing: border-box; margin: 0; }
-html { scroll-behavior: smooth; scroll-padding-top: 24px; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+html { scroll-behavior: smooth; scroll-padding-top: 88px; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition: none !important; animation: none !important; } }
 body {
   background: var(--bg); color: var(--ink);
   font-family: var(--sans); font-size: 16.5px; line-height: 1.65;
-  -webkit-font-smoothing: antialiased;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
 }
+::selection { background: var(--red); color: #FFFFFF; }
 a { color: inherit; text-decoration-color: var(--hair-2); text-underline-offset: 3px; }
+a, button { transition: color .16s ease, background-color .16s ease, border-color .16s ease, text-decoration-color .16s ease; }
 a:hover { text-decoration-color: var(--red); }
-a:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
 code { font-family: var(--mono); font-size: 0.85em; background: var(--bg-2); padding: 1px 5px; border: 1px solid var(--hair); }
 pre { font-family: var(--mono); }
 pre code { background: none; border: none; padding: 0; }
 
 .frame { max-width: 1200px; margin: 0 auto; padding: 0 28px; }
-@media (max-width: 640px) { .frame { padding: 0 16px; } }
-
-nav.top {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 20px 0; border-bottom: 1px solid var(--hair);
+@media (max-width: 640px) {
+  body { font-size: 16px; }
+  .frame { padding: 0 max(18px, env(safe-area-inset-right)) 0 max(18px, env(safe-area-inset-left)); }
 }
-.wordmark { font-weight: 800; font-size: 19px; letter-spacing: -0.02em; text-decoration: none; }
+
+.nav-shell { position: sticky; top: 0; z-index: 60; background: var(--bg); border-bottom: 1px solid var(--hair); }
+@supports ((backdrop-filter: blur(1px)) and (background: color-mix(in srgb, red 50%, blue))) {
+  .nav-shell {
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6);
+  }
+}
+nav.top { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 15px 0; }
+.wordmark { font-weight: 800; font-size: 19px; letter-spacing: -0.02em; text-decoration: none; white-space: nowrap; }
 .wordmark::after { content: "."; color: var(--red); }
 .wordmark span { color: var(--faint); font-weight: 600; }
-nav.top .links { display: flex; gap: 22px; align-items: center; font-size: 14px; font-weight: 600; }
-nav.top .links a { text-decoration: none; color: var(--mut); }
+.nav-right { display: flex; align-items: center; gap: 20px; }
+nav.top .links { display: flex; gap: 24px; align-items: center; font-size: 14px; font-weight: 600; }
+nav.top .links a { text-decoration: none; color: var(--mut); padding: 6px 0; }
 nav.top .links a:hover { color: var(--ink); }
+nav.top .links a[aria-current="page"] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--red); }
+.nav-right .gh {
+  font-size: 14px; font-weight: 600; text-decoration: none;
+  color: var(--bg); background: var(--ink); padding: 9px 16px; white-space: nowrap;
+}
+.nav-right .gh:hover { background: var(--red); }
+.theme-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; padding: 0; cursor: pointer;
+  background: transparent; border: 1px solid var(--hair-2); color: var(--mut);
+}
+.theme-btn:hover { color: var(--ink); border-color: var(--ink); }
+.theme-btn svg { width: 15px; height: 15px; display: block; }
+.menu-btn { display: none; }
+@media (max-width: 720px) {
+  nav.top { padding: 12px 0; }
+  .nav-right { gap: 10px; }
+  .nav-right .gh { font-size: 13px; padding: 10px 13px; }
+  .menu-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; padding: 0; cursor: pointer;
+    background: transparent; border: 1.5px solid var(--ink); color: var(--ink);
+  }
+  .menu-btn svg { width: 17px; height: 17px; display: block; }
+  .menu-btn .ic-close { display: none; }
+  nav.top.open .menu-btn .ic-menu { display: none; }
+  nav.top.open .menu-btn .ic-close { display: block; }
+  nav.top .links {
+    display: none; position: absolute; left: 0; right: 0; top: 100%;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--bg); border-bottom: 1.5px solid var(--ink);
+    padding: 4px max(18px, env(safe-area-inset-right)) 14px max(18px, env(safe-area-inset-left));
+  }
+  nav.top.open .links { display: flex; }
+  nav.top .links a { font-size: 16px; font-weight: 600; padding: 14px 2px; border-bottom: 1px solid var(--hair); }
+  nav.top .links a:last-child { border-bottom: none; }
+  nav.top .links a[aria-current="page"] { box-shadow: inset 3px 0 0 var(--red); padding-left: 12px; }
+}
 
 .layout { display: grid; grid-template-columns: 250px 1fr; gap: 56px; padding: 40px 0 100px; }
-@media (max-width: 900px) { .layout { grid-template-columns: 1fr; gap: 24px; } }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; gap: 28px; padding: 28px 0 80px; } }
+.layout > * { min-width: 0; }
 
 /* ── sidebar ── */
-.side { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; padding: 16px 0 40px; }
-@media (max-width: 900px) { .side { position: static; max-height: none; border: 1px solid var(--hair); padding: 16px; } }
+.side { position: sticky; top: 84px; align-self: start; max-height: calc(100vh - 104px); overflow-y: auto; padding: 16px 0 40px; }
+.side .toc summary { display: none; }
 .side .group { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); margin: 22px 0 8px; }
 .side .group:first-child { margin-top: 0; }
-.side a { display: block; font-size: 14px; color: var(--mut); text-decoration: none; padding: 4px 0 4px 12px; border-left: 2px solid var(--hair); }
+.side a { display: block; font-size: 14px; color: var(--mut); text-decoration: none; padding: 5px 0 5px 12px; border-left: 2px solid var(--hair); }
 .side a:hover { color: var(--ink); border-left-color: var(--red); }
+.side a.active { color: var(--ink); border-left-color: var(--red); font-weight: 600; }
+@media (max-width: 900px) {
+  .side { position: static; max-height: none; padding: 0; overflow: visible; }
+  .side .toc { border: 1.5px solid var(--ink); }
+  .side .toc summary {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    cursor: pointer; list-style: none; padding: 14px 16px; min-height: 48px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink);
+  }
+  .side .toc summary::-webkit-details-marker { display: none; }
+  .side .toc summary::after { content: "+"; font-size: 18px; line-height: 1; color: var(--red); }
+  .side .toc[open] summary::after { content: "–"; }
+  .side .toc[open] summary { border-bottom: 1px solid var(--hair); }
+  .side .toc-body { padding: 14px 16px 16px; }
+  .side a { padding: 7px 0 7px 12px; font-size: 14.5px; }
+}
 
 /* ── content ── */
 .doc h1 { font-size: clamp(30px, 4vw, 42px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.08; margin: 10px 0 14px; }
@@ -95,7 +170,9 @@ nav.top .links a:hover { color: var(--ink); }
   background: var(--term-bg); color: var(--term-ink);
   padding: 16px 18px; margin: 16px 0; overflow-x: auto;
   font-size: 12.5px; line-height: 1.8;
+  -webkit-overflow-scrolling: touch;
 }
+@media (max-width: 640px) { .doc .code { padding: 14px 15px; font-size: 12px; } }
 .doc .code .c { color: var(--term-dim); }
 .doc .code .g { color: #6CC993; font-weight: 700; }
 .doc .code .y { color: #E3BC61; font-weight: 700; }
@@ -106,7 +183,8 @@ nav.top .links a:hover { color: var(--ink); }
 .doc td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--hair); color: var(--mut); vertical-align: top; }
 .doc td:first-child { white-space: nowrap; }
 .doc td b { color: var(--ink); }
-.table-scroll { overflow-x: auto; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media (max-width: 640px) { .doc table { font-size: 14px; } .doc section { margin-top: 44px; } }
 
 .callout { border: 1px solid var(--hair-2); border-left: 3px solid var(--red); padding: 14px 18px; margin: 18px 0; font-size: 15px; color: var(--mut); max-width: 68ch; }
 .callout b { color: var(--ink); }
@@ -118,40 +196,61 @@ nav.top .links a:hover { color: var(--ink); }
 </head>
 <body>
 
+<div class="nav-shell">
 <div class="frame">
-<nav class="top">
+<nav class="top" id="topnav">
   <a class="wordmark" href="index.html">docket<span>&thinsp;/&thinsp;docs</span></a>
-  <div class="links">
-    <a href="index.html">Home</a>
-    <a href="about.html">About</a>
-    <a href="https://github.com/shahcolate/docket/blob/main/spec/SPEC.md">Spec</a>
-    <a href="https://github.com/shahcolate/docket">GitHub</a>
+  <div class="nav-right">
+    <div class="links" id="site-nav">
+      <a href="index.html">Home</a>
+      <a href="docs.html" aria-current="page">Docs</a>
+      <a href="about.html">About</a>
+      <a href="https://github.com/shahcolate/docket/blob/main/spec/SPEC.md">Spec</a>
+    </div>
+    <button class="theme-btn" type="button" aria-label="Toggle dark mode">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>
+    </button>
+    <a class="gh" href="https://github.com/shahcolate/docket">GitHub&nbsp;★</a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">
+      <svg class="ic-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <svg class="ic-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
+    </button>
   </div>
 </nav>
+</div>
+</div>
 
+<div class="frame">
 <div class="layout">
 <aside class="side" aria-label="documentation navigation">
-  <div class="group">Start</div>
-  <a href="#intro">What docket is</a>
-  <a href="#quickstart">Quickstart</a>
-  <div class="group">Concepts</div>
-  <a href="#loop">Loops &amp; the five layers</a>
-  <a href="#loopfile">Writing a loop file</a>
-  <a href="#warrant">The warrant</a>
-  <a href="#record">The record</a>
-  <a href="#review">Review: iteration</a>
-  <div class="group">Using it</div>
-  <a href="#compile">Compiling to your tools</a>
-  <a href="#mcp">The MCP server</a>
-  <a href="#integrations">Per-tool setup</a>
-  <a href="#cli">CLI reference</a>
-  <div class="group">Trust</div>
-  <a href="#eval">The red-team eval</a>
-  <a href="#faq">FAQ</a>
+  <details class="toc" id="toc" open>
+    <summary>On this page</summary>
+    <div class="toc-body">
+      <div class="group">Start</div>
+      <a href="#intro">What docket is</a>
+      <a href="#quickstart">Quickstart</a>
+      <div class="group">Concepts</div>
+      <a href="#loop">Loops &amp; the five layers</a>
+      <a href="#loopfile">Writing a loop file</a>
+      <a href="#warrant">The warrant</a>
+      <a href="#record">The record</a>
+      <a href="#review">Review: iteration</a>
+      <div class="group">Using it</div>
+      <a href="#compile">Compiling to your tools</a>
+      <a href="#routing">Routing &amp; context scale</a>
+      <a href="#mcp">The MCP server</a>
+      <a href="#hooks">Hooks: hard enforcement</a>
+      <a href="#integrations">Per-tool setup</a>
+      <a href="#cli">CLI reference</a>
+      <div class="group">Trust</div>
+      <a href="#eval">The red-team eval</a>
+      <a href="#faq">FAQ</a>
+    </div>
+  </details>
 </aside>
 
 <main class="doc">
-  <span class="klabel"><span class="tick">■</span> Documentation · v0.2</span>
+  <span class="klabel"><span class="tick">■</span> Documentation · v0.3</span>
   <h1>How docket works</h1>
   <p class="lede">Everything on this page is implemented, tested, and reproducible from the
   repo. The normative format definition is the
@@ -200,7 +299,7 @@ $ docket check appeal send "appeal email to the insurer"
 $ docket check appeal change "accepting a settlement"
 <span class="r">DENY</span>  matches a hard stop. Never happens, with or without approval.</pre></div>
     <p>Run <code>docket new &lt;name&gt;</code> without a template to get the five-question
-    interview instead, and <code>docket templates</code> to list all seven starters.</p>
+    interview instead, and <code>docket templates</code> to list all eight starters.</p>
   </section>
 
   <section id="loop">
@@ -227,6 +326,9 @@ $ docket check appeal change "accepting a settlement"
     <div class="code"><pre>---
 name: insurance-appeal
 description: Build the appeal, cite the policy — stop before send.
+triggers:
+  - insurance appeal, appeal a denial
+  - denied claim, denial letter
 warrant:
   read:  [policy documents, denial letter, claim correspondence]
   draft: [appeal letter, evidence summary]
@@ -261,6 +363,9 @@ general sense of unfairness. Stop before send.</pre></div>
       small enough to audit is part of the security posture.</li>
       <li>A <code>version</code> the tool doesn’t understand is rejected, never silently
       misread.</li>
+      <li><code>triggers</code> is optional routing metadata — phrases that mark a task
+      as this loop’s job. It never grants permission; it only helps
+      <a href="#routing">routing</a> find the loop.</li>
     </ul>
   </section>
 
@@ -393,6 +498,60 @@ allow read: "state insurance regulations" in appeal? [y/N] y
     recompile, not a re-teach.</p>
   </section>
 
+  <section id="routing">
+    <h2>Routing &amp; context scale</h2>
+    <p>The full compile puts every brief and procedure in the agent’s context on every
+    turn. That stops scaling around a handful of loops — the rules start crowding out
+    the work. The fix is architectural: <b>rules scale on disk, not in context.</b></p>
+    <div class="code"><pre>$ docket compile --index --target claude --write
+<span class="g">✓</span> compiled index of 23 loops → CLAUDE.md</pre></div>
+    <p><code>--index</code> compiles the same managed block in tiers instead of in
+    full:</p>
+    <div class="table-scroll"><table>
+      <tr><th>Tier</th><th>Resident?</th><th>Grows with</th></tr>
+      <tr><td><b>protocol</b></td><td>always</td><td>nothing — find the loop, load it, check the warrant, ask when uncovered</td></tr>
+      <tr><td><b>index</b></td><td>always</td><td>one line per loop: name, description, <code>triggers</code></td></tr>
+      <tr><td><b>active loop</b></td><td>on demand</td><td>only the task at hand — <code>docket compile --loop &lt;name&gt;</code> or <code>docket_loop_context</code></td></tr>
+      <tr><td><b>enforcement</b></td><td>never</td><td>the warrant check runs <em>outside</em> the model; its verdict carries the one matched rule into the conversation exactly when it matters</td></tr>
+    </table></div>
+    <p><code>docket compile</code> prints a token estimate and suggests
+    <code>--index</code> when the full render grows past a few thousand tokens.
+    The two modes share markers, so switching replaces the block instead of stacking
+    a second one.</p>
+    <h3>Which loop covers this task?</h3>
+    <p>With only an index resident, something has to answer the routing question —
+    deterministically:</p>
+    <div class="code"><pre>$ docket match "draft an appeal for my denied claim"
+1 candidate loop for "draft an appeal for my denied claim"
+
+  appeal                 Build the appeal, cite the policy — stop before send.
+                         score 14 — name: appeal · trigger: denied claim, denial letter
+
+$ docket match "wire funds to a vendor"
+<span class="y">NO LOOP</span>  "wire funds to a vendor"
+  No loop covers this task. Work outside a loop defaults to ask</pre></div>
+    <p>Scoring is lexical and integer-weighted, reusing the warrant’s cautious matcher:
+    the loop <b>name</b> read as a phrase (+5), each author-written <b>trigger</b> (+4),
+    matching <b>warrant targets</b> (+1 each, capped), shared <b>description</b> words
+    (+1 each, capped). Candidates need a score of 3; the top few are returned for the
+    agent — or you — to make the final pick. One shared word like “email” never routes
+    on its own.</p>
+    <p>Two rules matter more than the weights:</p>
+    <ul>
+      <li><b>The asymmetry inverts at routing time.</b> The warrant matches allow-entries
+      strictly because a false allow is an incident. Routing matches generously because a
+      false candidate costs one extra index line — and a routing miss is still caught
+      downstream by the warrant.</li>
+      <li><b>Retrieval fails closed.</b> No match doesn’t mean “best guess” — it means
+      <em>no loop covers this task, ask the human</em>. <code>docket match</code> exits
+      <b>2</b> on no coverage, the same exit as an ask verdict, so hooks can gate on
+      it.</li>
+    </ul>
+    <div class="callout"><b>The shape of it:</b> the context window holds a table of
+    contents and one open chapter. The enforcement layer holds every rule, forever, at
+    zero context cost.</div>
+  </section>
+
   <section id="mcp">
     <h2>The MCP server</h2>
     <p><code>docket mcp</code> is a zero-config MCP server (stdio, newline-delimited
@@ -403,12 +562,58 @@ allow read: "state insurance regulations" in appeal? [y/N] y
     <div class="table-scroll"><table>
       <tr><th>Tool</th><th>What the agent gets</th></tr>
       <tr><td><code>docket_list_loops</code></td><td>discover the loops you’ve defined</td></tr>
+      <tr><td><code>docket_match_loop</code></td><td>route a task (in plain words) to the loop that covers it — ranked candidates with why, or a fail-closed “no loop covers this, ask”</td></tr>
       <tr><td><code>docket_loop_context</code></td><td>a loop’s five layers, before starting work</td></tr>
       <tr><td><code>docket_warrant_check</code></td><td>allow / ask / deny for a proposed action — auto-logged, with explicit STOP instructions on ask/deny</td></tr>
       <tr><td><code>docket_record</code></td><td>append evidence: saw / did / skipped / stopped / note</td></tr>
     </table></div>
     <p>Checks the agent makes over MCP land on the record with <code>via: "mcp"</code> —
     distinguishable from human CLI checks forever.</p>
+  </section>
+
+  <section id="hooks">
+    <h2>Hooks: hard enforcement</h2>
+    <p>Compiled context tells the agent the rules; MCP makes checking cheap. For the tool
+    calls you actually fear, make the warrant <b>mechanical</b>: <code>docket hook
+    claude</code> plugs into Claude Code’s permission system as a PreToolUse hook. Add to
+    <code>.claude/settings.json</code>:</p>
+    <div class="code"><pre>{
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash|Write|Edit",
+        "hooks": [{ "type": "command", "command": "npx docket-agent hook claude" }] }
+    ]
+  }
+}</pre></div>
+    <p>Every matched tool call is piped through the warrant <em>before it runs</em>:</p>
+    <div class="table-scroll"><table>
+      <tr><th>Verdict</th><th>What Claude Code does</th></tr>
+      <tr><td><span class="verdict-w d">deny</span></td><td>the call is blocked; the loop, rule, and reason go back to the model</td></tr>
+      <tr><td><span class="verdict-w k">ask</span></td><td>Claude Code prompts <em>you</em> before the call runs</td></tr>
+      <tr><td><span class="verdict-w a">allow</span></td><td><b>silence.</b> Docket emits no decision on allow — it only ever <em>tightens</em> the gate, never bypasses Claude Code’s own permission prompts</td></tr>
+    </table></div>
+    <h3>How calls map to the warrant</h3>
+    <ul>
+      <li>Read-shaped tools (<code>Read</code>, <code>Grep</code>, <code>WebFetch</code>, …)
+      check as <code>read</code>; file-writing tools (<code>Write</code>, <code>Edit</code>, …)
+      as <code>change</code>. Everything else — <code>Bash</code>, MCP tools, tools that
+      don’t exist yet — checks as <code>send</code>, the most consequential verb, so
+      unknown tools fall toward ask, never toward allow.</li>
+      <li>The target is the human part of the input (<code>Bash: git push origin main</code>,
+      <code>Write: appeal-letter.md</code>), so your warrant patterns match it in plain
+      words.</li>
+      <li>Without <code>--loop</code>, each call is <a href="#routing">routed</a> with the
+      same scoring as <code>docket match</code>; when no loop claims the call, the hook
+      stays silent and Claude Code’s own permissions decide. Pin one loop with
+      <code>--loop &lt;name&gt;</code>, or add <code>--strict</code> to turn no-coverage
+      into an ask.</li>
+      <li>Every check lands on the record with <code>via: "hook"</code> — enforcement and
+      evidence in one move. A bare hook (no <code>--loop</code>, no <code>--strict</code>)
+      in a project without a <code>.docket</code> directory costs nothing. But once you
+      pin a gate — <code>--loop</code> or <code>--strict</code> — every failure mode (a bad
+      loop name, non-JSON stdin, a missing project) fails <b>closed</b> to ask: a gate you
+      asked for never fails open.</li>
+    </ul>
   </section>
 
   <section id="integrations">
@@ -421,20 +626,9 @@ allow read: "state insurance regulations" in appeal? [y/N] y
 npx docket-agent new followup --template client-follow-up
 npx docket-agent compile --target claude --write
 <span class="c"># optional — native checks + record via MCP:</span>
-claude mcp add docket -- npx docket-agent mcp</pre></div>
-    <p>To make the warrant <em>enforced</em> rather than advisory, wire
-    <code>docket hook</code> as a PreToolUse hook in <code>.claude/settings.json</code> —
-    every intercepted tool call gets an allow/ask/deny decision from the warrant, applied
-    by the harness whether or not the model read the rules:</p>
-    <div class="code"><pre>{ "hooks": { "PreToolUse": [ {
-    "matcher": "Write|Edit|Bash|mcp__.*",
-    "hooks": [ { "type": "command",
-                 "command": "npx -y docket-agent hook --loop followup" } ] } ] } }</pre></div>
-    <p>Lookup tools map to <code>read</code>, local edits and Bash to <code>change</code>,
-    and anything unrecognized — MCP tools included — to <code>send</code>. Every failure
-    mode (bad payload, missing project, ambiguous loop) degrades to <code>ask</code>,
-    never to a silent allow. Gated calls land in the record as <code>via: "hook"</code>
-    and feed <code>docket review</code> like any other check.</p>
+claude mcp add docket -- npx docket-agent mcp
+<span class="c"># optional — hard enforcement: wire `docket hook claude` into</span>
+<span class="c"># .claude/settings.json as a PreToolUse hook (see “Hooks” above)</span></pre></div>
 
     <h3>ChatGPT · Codex</h3>
     <div class="code"><pre>npx docket-agent compile --target agents --write   <span class="c"># → AGENTS.md</span></pre></div>
@@ -484,30 +678,31 @@ npx docket-agent compile --target agents --write</pre></div>
       <tr><th>Command</th><th>Does</th></tr>
       <tr><td><code>docket init</code></td><td>create <code>.docket/</code> here (<code>--dir</code>, <code>--quiet</code>)</td></tr>
       <tr><td><code>docket new &lt;name&gt;</code></td><td>create a loop — interactive five-question interview on a TTY, <code>--template &lt;t&gt;</code> to start from a starter, <code>--blank</code> for a scaffold</td></tr>
-      <tr><td><code>docket templates</code></td><td>list the seven starter loops</td></tr>
+      <tr><td><code>docket templates</code></td><td>list the eight starter loops</td></tr>
       <tr><td><code>docket list</code></td><td>list your loops</td></tr>
       <tr><td><code>docket show &lt;loop&gt;</code></td><td>print a loop’s five layers</td></tr>
+      <tr><td><code>docket match &lt;task…&gt;</code></td><td>which loop covers this task? — ranked with why (<code>--limit N</code>); exits 0 matched / 2 no coverage</td></tr>
       <tr><td><code>docket check &lt;loop&gt; &lt;verb&gt; &lt;target…&gt;</code></td><td>verdict + rule; exits 0/2/3; logged unless <code>--no-record</code>; <code>--quiet</code> prints the bare verdict</td></tr>
       <tr><td><code>docket record add &lt;loop&gt;</code></td><td>append evidence: <code>--saw --did --skipped --stopped --note</code></td></tr>
       <tr><td><code>docket record log [loop]</code></td><td>show recent entries (<code>--n 20</code>)</td></tr>
       <tr><td><code>docket record verify</code></td><td>verify the chain end to end; <code>--head &lt;hash&gt;</code> pins against tail truncation</td></tr>
       <tr><td><code>docket review</code></td><td>propose warrant updates from repeated asks (<code>--min</code>, <code>--loop</code>, <code>--yes</code>)</td></tr>
-      <tr><td><code>docket compile</code></td><td><code>--target claude|agents|gemini|cursor|raw</code>, <code>--write</code> to update the file in place, <code>--loop</code> to preview one loop on stdout</td></tr>
+      <tr><td><code>docket compile</code></td><td><code>--target claude|agents|gemini|cursor|raw</code>, <code>--write</code> to update the file in place, <code>--loop</code> to preview one loop on stdout, <code>--index</code> to compile the routing table instead of full loops</td></tr>
       <tr><td><code>docket mcp</code></td><td>run the MCP server (<code>--dir</code> or <code>DOCKET_DIR</code> to locate the project)</td></tr>
-      <tr><td><code>docket hook</code></td><td>Claude Code PreToolUse gate: hook JSON on stdin → <code>permissionDecision</code> JSON on stdout (<code>--loop</code>, <code>--dir</code>, <code>--no-record</code>); fails toward ask, never open</td></tr>
+      <tr><td><code>docket hook claude</code></td><td>Claude Code PreToolUse hook: deny blocks, ask prompts the human, allow stays silent (<code>--loop</code> pins a loop, <code>--strict</code> asks on no coverage, <code>--dir</code> locates the project); with a gate pinned, every failure mode fails closed to ask</td></tr>
     </table></div>
   </section>
 
   <section id="eval">
     <h2>The red-team eval</h2>
-    <p>The claim “fuzzy only toward caution” is tested, not asserted — <b>10,545 checks
+    <p>The claim “fuzzy only toward caution” is tested, not asserted — <b>10,582 checks
     across six suites</b>, all deterministic, all reproducible with <code>npm run eval</code>,
     every invariant enforced in CI:</p>
     <div class="table-scroll"><table>
       <tr><th>Suite</th><th>Checks</th><th>Result</th></tr>
-      <tr><td>Behavior scenarios — real agent-overreach incidents, incl. scheduled escapes</td><td>51</td><td><b>0 silent allows</b> · 18/18 warranted work allowed</td></tr>
-      <tr><td>Adversarial phrasing — euphemism, compound intent, injection, homoglyphs</td><td>39</td><td><b>39/39 contained</b></td></tr>
-      <tr><td>Vague-target probes — every proper subset of every allow pattern</td><td>194</td><td><b>0 permissions inherited</b></td></tr>
+      <tr><td>Behavior scenarios — real agent-overreach incidents, incl. scheduled escapes</td><td>61</td><td><b>0 silent allows</b> · 21/21 warranted work allowed</td></tr>
+      <tr><td>Adversarial phrasing — euphemism, compound intent, injection, homoglyphs</td><td>42</td><td><b>42/42 contained</b></td></tr>
+      <tr><td>Vague-target probes — every proper subset of every allow pattern</td><td>218</td><td><b>0 permissions inherited</b></td></tr>
       <tr><td>Fuzzed targets — seeded, vocabulary disjoint from every allow entry</td><td>10,000</td><td><b>0 allowed</b></td></tr>
       <tr><td>Record tampering — edits, rehashes, deletions, reorders, forgeries, truncations</td><td>239</td><td><b>239/239 detected</b> with pinned head; 197 by the chain alone</td></tr>
       <tr><td>Hook gate — the live binary vs hostile PreToolUse payloads</td><td>22</td><td>14 hostile calls, <b>0 allowed</b> · 3/3 benign allowed · <b>0 fail-open</b></td></tr>
@@ -529,19 +724,19 @@ npx docket-agent compile --target agents --write</pre></div>
     <p>Three layers, in increasing strength: the compiled context tells it the rules
     (models follow explicit written boundaries far better than vibes); the MCP tools make
     checking cheap and logged, so skipping the check is visible in the record; and
-    <code>docket hook</code> makes it <em>mechanical</em> — as a Claude Code PreToolUse
-    hook, the harness applies the warrant's allow/ask/deny to every intercepted tool
-    call, whether or not the model cooperates. (The exit codes of <code>docket
-    check</code> — 0/2/3 — let you build the same guard into any other agent's hook
-    system.) Advisory for cooperative agents, enforced where it counts.</p>
+    <a href="#hooks"><code>docket hook claude</code></a> makes it <em>mechanical</em> —
+    Claude Code pipes tool calls through the warrant before they run, blocking on deny
+    and prompting you on ask. On other agents, the exit codes give you the same lever:
+    wrap risky tools in a shell guard that calls <code>docket check</code> and refuses on
+    exit 2/3. Advisory for cooperative agents, enforceable where it counts.</p>
     <h3>Why not just a sandbox?</h3>
-    <p>Use one — they're complementary layers. A sandbox bounds <em>damage</em>: what the
+    <p>Use one — they’re complementary layers. A sandbox bounds <em>damage</em>: what the
     process can physically reach. Docket bounds <em>authority</em>: what the agent was
-    allowed to do, and whether you can prove what it did. A sandbox can't tell the
+    allowed to do, and whether you can prove what it did. A sandbox can’t tell the
     authorized email from the unauthorized one — both are legitimate traffic through the
     proxy. And the failure that connects the layers is the scheduled escape: an action
     that looks contained inside the session and detonates after it (a planted git hook, a
-    queued send). That's a scenario family in the eval, a <code>never</code> in the
+    queued send). That’s a scenario family in the eval, a <code>never</code> in the
     templates, and a rule in the spec.</p>
     <h3>Can the record be faked?</h3>
     <p>Edits, deletions, insertions, and reordering break the hash chain at a named
@@ -563,11 +758,84 @@ npx docket-agent compile --target agents --write</pre></div>
 </main>
 </div>
 
-<footer style="border-top:1px solid var(--hair); padding: 24px 0 48px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; font-size:13px; color:var(--faint);">
+<footer style="border-top:1px solid var(--hair); padding: 24px 0 max(48px, env(safe-area-inset-bottom)); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; font-size:13px; color:var(--faint);">
   <span>MIT · zero dependencies · plain files, forever</span>
   <span><a href="index.html">docket home</a> · <a href="https://github.com/shahcolate/docket">GitHub</a></span>
 </footer>
 </div>
 
+<script>
+(function () {
+  // ── theme toggle ──
+  var rootEl = document.documentElement;
+  var themeBtn = document.querySelector('.theme-btn');
+  function currentTheme() {
+    return rootEl.getAttribute('data-theme') ||
+      (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  }
+  if (themeBtn) themeBtn.addEventListener('click', function () {
+    var next = currentTheme() === 'dark' ? 'light' : 'dark';
+    rootEl.setAttribute('data-theme', next);
+    try { localStorage.setItem('docket-theme', next); } catch (e) {}
+  });
+
+  // ── mobile menu ──
+  var nav = document.getElementById('topnav');
+  var menuBtn = document.querySelector('.menu-btn');
+  if (nav && menuBtn) {
+    menuBtn.addEventListener('click', function () {
+      var open = nav.classList.toggle('open');
+      menuBtn.setAttribute('aria-expanded', String(open));
+      menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    });
+    [].slice.call(nav.querySelectorAll('.links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        nav.classList.remove('open');
+        menuBtn.setAttribute('aria-expanded', 'false');
+        menuBtn.setAttribute('aria-label', 'Open menu');
+      });
+    });
+  }
+
+  // ── contents: collapsed by default on small screens, always open on desktop ──
+  var toc = document.getElementById('toc');
+  var mobile = window.matchMedia ? matchMedia('(max-width: 900px)') : null;
+  if (toc && mobile) {
+    if (mobile.matches) toc.removeAttribute('open');
+    var onChange = function (m) { if (!m.matches) toc.setAttribute('open', ''); };
+    if (mobile.addEventListener) mobile.addEventListener('change', onChange);
+    [].slice.call(toc.querySelectorAll('a')).forEach(function (a) {
+      a.addEventListener('click', function () { if (mobile.matches) toc.removeAttribute('open'); });
+    });
+  }
+
+  // ── scroll-spy: highlight the section being read ──
+  var links = [].slice.call(document.querySelectorAll('.side a[href^="#"]'));
+  var byId = {};
+  links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+  var sections = [].slice.call(document.querySelectorAll('main.doc section[id]'));
+  if (sections.length && links.length) {
+    var active = null;
+    var ticking = false;
+    function updateSpy() {
+      ticking = false;
+      var y = window.scrollY + 140;
+      var current = sections[0];
+      for (var i = 0; i < sections.length; i++) {
+        if (sections[i].getBoundingClientRect().top + window.scrollY <= y) current = sections[i];
+      }
+      var link = byId[current.id];
+      if (!link || link === active) return;
+      if (active) active.classList.remove('active');
+      active = link;
+      active.classList.add('active');
+    }
+    window.addEventListener('scroll', function () {
+      if (!ticking) { ticking = true; requestAnimationFrame(updateSpy); }
+    }, { passive: true });
+    updateSpy();
+  }
+})();
+</script>
 </body>
 </html>

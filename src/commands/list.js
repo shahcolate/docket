@@ -34,7 +34,11 @@ export function cmdShow(argv) {
     console.log();
   };
 
-  console.log(`${bold(cyan(loop.name))} — ${loop.description}\n${dim(loop.file)}\n`);
+  console.log(`${bold(cyan(loop.name))} — ${loop.description}\n${dim(loop.file)}`);
+  if (loop.triggers.length) {
+    console.log(dim(`triggers: ${loop.triggers.join(' · ')}`));
+  }
+  console.log();
   section('Brief — what it knows before it starts', loop.brief);
   section('Procedure — how the work is done', loop.procedure);
 

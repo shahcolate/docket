@@ -25,26 +25,31 @@ const STOPWORDS = new Set([
   'a', 'an', 'the', 'any', 'anything', 'anyone', 'this', 'that', 'these', 'those',
   'to', 'of', 'for', 'with', 'without', 'on', 'in', 'at', 'by', 'about', 'into',
   'it', 'its', 'is', 'are', 'be', 'will', 'even', 'my', 'your', 'our', 'their',
-  'or', 'and',
+  'or', 'and', 'then', 'also', 'other',
 ]);
 
 // Light stemming, candidate-set style: two words match when any of their
 // suffix-stripped forms coincide ("quotes"→{quote,quot} meets "quote"→{quote},
-// "contacting" meets "contact"). Stripping -ing/-ed also restores a trailing
-// "e" ("scheduled"→{…,schedul,schedule} meets "schedule") — inflection must
-// not decide permission. No dictionary — just enough to keep phrasing from
-// deciding permission.
+// "contacting" meets "contact", "suggestion" meets "suggested"). Stripping
+// -ing/-ed also restores a trailing "e" ("scheduled"→{…,schedul,schedule}
+// meets "schedule") — inflection must not decide permission. No dictionary —
+// just enough to keep phrasing from deciding permission. Memoized: the fuzz
+// suite alone compares tens of thousands of word pairs.
+const STEM_CACHE = new Map();
 function stemCandidates(word) {
+  const hit = STEM_CACHE.get(word);
+  if (hit) return hit;
   const c = new Set([word]);
   const base = word.replace(/'s$/, '');
   c.add(base);
-  for (const suffix of ['ing', 'ed', 'es', 's']) {
+  for (const suffix of ['ing', 'ed', 'es', 's', 'ion']) {
     if (base.endsWith(suffix) && base.length - suffix.length >= 3) {
       const stem = base.slice(0, -suffix.length);
       c.add(stem);
       if (suffix === 'ing' || suffix === 'ed') c.add(stem + 'e');
     }
   }
+  STEM_CACHE.set(word, c);
   return c;
 }
 
@@ -107,6 +112,35 @@ function firstMatch(patterns, target, opts) {
   return null;
 }
 
+// Strict allow demands FULL coverage, clause by clause. A target splits on
+// conjunctions and command separators; every clause that carries content
+// words must independently cover an allow alternative. This closes the
+// free-rider gap: "the appeal letter, then fax it to the adjuster" cannot
+// ride the allow entry for "appeal letter" — the uncovered clause drops the
+// whole target to ask. Evasion can only reduce coverage, and less coverage
+// means ask, never allow.
+const CLAUSE_SPLIT = /\s*(?:,|;|&&|\|\|)\s*|\s+(?:and|or|then|plus)\s+/;
+
+export function clauses(target) {
+  return target
+    .split(CLAUSE_SPLIT)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function coveringAllow(patterns, target) {
+  const parts = clauses(target).filter((c) => contentWords(c.toLowerCase()).length > 0);
+  // No content-bearing clause (pure filler/symbols): whole-target match only.
+  if (!parts.length) return firstMatch(patterns, target, { strict: true });
+  let rule = null;
+  for (const part of parts) {
+    const m = firstMatch(patterns, part, { strict: true });
+    if (!m) return null;
+    rule ??= m;
+  }
+  return rule;
+}
+
 export function checkWarrant(loop, action, target) {
   if (!ACTIONS.includes(action)) {
     throw new Error(`unknown action "${action}" — actions are: ${ACTIONS.join(', ')}`);
@@ -131,12 +165,24 @@ export function checkWarrant(loop, action, target) {
     };
   }
 
-  const allow = firstMatch(b[action], target, { strict: true });
+  const allow = coveringAllow(b[action], target);
   if (allow) {
     return {
       verdict: 'allow',
       rule: `${action}: ${allow}`,
       reason: `"${target}" is within the ${action} warrant.`,
+    };
+  }
+
+  // Distinguish "partially warranted" from "unlisted": if part of the target
+  // matched an allow entry but another clause did not, say so — the agent
+  // learns to split the work, not to rephrase it.
+  const partial = firstMatch(b[action], target, { strict: true });
+  if (partial) {
+    return {
+      verdict: 'ask',
+      rule: `partial: ${action}: ${partial}`,
+      reason: `part of "${target}" is within the ${action} warrant (${partial}), but the rest is not — every clause must be covered. Split the warranted part out, or ask.`,
     };
   }
 

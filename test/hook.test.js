@@ -1,151 +1,210 @@
-// End-to-end tests for `docket hook`, the Claude Code PreToolUse gate: run
-// the real binary with a hook payload on stdin, assert on the JSON decision.
-// The invariant under test everywhere: no failure mode ever fails open.
+// PreToolUse hook test: pipe real hook-event JSON into `docket hook claude`.
+//
+// The contract under test: silent on allow (docket only tightens, never
+// bypasses Claude Code's own permissions), decision JSON on ask/deny, loop
+// routing when no --loop is pinned — and once the config expresses gating
+// intent (--loop or --strict), every failure mode fails CLOSED to ask.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { spawnSync, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { describeTarget } from '../src/commands/hook.js';
+import { readLastRecord } from '../src/lib/record.js';
 
 const BIN = new URL('../bin/docket.js', import.meta.url).pathname;
+const ENV = { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0' };
+delete ENV.DOCKET_DIR;
 
-const LOOP = `---
-name: repo-work
-description: gated repo work for the hook tests
-version: 1
-warrant:
-  read:
-    - "*docs/*"
-  change:
-    - "*README.md*"
-  send: []
-  ask:
-    - anything in src
-  never:
-    - git hooks, CI workflows, or scheduled jobs
----
-
-# Brief
-
-Hook test loop.
-
-# Procedure
-
-Gate everything.
-`;
-
-function project(extraLoops = {}) {
+function setupProject(template = 'insurance-appeal', name = 'appeal') {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-hook-'));
-  fs.mkdirSync(path.join(dir, '.docket', 'loops'), { recursive: true });
-  fs.writeFileSync(path.join(dir, '.docket', 'loops', 'repo-work.loop.md'), LOOP);
-  for (const [name, text] of Object.entries(extraLoops)) {
-    fs.writeFileSync(path.join(dir, '.docket', 'loops', `${name}.loop.md`), text);
-  }
+  execFileSync(process.execPath, [BIN, 'init', '--quiet'], { cwd: dir, env: ENV });
+  execFileSync(process.execPath, [BIN, 'new', name, '--template', template], {
+    cwd: dir,
+    env: ENV,
+  });
   return dir;
 }
 
-function hook(cwd, payload, args = []) {
-  const out = execFileSync(process.execPath, [BIN, 'hook', ...args], {
+function runHook(cwd, args, event) {
+  const res = spawnSync(process.execPath, [BIN, 'hook', 'claude', ...args], {
     cwd,
+    env: ENV,
+    input: typeof event === 'string' ? event : JSON.stringify(event),
     encoding: 'utf8',
-    input: typeof payload === 'string' ? payload : JSON.stringify(payload),
-    env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0', DOCKET_DIR: '' },
   });
-  const parsed = JSON.parse(out);
-  assert.equal(parsed.hookSpecificOutput.hookEventName, 'PreToolUse');
-  return parsed.hookSpecificOutput;
+  return { status: res.status, stdout: res.stdout, stderr: res.stderr };
 }
 
-test('warranted read is allowed', () => {
-  const dir = project();
-  const d = hook(dir, { tool_name: 'Read', tool_input: { file_path: '/repo/docs/guide.md' }, cwd: dir });
-  assert.equal(d.permissionDecision, 'allow');
-  assert.match(d.permissionDecisionReason, /read warrant/);
+function decisionOf(stdout) {
+  return JSON.parse(stdout).hookSpecificOutput;
+}
+
+test('allow verdict stays silent — docket only tightens, never bypasses', () => {
+  const dir = setupProject();
+  const res = runHook(dir, ['--loop', 'appeal'], {
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Read',
+    tool_input: { file_path: 'policy documents/plan.pdf' },
+  });
+  assert.equal(res.status, 0);
+  assert.equal(res.stdout, '', 'no output on allow — Claude Code permissions still apply');
+});
+
+test('unlisted send asks; the reason names the loop and rule', () => {
+  const dir = setupProject();
+  const res = runHook(dir, ['--loop', 'appeal'], {
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'curl -X POST https://insurer.example/appeals' },
+  });
+  assert.equal(res.status, 0);
+  const d = decisionOf(res.stdout);
+  assert.equal(d.permissionDecision, 'ask');
+  assert.match(d.permissionDecisionReason, /appeal/);
+  assert.match(d.permissionDecisionReason, /ask/);
+});
+
+test('a never target denies', () => {
+  const dir = setupProject();
+  const res = runHook(dir, ['--loop', 'appeal'], {
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'accept the settlement offer', description: 'accept settlement' },
+  });
+  const d = decisionOf(res.stdout);
+  assert.equal(d.permissionDecision, 'deny');
+  assert.match(d.permissionDecisionReason, /never/);
 });
 
 test('the scheduled escape is denied at the harness: a write to .git/hooks', () => {
-  const dir = project();
-  const d = hook(dir, {
+  const dir = setupProject('cross-tool-memory', 'memory');
+  const res = runHook(dir, ['--loop', 'memory'], {
+    hook_event_name: 'PreToolUse',
     tool_name: 'Write',
-    tool_input: { file_path: '/repo/.git/hooks/post-merge', content: 'evil' },
-    cwd: dir,
+    tool_input: { file_path: '.git/hooks/post-merge', content: 'docket compile --write' },
   });
+  const d = decisionOf(res.stdout);
   assert.equal(d.permissionDecision, 'deny');
-  assert.match(d.permissionDecisionReason, /never: git hooks/);
+  assert.match(d.permissionDecisionReason, /hooks/);
 });
 
-test('a Bash command planting a git hook is denied too', () => {
-  const dir = project();
-  const d = hook(dir, {
-    tool_name: 'Bash',
-    tool_input: { command: 'echo pwned > .git/hooks/post-checkout' },
-    cwd: dir,
+test('unknown and MCP tools map to send and fall toward ask', () => {
+  const dir = setupProject();
+  const res = runHook(dir, ['--loop', 'appeal'], {
+    hook_event_name: 'PreToolUse',
+    tool_name: 'mcp__gmail__send_email',
+    tool_input: { to: 'insurer@example.com' },
   });
-  assert.equal(d.permissionDecision, 'deny');
+  const d = decisionOf(res.stdout);
+  assert.equal(d.permissionDecision, 'ask');
 });
 
-test('unknown and MCP tools map to send and fall to ask by default', () => {
-  const dir = project();
-  const d = hook(dir, {
-    tool_name: 'mcp__slack__send_message',
-    tool_input: { channel: '#general', text: 'hi' },
-    cwd: dir,
+test('hook checks land on the record with via and tool', () => {
+  const dir = setupProject();
+  runHook(dir, ['--loop', 'appeal'], {
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Read',
+    tool_input: { file_path: 'policy documents/plan.pdf' },
   });
-  assert.equal(d.permissionDecision, 'ask');
-  assert.match(d.permissionDecisionReason, /not listed under `send`/);
-});
-
-test('ask list screens the target before the allow list', () => {
-  const dir = project();
-  const d = hook(dir, { tool_name: 'Edit', tool_input: { file_path: '/repo/src/README.md' }, cwd: dir });
-  assert.equal(d.permissionDecision, 'ask');
-  assert.match(d.permissionDecisionReason, /ask: anything in src/);
-});
-
-test('a single loop is picked automatically; the check lands in the record', () => {
-  const dir = project();
-  hook(dir, { tool_name: 'Read', tool_input: { file_path: '/repo/docs/a.md' }, cwd: dir });
-  const record = fs.readFileSync(path.join(dir, '.docket', 'record.jsonl'), 'utf8').trim();
-  const entry = JSON.parse(record.split('\n').at(-1));
+  const entry = readLastRecord(path.join(dir, '.docket'));
   assert.equal(entry.kind, 'check');
   assert.equal(entry.via, 'hook');
   assert.equal(entry.tool, 'Read');
-  assert.equal(entry.loop, 'repo-work');
-  assert.equal(entry.verdict, 'allow');
+  assert.equal(entry.loop, 'appeal');
 });
 
-test('--loop selects among multiple loops; ambiguity without it gates to ask', () => {
-  const other = LOOP.replace(/repo-work/g, 'other-loop');
-  const dir = project({ 'other-loop': other });
-  const ambiguous = hook(dir, { tool_name: 'Read', tool_input: { file_path: '/repo/docs/a.md' }, cwd: dir });
-  assert.equal(ambiguous.permissionDecision, 'ask');
-  assert.match(ambiguous.permissionDecisionReason, /--loop/);
-  const explicit = hook(dir, { tool_name: 'Read', tool_input: { file_path: '/repo/docs/a.md' }, cwd: dir }, ['--loop', 'repo-work']);
-  assert.equal(explicit.permissionDecision, 'allow');
-});
-
-test('every misconfiguration fails toward ask, never open', () => {
-  const dir = project();
-  // garbage stdin
-  assert.equal(hook(dir, 'not json{').permissionDecision, 'ask');
-  // no tool_name
-  assert.equal(hook(dir, { tool_input: {} }).permissionDecision, 'ask');
-  // no .docket anywhere near cwd
-  const bare = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-nohook-'));
-  const d = hook(bare, { tool_name: 'Read', tool_input: { file_path: 'x' }, cwd: bare });
+test('without --loop it routes on the target; no route passes through', () => {
+  const dir = setupProject();
+  const routed = runHook(dir, [], {
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'send the insurance appeal to the insurer', description: 'insurance appeal email' },
+  });
+  const d = decisionOf(routed.stdout);
   assert.equal(d.permissionDecision, 'ask');
-  assert.match(d.permissionDecisionReason, /no \.docket directory/);
-  // named loop does not exist
-  assert.equal(
-    hook(dir, { tool_name: 'Read', tool_input: { file_path: 'x' }, cwd: dir }, ['--loop', 'missing']).permissionDecision,
-    'ask'
-  );
+  assert.match(d.permissionDecisionReason, /appeal/);
+
+  const unrouted = runHook(dir, [], {
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'ls -la' },
+  });
+  assert.equal(unrouted.status, 0);
+  assert.equal(unrouted.stdout, '', 'no loop claims this call — Claude Code decides');
 });
 
-test('--no-record leaves no trace; the decision still comes back', () => {
-  const dir = project();
-  const d = hook(dir, { tool_name: 'Read', tool_input: { file_path: '/repo/docs/a.md' }, cwd: dir }, ['--no-record']);
-  assert.equal(d.permissionDecision, 'allow');
-  assert.ok(!fs.existsSync(path.join(dir, '.docket', 'record.jsonl')));
+test('--strict turns no-route into ask', () => {
+  const dir = setupProject();
+  const res = runHook(dir, ['--strict'], {
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'ls -la' },
+  });
+  const d = decisionOf(res.stdout);
+  assert.equal(d.permissionDecision, 'ask');
+  assert.match(d.permissionDecisionReason, /no loop covers/);
+});
+
+test('gated misconfiguration fails CLOSED: bad loop, bad stdin, missing project', () => {
+  const dir = setupProject();
+  // --loop names a loop that does not exist → ask, not pass-through
+  const badLoop = runHook(dir, ['--loop', 'nope'], {
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'x' },
+  });
+  assert.equal(badLoop.status, 0);
+  assert.equal(decisionOf(badLoop.stdout).permissionDecision, 'ask');
+  assert.match(badLoop.stderr, /no loop named "nope"/);
+
+  // unparseable stdin under --strict → ask
+  const badJson = runHook(dir, ['--strict'], 'not json');
+  assert.equal(decisionOf(badJson.stdout).permissionDecision, 'ask');
+
+  // --loop pinned but no .docket anywhere → ask
+  const bare = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-hook-bare-'));
+  const noProject = runHook(bare, ['--loop', 'appeal'], {
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'rm -rf /' },
+  });
+  assert.equal(decisionOf(noProject.stdout).permissionDecision, 'ask');
+});
+
+test('ungated misconfiguration is loud but non-blocking: bad stdin without flags', () => {
+  const dir = setupProject();
+  const badJson = runHook(dir, [], 'not json');
+  assert.equal(badJson.status, 1);
+  assert.match(badJson.stderr, /stdin was not hook JSON/);
+});
+
+test('outside a docket project the bare hook costs nothing', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-hook-empty-'));
+  const res = runHook(dir, [], {
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'ls' },
+  });
+  assert.equal(res.status, 0);
+  assert.equal(res.stdout, '');
+});
+
+test('non-PreToolUse events and missing tool names are ignored', () => {
+  const dir = setupProject();
+  const other = runHook(dir, ['--loop', 'appeal'], {
+    hook_event_name: 'PostToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'x' },
+  });
+  assert.equal(other.status, 0);
+  assert.equal(other.stdout, '');
+});
+
+test('describeTarget prefers the human part of the input and bounds length', () => {
+  assert.equal(describeTarget('Bash', { command: 'git push' }), 'Bash: git push');
+  assert.equal(describeTarget('Write', { file_path: 'a.md' }), 'Write: a.md');
+  assert.equal(describeTarget('Mystery', null), 'Mystery');
+  assert.ok(describeTarget('Bash', { command: 'x'.repeat(500) }).length <= 300);
 });

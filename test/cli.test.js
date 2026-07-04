@@ -41,10 +41,11 @@ test('init creates .docket and is idempotent', () => {
   assert.match(again, /already initialized/);
 });
 
-test('templates lists all seven starters', () => {
+test('templates lists all eight starters', () => {
   const dir = freshProject();
   const out = docket(dir, ['templates']);
   for (const t of [
+    'prod-hotfix',
     'insurance-appeal',
     'client-follow-up',
     'travel-morning',
@@ -74,6 +75,22 @@ test('new without a TTY writes a valid scaffold', () => {
   const text = fs.readFileSync(path.join(dir, '.docket', 'loops', 'my-loop.loop.md'), 'utf8');
   assert.match(text, /^---\nname: my-loop\n/);
   docket(dir, ['show', 'my-loop']);
+});
+
+test('match routes a task to its loop; no coverage exits 2', () => {
+  const dir = freshProject();
+  docket(dir, ['new', 'appeal', '--template', 'insurance-appeal']);
+  docket(dir, ['new', 'followup', '--template', 'client-follow-up']);
+
+  const hit = docket(dir, ['match', 'draft an appeal for my denied claim']);
+  assert.match(hit, /appeal/);
+  assert.match(hit, /trigger/);
+
+  const none = docket(dir, ['match', 'wire funds to a vendor'], { expectExit: 2 });
+  assert.match(none, /NO LOOP/);
+  assert.match(none, /defaults to ask/);
+
+  docket(dir, ['match'], { expectExit: 1 });
 });
 
 // The guided creator reads answers line by line; --guided forces it on
@@ -205,6 +222,28 @@ test('compile writes and idempotently replaces the block', () => {
   assert.ok(fs.existsSync(path.join(dir, 'GEMINI.md')));
   docket(dir, ['compile', '--target', 'cursor', '--write']);
   assert.ok(fs.existsSync(path.join(dir, '.cursor', 'rules', 'docket.mdc')));
+});
+
+test('compile --index writes the routing table, and switching modes replaces the block', () => {
+  const dir = freshProject();
+  docket(dir, ['new', 'appeal', '--template', 'insurance-appeal']);
+  docket(dir, ['new', 'followup', '--template', 'client-follow-up']);
+
+  docket(dir, ['compile', '--index', '--target', 'claude', '--write']);
+  const index = fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8');
+  assert.match(index, /Docket loops \(index\)/);
+  assert.match(index, /docket_match_loop/);
+  assert.match(index, /\*\*appeal\*\*/);
+  assert.match(index, /triggers:/);
+  assert.doesNotMatch(index, /Procedure — how this work is done/, 'index must not inline full loops');
+
+  // Full → index → full all replace the same managed block.
+  docket(dir, ['compile', '--target', 'claude', '--write']);
+  docket(dir, ['compile', '--index', '--target', 'claude', '--write']);
+  const again = fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8');
+  assert.equal(again.match(/docket:begin/g).length, 1, 'mode switches must not stack blocks');
+
+  docket(dir, ['compile', '--index', '--loop', 'appeal'], { expectExit: 1 });
 });
 
 test('raw compile prints to stdout', () => {

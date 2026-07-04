@@ -2,6 +2,9 @@
 name: client-follow-up
 description: Follow up with a client with the whole history in the room — promises, tone, and the language they already approved.
 version: 1
+triggers:
+  - follow up with a client, client follow-up
+  - client email, client status update, check in with the account
 warrant:
   read:
     - account history

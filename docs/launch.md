@@ -54,13 +54,13 @@ Then:
   permissions.
 - `docket mcp` exposes it all to agents natively (warrant checks the agent
   makes land in the record too).
-- `docket hook` turns the warrant into a Claude Code PreToolUse gate:
+- `docket hook claude` turns the warrant into a Claude Code PreToolUse gate:
   allow/ask/deny applied by the harness on every intercepted tool call —
   enforced, not suggested — and every failure mode degrades to ask, never
   to a silent allow.
 
 Zero dependencies, node >= 18, MIT. We red-team the warrant engine in CI:
-10,545 checks across six suites — real-incident scenarios, adversarial
+10,582 checks across six suites — real-incident scenarios, adversarial
 phrasing (euphemism, compound intent, injection, homoglyphs), vague-target
 probes, 10,000 fuzzed targets, 239 record-tampering mutations, and a live
 hook-gate corpus — zero silent allows, zero fail-open outcomes, zero
@@ -113,7 +113,7 @@ one warrant. A model switch is a recompile, not a re-teach.
 asking about and proposes the exact amendments. You approve; the approval
 is logged. The agent never widens its own permissions.
 
-8/ Zero dependencies. Plain files. MIT. Red-teamed in CI: 10,545 checks —
+8/ Zero dependencies. Plain files. MIT. Red-teamed in CI: 10,582 checks —
 adversarial phrasing, fuzzing, tamper attempts, a live hook gate — zero
 silent allows, zero fail-open.
 npm i -g docket-agent · github.com/shahcolate/docket
@@ -150,7 +150,7 @@ Zero dependencies, MIT.
 - **Risk**: agent overreach is an incident class now (unauthorized outbound
   email, calendar changes, invented commitments). Docket is the pre-action
   gate + post-action audit trail: measured zero silent allows and zero
-  fail-open outcomes across a 10,545-check red-team program (behavior,
+  fail-open outcomes across a 10,582-check red-team program (behavior,
   adversarial phrasing, fuzzing, tampering, live hook gate), reproducible
   with `npm run eval`.
 - **Cost**: context is rebuilt per-tool and per-chat today. One set of loop

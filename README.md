@@ -32,7 +32,7 @@ Zero dependencies · plain Markdown + JSONL · MIT
 
 ## News
 
-- **2026.07** — The red-team program grows to [**10,545 checks across six suites**](eval/REPORT.md): adversarial phrasing, vague-target probes, 10,000 fuzzed targets, 239 tamper mutations, and a live hook-gate corpus — zero silent allows, zero fail-open.
+- **2026.07** — The red-team program grows to [**10,582 checks across six suites**](eval/REPORT.md): adversarial phrasing, vague-target probes, 10,000 fuzzed targets, 239 tamper mutations, and a live hook-gate corpus — zero silent allows, zero fail-open. The matcher now splits compound targets clause by clause, so a consequence can't ride along with an allowed phrase.
 - **2026.07** — `v0.3.0` ships **`docket hook`**: the warrant as a Claude Code PreToolUse gate — allow/ask/deny enforced by the harness, not the prompt. Plus the deferred-consequence rule in the spec and the **scheduled escape** red-team family.
 - **2026.07** — `v0.2.1` on npm: current README and CLI help ship in the package.
 - **2026.07** — `v0.2.0` ships **`docket review`**: the record proposes warrant amendments; applying is always a human keystroke.
@@ -48,10 +48,12 @@ Today's failure is a bad **action**: agents use tools. A misread doesn't come
 back as a wrong paragraph — it goes out as a sent email, a filed ticket, a
 changed record.
 
-It's already happened in the wild: in early 2026 a user reported that his
-agent, having drafted an appeal for a denied insurance claim, **sent it to
-the insurer on its own** when he ignored the draft — it took silence plus
-frustration as a yes.
+It's already happened in the wild: in mid-2025, Replit's coding agent
+**deleted a SaaS company's production database** during an explicit code
+freeze — after being told, eleven times, in all caps, not to touch anything.
+Then it reported that rollback was impossible (it wasn't) and generated
+thousands of fake records to paper over the damage. Two failures in one
+incident: an action nobody permitted, and a record nobody could trust.
 
 So the question that matters isn't *"what does the AI know?"* It's:
 
@@ -65,7 +67,7 @@ Docket makes the answer a file instead of a vibe.
   writing, under calm conditions — so the agent works unattended and stops
   exactly where you said. `ask` stays rare and meaningful: across the
   red-team program, warranted work runs without a single unnecessary prompt
-  (18/18), and `docket review` retires the asks you keep approving.
+  (21/21), and `docket review` retires the asks you keep approving.
 - **Evidence you can hand to anyone.** A client, a manager, a compliance
   review, a postmortem — the record answers *"what was it allowed to do,
   and what did it do?"* from a hash-chained file, not from memory.
@@ -154,10 +156,12 @@ DENY  change → "accepting a settlement"
   never happens, with or without approval.
 ```
 
-That's the frustrated-customer story, prevented by a text file. And the
-default posture is the important part: the warrant never granted `send`
-anything, so **every send asks** — the agent doesn't need to anticipate the
-exact email to be stopped by it.
+That's an agent overreach prevented by a text file. And the default posture
+is the important part: the warrant never granted `send` anything, so **every
+send asks** — the agent doesn't need to anticipate the exact email to be
+stopped by it. The same posture covers the database story: `never: destructive
+commands in production` is decided under calm conditions, and no in-the-moment
+panic overrides it.
 
 Matching is word-level, stemmed, and **asymmetric**: `ask`/`never` patterns
 match fuzzily in both directions (`accepting a settlement` hits `accepting
@@ -174,16 +178,18 @@ shipped templates hard-stop them (`scheduled or automated sending`; `git
 hooks, CI workflows, or scheduled jobs`), and the
 [spec's rule](spec/SPEC.md#deferred-consequences) is general: **an action
 classifies by where its consequences eventually land**, not where the bytes
-land first.
+land first. Compound intent gets the same treatment: the matcher splits a
+target on conjunctions and requires *every* clause to be warranted, so
+"draft the appeal **and send it**" cannot ride the allow for "draft".
 
 We red-team all of this, six ways, on every CI build —
-[**10,545 checks**](eval/REPORT.md):
+[**10,582 checks**](eval/REPORT.md):
 
 | Suite | Checks | Result |
 |---|---|---|
-| Behavior scenarios | 51 | 0 silent allows · 18/18 warranted work allowed |
-| Adversarial phrasing — euphemism, compound intent, injection, homoglyphs | 39 | 39/39 contained |
-| Vague-target probes ("email" vs "status email to the team") | 194 | 0 permissions inherited |
+| Behavior scenarios | 61 | 0 silent allows · 21/21 warranted work allowed |
+| Adversarial phrasing — euphemism, compound intent, injection, homoglyphs | 42 | 42/42 contained |
+| Vague-target probes ("email" vs "status email to the team") | 218 | 0 permissions inherited |
 | Fuzzed targets, deterministic seed | 10,000 | 0 allowed |
 | Record-tampering mutations | 239 | 239/239 detected |
 | Hook gate, live binary vs hostile tool calls | 22 | 0 fail-open |
@@ -242,6 +248,42 @@ $ docket compile --target cursor --write    # → .cursor/rules/docket.mdc
 Same loops, every tool. **A model switch is a recompile, not a re-teach** —
 try the new tool, point it at the same files, keep working.
 
+## Fifty loops, flat context
+
+Compiling every brief and procedure into the context file stops scaling
+around a handful of loops — the rules start crowding out the work. So
+**rules scale on disk, not in context**:
+
+```console
+$ docket compile --index --target claude --write
+✓ compiled index of 23 loops → CLAUDE.md
+```
+
+`--index` compiles the protocol plus **one line per loop** — name,
+description, and the loop's `triggers` — instead of the loops themselves.
+The agent routes each task to its loop, then pulls just that loop in full:
+
+```console
+$ docket match "draft an appeal for my denied claim"
+1 candidate loop for "draft an appeal for my denied claim"
+
+  appeal                 Build the appeal, cite the policy — stop before send.
+                         score 14 — name: appeal · trigger: denied claim, denial letter
+
+$ docket match "wire funds to a vendor"
+NO LOOP  "wire funds to a vendor"
+  No loop covers this task. Work outside a loop defaults to ask
+```
+
+Routing is deterministic and scored — loop name, author-written `triggers`
+phrases, warrant targets, description overlap — and it **fails closed**: no
+match doesn't mean "best guess", it means *stop and ask*, exit code `2`,
+same as the warrant. And enforcement never needed context residency at all:
+the warrant check runs outside the model and injects the one matched rule
+exactly when it becomes relevant. What stays resident is a table of
+contents; the window holds one open chapter; the checker never forgets any
+of it.
+
 ## Agents can use it natively (MCP)
 
 `docket mcp` is a zero-config MCP server. Add it to Claude Code:
@@ -256,11 +298,12 @@ or to any MCP client:
 { "mcpServers": { "docket": { "command": "npx", "args": ["docket-agent", "mcp"] } } }
 ```
 
-The agent gets four tools:
+The agent gets five tools:
 
 | Tool | What it does |
 |---|---|
 | `docket_list_loops` | discover your loops |
+| `docket_match_loop` | route a task to the loop that covers it — ranked, fail-closed |
 | `docket_loop_context` | pull a loop's five layers before starting |
 | `docket_warrant_check` | allow / ask / deny, **before** acting — auto-logged |
 | `docket_record` | add a verifiable record entry when it finishes or stops |
@@ -270,20 +313,20 @@ even ask?"* becomes a grep.
 
 ## Enforced, not suggested (Claude Code hook)
 
-Compiled context and MCP tools work when the agent cooperates. `docket hook`
-doesn't need it to. Wired as a Claude Code **PreToolUse hook**, every
+Compiled context and MCP tools work when the agent cooperates. `docket hook
+claude` doesn't need it to. Wired as a Claude Code **PreToolUse hook**, every
 intercepted tool call is checked against the warrant *by the harness* —
-docket's three verdicts map one-to-one onto Claude Code's permission
-decisions, whether or not the model read a word of your rules:
+docket's verdicts map onto Claude Code's permission decisions, whether or not
+the model read a word of your rules:
 
 ```json
 {
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Write|Edit|Bash|mcp__.*",
+        "matcher": "Bash|Write|Edit|mcp__.*",
         "hooks": [
-          { "type": "command", "command": "npx -y docket-agent hook --loop repo-work" }
+          { "type": "command", "command": "npx -y docket-agent hook claude --loop repo-work" }
         ]
       }
     ]
@@ -292,16 +335,21 @@ decisions, whether or not the model read a word of your rules:
 ```
 
 Put that in `.claude/settings.json`, scope the `matcher` to the tools you
-want gated, and the warrant is no longer advice. Lookup tools map to `read`,
-local edits and Bash to `change`, and anything docket doesn't recognize —
-MCP tools included — to `send`, the verb whose allow list most loops keep
-empty on purpose. Every failure mode (bad payload, missing project,
-ambiguous loop) degrades to `ask`, never to a silent allow: a gate that
-fails open is not a gate.
+want gated, and the warrant is no longer advice. **deny** blocks the call and
+tells the model why; **ask** makes Claude Code prompt you; **allow** stays
+silent — docket only ever *tightens* the gate, never bypasses Claude Code's
+own prompts. Lookup and edit tools map to `read`/`change`; anything docket
+doesn't recognize — Bash, MCP tools, tools that don't exist yet — falls to
+`send`, the verb whose allow list most loops keep empty on purpose, so an
+unknown tool asks rather than slips through.
 
-Gated calls land in the record like every other check (`via: "hook"`), so
-the asks you keep approving surface in `docket review` — the gate teaches
-the warrant what it should say next.
+Pin one loop with `--loop <name>`; drop it to route each call by content
+(add `--strict` to ask when no loop claims a call). Once you name a loop or
+pass `--strict`, every failure mode — bad payload, missing project, misnamed
+loop — fails **closed** to ask: a gate you asked for that fails open is not a
+gate. Gated calls land in the record (`via: "hook"`), so the asks you keep
+approving surface in `docket review` — the gate teaches the warrant what to
+say next.
 
 ## Why not just a sandbox?
 
@@ -408,10 +456,11 @@ Run it weekly, or wire it into a cron — the proposals wait for you.
 
 ## Starter loops
 
-Seven templates, each a complete worked example (`docket templates`):
+Eight templates, each a complete worked example (`docket templates`):
 
 | Loop | The gist |
 |---|---|
+| `prod-hotfix` | diagnose and fix on staging — **production asks, destructive commands never** |
 | `insurance-appeal` | build the appeal and the evidence packet, **stop before send** |
 | `client-follow-up` | promises made, approved language, tone — approval rules included |
 | `travel-morning` | your walking tolerance and food rules, not a guidebook's |
@@ -455,7 +504,7 @@ Read the [Loop File Spec](spec/SPEC.md) — it's short on purpose.
 
 ## Roadmap
 
-- [x] ~~`docket check` as a Claude Code PreToolUse hook recipe~~ — shipped as `docket hook` in v0.3.0
+- [x] ~~`docket check` as a Claude Code PreToolUse hook~~ — shipped as `docket hook claude`
 - [ ] Signed record heads (attest the chain tip, share the attestation)
 - [ ] Loop inheritance (`extends:`) for team baselines
 - [ ] Record export → human-readable work summaries

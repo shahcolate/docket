@@ -99,6 +99,39 @@ export function renderBlock(loops) {
   return `${BEGIN}\n${header}\n\n${body}\n${END}`;
 }
 
+// Tiered rendering, for when the full render outgrows the context window.
+// Rules scale on disk, not in context: what stays resident is the protocol
+// (invariant with loop count) plus a one-line-per-loop routing table. Full
+// loops load on demand — and enforcement never needed residency at all,
+// because the warrant check runs outside the model.
+export function renderIndexEntry(loop) {
+  const triggers = loop.triggers.length ? ` *(triggers: ${loop.triggers.join('; ')})*` : '';
+  return `- **${loop.name}** — ${loop.description || '(no description)'}${triggers}`;
+}
+
+export function renderIndexBlock(loops) {
+  const header = [
+    '## Docket loops (index)',
+    '',
+    `${loops.length} loop${loops.length === 1 ? ' is' : 's are'} defined. This is the index, not the rules — each`,
+    "loop's full brief, procedure, and warrant load on demand.",
+    '',
+    'Before starting any task:',
+    '',
+    '1. Find the loop that covers it below — by its triggers, or ask docket:',
+    '   `docket match "<the task in plain words>"` (MCP: `docket_match_loop`).',
+    '2. Load that loop in full — `docket compile --loop <name>` (MCP:',
+    '   `docket_loop_context`) — and follow its brief and procedure.',
+    '3. Before any read/draft/change/send that matters, check the warrant:',
+    '   `docket check <loop> <action> "<target>"` (MCP: `docket_warrant_check`).',
+    '',
+    'If no loop covers the task, stop and ask the human before proceeding.',
+    'Unlisted means ask. Silence is never permission.',
+  ].join('\n');
+  const body = loops.map(renderIndexEntry).join('\n');
+  return `${BEGIN}\n${header}\n\n${neutralizeMarkers(body)}\n${END}`;
+}
+
 // Locate the managed block: first BEGIN at a line start, LAST END at a line
 // start. Content is marker-neutralized at render time, so a matching END is
 // always a real one.
@@ -116,11 +149,13 @@ function findBlock(text) {
   return { start: beginMatch.index, end: endIdx + 1 + END.length };
 }
 
-export function compileToFile(rootDir, target, loops) {
+export function compileToFile(rootDir, target, loops, { index = false } = {}) {
   const spec = TARGETS[target];
   if (!spec || !spec.file) throw new Error(`target "${target}" cannot be written to a file`);
   const filePath = path.join(rootDir, spec.file);
-  const block = renderBlock(loops);
+  // Same markers either way, so switching between full and index render
+  // replaces the managed block instead of stacking a second one.
+  const block = index ? renderIndexBlock(loops) : renderBlock(loops);
   let existing = '';
   if (fs.existsSync(filePath)) existing = fs.readFileSync(filePath, 'utf8');
 

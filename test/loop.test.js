@@ -7,6 +7,8 @@ import { parseLoop, extractSections, LoopError } from '../src/lib/loop.js';
 const VALID = `---
 name: appeal
 description: Build the appeal.
+triggers:
+  - insurance appeal, denied claim
 warrant:
   read:
     - policy documents
@@ -40,6 +42,16 @@ test('parses a valid loop file', () => {
   assert.equal(loop.brief, 'The deadline matters.');
   assert.equal(loop.procedure, 'Read the denial first.');
   assert.deepEqual(loop.reserved, ['signing and sending']);
+  assert.deepEqual(loop.triggers, ['insurance appeal, denied claim']);
+});
+
+test('triggers are optional and default to empty', () => {
+  const loop = parseLoop('---\nname: x\n---\n');
+  assert.deepEqual(loop.triggers, []);
+});
+
+test('rejects non-list triggers', () => {
+  assert.throws(() => parseLoop('---\nname: x\ntriggers: appeal\n---\n'), /must be a list/);
 });
 
 test('rejects files without frontmatter', () => {
@@ -70,7 +82,7 @@ test('extractSections is case-insensitive and heading-level tolerant', () => {
 test('all shipped templates parse and have every layer', () => {
   const dir = new URL('../templates/', import.meta.url).pathname;
   const files = fs.readdirSync(dir).filter((f) => f.endsWith('.loop.md'));
-  assert.equal(files.length, 7);
+  assert.equal(files.length, 8);
   for (const f of files) {
     const loop = parseLoop(fs.readFileSync(path.join(dir, f), 'utf8'), { file: f });
     assert.equal(`${loop.name}.loop.md`, f, `${f}: name must match filename`);
@@ -79,6 +91,7 @@ test('all shipped templates parse and have every layer', () => {
     assert.ok(loop.procedure.length > 50, `${f}: method section too thin`);
     assert.ok(loop.reserved.length > 0, `${f}: reserved must not be empty`);
     assert.ok(loop.record.length > 0, `${f}: record must not be empty`);
+    assert.ok(loop.triggers.length > 0, `${f}: needs triggers so routing can find it`);
     assert.deepEqual(loop.warrant.send, [], `${f}: starter loops never allow send on their own`);
   }
 });

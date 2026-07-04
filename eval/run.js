@@ -7,24 +7,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseLoop } from '../src/lib/loop.js';
 import { checkWarrant } from '../src/lib/warrant.js';
 import { SCENARIOS } from './scenarios.js';
 import { ADVERSARIAL } from './adversarial.js';
-import { runVagueProbes, runFuzz } from './properties.js';
+import { loadTemplateLoops, runVagueProbes, runFuzz } from './properties.js';
 import { runTamper } from './tamper.js';
 import { runHookGate } from './hookgate.js';
 
 const ROOT = path.join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
+// One loader for the whole program: the behavior/adversarial suites and the
+// property/fuzz suites must evaluate the exact same template set, or the
+// committed numbers stop meaning one thing.
 function loadLoops() {
-  const loops = {};
-  for (const f of fs.readdirSync(path.join(ROOT, 'templates'))) {
-    if (!f.endsWith('.loop.md')) continue;
-    const loop = parseLoop(fs.readFileSync(path.join(ROOT, 'templates', f), 'utf8'), { file: f });
-    loops[loop.name] = loop;
-  }
-  return loops;
+  return Object.fromEntries(loadTemplateLoops().map((l) => [l.name, l]));
 }
 
 function judge(loops, s) {
@@ -91,6 +87,23 @@ export function runAll() {
     tamper: runTamper(),
     hookgate: runHookGate(),
   };
+}
+
+// The single definition of "the program failed" — used by BOTH the console
+// exit code and the CI tests, so a new suite cannot be added to the report
+// without also being wired into the gate. Each entry is one breach class.
+// (hookgate.failOpen already counts an allowed hostile call, so hostileAllowed
+// is not summed again.)
+export function invariantFailures(all) {
+  const { behavior, adversarial, vague, fuzz, tamper, hookgate } = all;
+  return [
+    ['behavior silent allows', behavior.summary.breaches],
+    ['adversarial silent allows', adversarial.summary.breaches],
+    ['vague permissions inherited', vague.violations.length],
+    ['fuzz permissions granted', fuzz.allowed],
+    ['tamper undetected (pinned head)', tamper.total - tamper.detectedWithHead],
+    ['hook gate fail-open', hookgate.summary.failOpen],
+  ].filter(([, n]) => n > 0);
 }
 
 function pct(a, b) {
@@ -249,8 +262,11 @@ function main(args) {
   console.log(`fuzz:        ${fuzz.count} targets · ${fuzz.allowed} allowed`);
   console.log(`tamper:      ${tamper.detectedWithHead}/${tamper.total} detected with pinned head · ${tamper.detectedChainAlone} chain-alone`);
   console.log(`hook gate:   ${h.hostileTotal} hostile → ${h.hostileAllowed} allowed (${h.hostileDenied} deny / ${h.hostileAsked} ask) · benign ${h.benignAllowed}/${h.benignTotal} · misconfig ${h.misconfigClosed}/${h.misconfigTotal} closed · ${h.failOpen} fail-open`);
-  const breaches = b.breaches + a.breaches + vague.violations.length + fuzz.allowed + h.hostileAllowed + h.failOpen;
-  if (breaches > 0) process.exit(1);
+  const failures = invariantFailures(all);
+  if (failures.length) {
+    console.log('\n⚠️  INVARIANT FAILURES: ' + failures.map(([k, n]) => `${k} (${n})`).join(', '));
+    process.exit(1);
+  }
 }
 
 // Importable by tests without side effects; runs only as a script.

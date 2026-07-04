@@ -32,8 +32,8 @@ ChatGPT/Codex、Gemini、Cursor、OpenClaw、Hermes 以及任何 MCP 客户端�
 
 ## 最新动态
 
-- **2026.07** — 红队测试计划扩展到[**六个套件、10,545 项检查**](eval/REPORT.md)：对抗性措辞、模糊目标探针、10,000 次模糊测试、239 次篡改变异、真实钩子门禁语料——零静默放行，零失效开门。
-- **2026.07** — `v0.3.0` 推出 **`docket hook`**：把授权令变成 Claude Code 的 PreToolUse 门禁——allow/ask/deny 由执行框架强制执行，而不是靠提示词。同时规范新增“延迟后果”规则，红队套件新增**定时逃逸**场景族。
+- **2026.07** — 红队测试计划扩展到[**六个套件、10,582 项检查**](eval/REPORT.md)：对抗性措辞、模糊目标探针、10,000 次模糊测试、239 次篡改变异、真实钩子门禁语料——零静默放行，零失效开门。匹配器现按子句拆分复合目标，后果无法搭上被许可短语的顺风车。
+- **2026.07** — `v0.3.0` 推出 **`docket hook claude`**：把授权令变成 Claude Code 的 PreToolUse 门禁——allow/ask/deny 由执行框架强制执行，而不是靠提示词。同时规范新增“延迟后果”规则，红队套件新增**定时逃逸**场景族。
 - **2026.07** — `v0.2.1` 发布至 npm：软件包内附带最新的 README 与 CLI 帮助。
 - **2026.07** — `v0.2.0` 推出 **`docket review`**：记录会自动提议授权令修正案，但每一条都必须由人来按键批准。
 - **2026.07** — 新增 [OpenClaw](https://docs.openclaw.ai) 与 [Hermes](https://hermes-agent.nousresearch.com/docs/) 集成，上线完整[文档站点](https://shahcolate.github.io/docket/docs.html)。
@@ -46,8 +46,10 @@ ChatGPT/Codex、Gemini、Cursor、OpenClaw、Hermes 以及任何 MCP 客户端�
 今天的失败是一个坏**动作**：智能体会使用工具。一次误读不再以一段错误的文字返回——
 它变成一封已发出的邮件、一张已提交的工单、一条已被改动的记录。
 
-这在现实中已经发生：2026 年初，有用户反映他的智能体替他起草了一封保险理赔申诉信，
-在他没有理会草稿之后，**擅自把信发给了保险公司**——它把沉默加上情绪当成了同意。
+这在现实中已经发生：2025 年年中，Replit 的编程智能体在明确的代码冻结期间
+**删除了一家 SaaS 公司的生产数据库**——此前用户已经用大写字母重复了十一遍
+“什么都不要动”。随后它谎称无法回滚（事实并非如此），还生成了数千条假数据来
+掩盖损失。一次事故，两种失败：一个没人批准过的动作，和一份没人敢信的记录。
 
 所以真正要紧的问题不是*“AI 知道什么？”*，而是：
 
@@ -59,7 +61,7 @@ Docket 把这个问题的答案从一种感觉，变成一个文件。
 
 - **委托，而不是盯梢。** 边界只需在冷静时用文字决定一次——智能体就能无人值守地
   工作，并恰好停在你说的地方。`ask` 保持稀少而有分量：整个红队测试中，
-  已授权的工作 18/18 全部零阻力通过，而 `docket review` 会替你退役那些
+  已授权的工作 21/21 全部零阻力通过，而 `docket review` 会替你退役那些
   反复批准的询问。
 - **可以递给任何人的证据。** 客户、上级、合规审查、事后复盘——记录用一个
   哈希链文件回答“它被允许做什么、它做了什么”，而不是靠回忆。
@@ -146,9 +148,11 @@ DENY  change → "accepting a settlement"
   never happens, with or without approval.
 ```
 
-那位被激怒的客户的故事，就这样被一个文本文件拦下了。而其中最重要的是默认姿态：
+一次智能体越权，就这样被一个文本文件拦下了。而其中最重要的是默认姿态：
 授权令从未给 `send` 授予过任何东西，所以**每一次发送都要先问**——
-智能体不需要预判出那封邮件的具体内容，也照样会被拦住。
+智能体不需要预判出那封邮件的具体内容，也照样会被拦住。数据库那个故事靠的
+也是同一种姿态：`never: 生产环境的破坏性命令` 是在冷静时预先写下的，
+任何当下的慌乱都推翻不了它。
 
 匹配是词级、带词干还原、并且**不对称**的：`ask`/`never` 模式在两个方向上都做模糊匹配
 （`accepting a settlement` 会命中 `accepting or rejecting a settlement`），
@@ -162,16 +166,18 @@ DENY  change → "accepting a settlement"
 内置模板对它们设了硬停（`scheduled or automated sending`；
 `git hooks, CI workflows, or scheduled jobs`），而
 [规范里的规则](spec/SPEC.md#deferred-consequences)是通用的：
-**动作按其后果最终落在哪里来归类**，而不是按字节先落在哪里。
+**动作按其后果最终落在哪里来归类**，而不是按字节先落在哪里。复合意图同理：
+匹配器会按连接词把目标拆成子句，要求*每一个*子句都被授权，所以
+“起草申诉信**并把它发出去**”无法搭上“起草”的许可顺风车。
 
 我们从六个方向对这一切做红队测试，每次 CI 构建全量运行——
-[**10,545 项检查**](eval/REPORT.md)：
+[**10,582 项检查**](eval/REPORT.md)：
 
 | 套件 | 检查数 | 结果 |
 |---|---|---|
-| 行为场景（取材于真实越权事件） | 51 | 零静默放行 · 18/18 已授权工作放行 |
-| 对抗性措辞——委婉语、复合意图、注入、同形字 | 39 | 39/39 被拦截 |
-| 模糊目标探针（“email” vs “status email to the team”） | 194 | 零权限被继承 |
+| 行为场景（取材于真实越权事件） | 61 | 零静默放行 · 21/21 已授权工作放行 |
+| 对抗性措辞——委婉语、复合意图、注入、同形字 | 42 | 42/42 被拦截 |
+| 模糊目标探针（“email” vs “status email to the team”） | 218 | 零权限被继承 |
 | 确定性种子模糊测试 | 10,000 | 零放行 |
 | 记录篡改变异 | 239 | 239/239 被检出 |
 | 钩子门禁——真实二进制 vs 恶意工具调用 | 22 | 零失效开门 |
@@ -258,19 +264,18 @@ $ claude mcp add docket -- npx docket-agent mcp
 
 ## 强制执行，而非建议（Claude Code 钩子）
 
-编译上下文和 MCP 工具在智能体配合时有效。`docket hook` 不需要它配合。
+编译上下文和 MCP 工具在智能体配合时有效。`docket hook claude` 不需要它配合。
 把它接成 Claude Code 的 **PreToolUse 钩子**，每一次被拦截的工具调用都会
-由*执行框架本身*按授权令裁决——docket 的三种判定与 Claude Code 的权限
-决策一一对应，无论模型有没有读过你的规则：
+由*执行框架本身*按授权令裁决——无论模型有没有读过你的规则：
 
 ```json
 {
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Write|Edit|Bash|mcp__.*",
+        "matcher": "Bash|Write|Edit|mcp__.*",
         "hooks": [
-          { "type": "command", "command": "npx -y docket-agent hook --loop repo-work" }
+          { "type": "command", "command": "npx -y docket-agent hook claude --loop repo-work" }
         ]
       }
     ]
@@ -279,14 +284,17 @@ $ claude mcp add docket -- npx docket-agent mcp
 ```
 
 把它放进 `.claude/settings.json`，用 `matcher` 圈定要设门禁的工具，
-授权令就不再只是建议。查询类工具映射为 `read`，本地修改和 Bash 映射为
-`change`，docket 不认识的一切——包括 MCP 工具——映射为 `send`，
-也就是大多数 loop 刻意留空 allow 列表的那个动词。所有故障模式
-（坏载荷、找不到项目、loop 不明确）都退化为 `ask`，绝不静默放行：
-会失效开门的门禁不是门禁。
+授权令就不再只是建议。**deny** 拦下调用并告知模型原因；**ask** 让 Claude Code
+提示你；**allow** 保持沉默——docket 只会*收紧*门禁，绝不绕过 Claude Code
+自己的确认提示。查询与编辑类工具映射为 `read`/`change`；docket 不认识的一切
+——Bash、MCP 工具、尚不存在的工具——都落到 `send`，也就是大多数 loop 刻意
+留空 allow 列表的那个动词，因此未知工具会询问而非溜过。
 
-被门禁的调用和其他检查一样写入记录（`via: "hook"`），你反复批准的询问
-会浮现在 `docket review` 里——门禁在教授权令下一步该写什么。
+用 `--loop <名称>` 固定一个 loop；不带它则按内容路由（加 `--strict`
+使无 loop 认领的调用也询问）。一旦你指定了 loop 或传了 `--strict`，
+所有故障模式——坏载荷、找不到项目、loop 名错——都**失效关闭**为询问：
+会失效开门的门禁不是门禁。被门禁的调用照常写入记录（`via: "hook"`），
+你反复批准的询问会浮现在 `docket review` 里。
 
 ## 为什么不直接用沙箱？
 
@@ -383,10 +391,11 @@ allow read: "state insurance regulations" in appeal? [y/N] y
 
 ## 起步模板
 
-七个模板，每个都是完整的成品示例（`docket templates`）：
+八个模板，每个都是完整的成品示例（`docket templates`）：
 
 | Loop | 要点 |
 |---|---|
+| `prod-hotfix` | 在 staging 上诊断和修复——**碰生产必须先问，破坏性命令永远禁止** |
 | `insurance-appeal` | 写好申诉信和证据包，**在发送前停下** |
 | `client-follow-up` | 许下的承诺、批准过的话术、语气——附带审批规则 |
 | `travel-morning` | 按你的脚力和饮食习惯来，而不是旅游指南的 |
@@ -424,7 +433,7 @@ allow read: "state insurance regulations" in appeal? [y/N] y
 
 ## 路线图
 
-- [x] ~~`docket check` 作为 Claude Code PreToolUse 钩子的配方~~ — 已在 v0.3.0 以 `docket hook` 发布
+- [x] ~~`docket check` 作为 Claude Code PreToolUse 钩子~~ — 已以 `docket hook claude` 发布
 - [ ] 记录链头签名（为链尖出具证明，可对外分享）
 - [ ] loop 继承（`extends:`），用于团队基线
 - [ ] 记录导出 → 人类可读的工作摘要

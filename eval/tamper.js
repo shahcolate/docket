@@ -19,14 +19,13 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { appendRecord, verifyRecord, hashEntry, readRecords } from '../src/lib/record.js';
+import { appendRecord, verifyRecord, hashEntry, readRecords, recordFile } from '../src/lib/record.js';
 
 const CHAIN_LENGTH = 40;
 
-function buildChain() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-tamper-'));
-  fs.mkdirSync(path.join(dir, '.docket'), { recursive: true });
-  const docketDir = path.join(dir, '.docket');
+function buildChain(root) {
+  const docketDir = path.join(root, '.docket');
+  fs.mkdirSync(docketDir, { recursive: true });
   for (let i = 0; i < CHAIN_LENGTH; i++) {
     if (i % 2 === 0) {
       appendRecord(docketDir, {
@@ -43,22 +42,32 @@ function buildChain() {
   return docketDir;
 }
 
-function writeMutated(entries) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-tamper-mut-'));
-  fs.mkdirSync(path.join(dir, '.docket'), { recursive: true });
-  const docketDir = path.join(dir, '.docket');
+// One scratch directory for the whole run; each mutation overwrites the same
+// record file (verifyRecord only reads it), so the suite leaks nothing.
+function writeMutated(docketDir, entries) {
   fs.writeFileSync(
-    path.join(docketDir, 'record.jsonl'),
+    recordFile(docketDir),
     entries.map((e) => JSON.stringify(e)).join('\n') + (entries.length ? '\n' : '')
   );
   return docketDir;
 }
 
 export function runTamper() {
-  const original = buildChain();
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-tamper-'));
+  try {
+    return tamperIn(root);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function tamperIn(root) {
+  const original = buildChain(path.join(root, 'chain'));
   const entries = readRecords(original);
   const head = verifyRecord(original).head;
   const clone = () => entries.map((e) => ({ ...e }));
+  const scratch = path.join(root, 'scratch', '.docket');
+  fs.mkdirSync(scratch, { recursive: true });
 
   const mutations = [];
   for (let i = 0; i < entries.length; i++) {
@@ -90,7 +99,7 @@ export function runTamper() {
   let detectedChainAlone = 0;
   let detectedWithHead = 0;
   for (const mut of mutations) {
-    const dir = writeMutated(mut.make());
+    const dir = writeMutated(scratch, mut.make());
     const plain = verifyRecord(dir);
     const pinned = verifyRecord(dir, { expectHead: head });
     if (!plain.ok) detectedChainAlone++;

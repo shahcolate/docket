@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>about docket — why agents need a permission layer</title>
 <meta name="description" content="Why docket exists, the principles it refuses to bend, and what the project is: an open-source, zero-dependency permission layer and paper trail for AI agents.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121316" media="(prefers-color-scheme: dark)">
+<script>(function(){try{var t=localStorage.getItem('docket-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <style>
 :root {
   --bg: #FFFFFF; --bg-2: #F6F6F7; --ink: #131417; --mut: #55585F; --faint: #8B8E96;
@@ -46,16 +52,59 @@ code { font-family: var(--mono); font-size: 0.85em; background: var(--bg-2); pad
 .frame { max-width: 860px; margin: 0 auto; padding: 0 28px; }
 @media (max-width: 640px) { .frame { padding: 0 16px; } }
 
-nav.top {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 20px 0; border-bottom: 1px solid var(--hair);
+.nav-shell { position: sticky; top: 0; z-index: 60; background: var(--bg); border-bottom: 1px solid var(--hair); }
+@supports ((backdrop-filter: blur(1px)) and (background: color-mix(in srgb, red 50%, blue))) {
+  .nav-shell {
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6);
+  }
 }
-.wordmark { font-weight: 800; font-size: 19px; letter-spacing: -0.02em; text-decoration: none; }
+nav.top { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 15px 0; }
+.wordmark { font-weight: 800; font-size: 19px; letter-spacing: -0.02em; text-decoration: none; white-space: nowrap; }
 .wordmark::after { content: "."; color: var(--red); }
 .wordmark span { color: var(--faint); font-weight: 600; }
-nav.top .links { display: flex; gap: 22px; align-items: center; font-size: 14px; font-weight: 600; }
-nav.top .links a { text-decoration: none; color: var(--mut); }
+.nav-right { display: flex; align-items: center; gap: 20px; }
+nav.top .links { display: flex; gap: 24px; align-items: center; font-size: 14px; font-weight: 600; }
+nav.top .links a { text-decoration: none; color: var(--mut); padding: 6px 0; }
 nav.top .links a:hover { color: var(--ink); }
+nav.top .links a[aria-current="page"] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--red); }
+.nav-right .gh {
+  font-size: 14px; font-weight: 600; text-decoration: none;
+  color: var(--bg); background: var(--ink); padding: 9px 16px; white-space: nowrap;
+}
+.nav-right .gh:hover { background: var(--red); }
+.theme-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; padding: 0; cursor: pointer;
+  background: transparent; border: 1px solid var(--hair-2); color: var(--mut);
+}
+.theme-btn:hover { color: var(--ink); border-color: var(--ink); }
+.theme-btn svg { width: 15px; height: 15px; display: block; }
+.menu-btn { display: none; }
+@media (max-width: 720px) {
+  nav.top { padding: 12px 0; }
+  .nav-right { gap: 10px; }
+  .nav-right .gh { font-size: 13px; padding: 10px 13px; }
+  .menu-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; padding: 0; cursor: pointer;
+    background: transparent; border: 1.5px solid var(--ink); color: var(--ink);
+  }
+  .menu-btn svg { width: 17px; height: 17px; display: block; }
+  .menu-btn .ic-close { display: none; }
+  nav.top.open .menu-btn .ic-menu { display: none; }
+  nav.top.open .menu-btn .ic-close { display: block; }
+  nav.top .links {
+    display: none; position: absolute; left: 0; right: 0; top: 100%;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--bg); border-bottom: 1.5px solid var(--ink);
+    padding: 4px max(16px, env(safe-area-inset-right)) 14px max(16px, env(safe-area-inset-left));
+  }
+  nav.top.open .links { display: flex; }
+  nav.top .links a { font-size: 16px; font-weight: 600; padding: 14px 2px; border-bottom: 1px solid var(--hair); }
+  nav.top .links a:last-child { border-bottom: none; }
+  nav.top .links a[aria-current="page"] { box-shadow: inset 3px 0 0 var(--red); padding-left: 12px; }
+}
 
 .doc { padding: 48px 0 100px; }
 .doc .klabel { font-size: 11.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mut); }
@@ -87,15 +136,31 @@ nav.top .links a:hover { color: var(--ink); }
 </head>
 <body>
 
+<div class="nav-shell">
 <div class="frame">
-<nav class="top">
+<nav class="top" id="topnav">
   <a class="wordmark" href="index.html">docket<span>&thinsp;/&thinsp;about</span></a>
-  <div class="links">
-    <a href="index.html">Home</a>
-    <a href="docs.html">Docs</a>
-    <a href="https://github.com/shahcolate/docket">GitHub</a>
+  <div class="nav-right">
+    <div class="links" id="site-nav">
+      <a href="index.html">Home</a>
+      <a href="docs.html">Docs</a>
+      <a href="about.html" aria-current="page">About</a>
+      <a href="https://github.com/shahcolate/docket/blob/main/spec/SPEC.md">Spec</a>
+    </div>
+    <button class="theme-btn" type="button" aria-label="Toggle dark mode">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>
+    </button>
+    <a class="gh" href="https://github.com/shahcolate/docket">GitHub&nbsp;★</a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">
+      <svg class="ic-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <svg class="ic-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
+    </button>
   </div>
 </nav>
+</div>
+</div>
+
+<div class="frame">
 
 <main class="doc">
   <div class="klabel"><span class="tick">■</span> About</div>
@@ -110,19 +175,23 @@ nav.top .links a:hover { color: var(--ink); }
     failure is a bad <b>action</b>: agents use tools. A misread no longer comes back
     as a wrong paragraph — it goes out as a sent email, a filed ticket, a changed
     record.</p>
-    <div class="callout"><b>It has already happened in the wild.</b> In early 2026 a
-    user reported that his agent, having drafted an appeal for a denied insurance
-    claim, sent it to the insurer on its own when he ignored the draft — it took
-    silence plus frustration as a yes.</div>
-    <p>Docket is the layer that prevents exactly that. Before an agent acts, it checks
-    a one-page rule file a human wrote — <b>allow, ask, or deny</b> — and after, it
-    leaves a tamper-evident record. The default is the point: anything the file
-    doesn’t grant, the agent must ask about. <b>Unlisted means ask. Silence is never
-    permission.</b></p>
-    <p>And the rules aren’t only advice. In Claude Code, <code>docket hook</code> wires
-    the warrant into the harness itself as a PreToolUse gate — every intercepted tool
-    call gets its allow/ask/deny from your file, whether or not the model read a word
-    of it. Advisory for cooperative agents, mechanical where it counts.</p>
+    <div class="callout"><b>It has already happened in the wild.</b> In mid-2025,
+    Replit’s coding agent deleted a SaaS company’s production database during an
+    explicit code freeze — after being told, eleven times, in all caps, not to touch
+    anything. Then it reported that rollback was impossible (it wasn’t) and generated
+    thousands of fake records to hide the damage.</div>
+    <p>That’s two failures in one incident — an action nobody permitted, and a record
+    nobody could trust — and docket is a layer against both. Before an agent acts, it
+    checks a one-page rule file a human wrote — <b>allow, ask, or deny</b> — and a
+    <code>never</code> written under calm conditions can’t be overridden by
+    in-the-moment panic. After, every check and action lands on a hash-chained record,
+    so “the agent says it rolled back” is checkable, not taken on faith. The default
+    is the point: anything the file doesn’t grant, the agent must ask about.
+    <b>Unlisted means ask. Silence is never permission.</b></p>
+    <p>And the rules aren’t only advice. In Claude Code, <code>docket hook claude</code>
+    wires the warrant into the harness itself as a PreToolUse gate — every intercepted
+    tool call gets its allow/ask/deny from your file, whether or not the model read a
+    word of it. Advisory for cooperative agents, mechanical where it counts.</p>
   </section>
 
   <section id="story">
@@ -130,21 +199,21 @@ nav.top .links a:hover { color: var(--ink); }
     <p>I kept handing agents more of my real work — the follow-ups, the planning, the
     paperwork nobody loves — and noticed the deal I was actually making: every step of
     autonomy I granted was a step of visibility I gave up. The tools got better at
-    <em>acting</em> much faster than I got better at <em>knowing what I'd authorized</em>.
-    My rules lived in prompts I'd improvised at 11pm, different in every tool, enforced
+    <em>acting</em> much faster than I got better at <em>knowing what I’d authorized</em>.
+    My rules lived in prompts I’d improvised at 11pm, different in every tool, enforced
     by hope.</p>
-    <p>Then came the story that wouldn't leave me alone: an agent that drafted an
-    insurance appeal and, when its user went quiet, sent it — silence plus frustration,
-    read as a yes. What struck me wasn't that the agent misjudged. It's that the user
-    had no artifact to point at. Nothing that said <em>here is what it was allowed to
-    do</em>, nothing that proved <em>here is what it did</em>. The permission was a
-    vibe, and the evidence was a chat scroll.</p>
-    <p>Docket is the tool I wanted that day: the boundary written down once, calmly, in
-    a file I can diff and commit — and a record I can hand to anyone, including my own
-    future self, that doesn't depend on trusting the agent's memory or mine. It's
-    deliberately small. The problem isn't that we lack platforms; it's that the most
+    <p>Then came the incidents that wouldn’t leave me alone — a database deleted through
+    a code freeze, an agent that read silence as a yes and sent the thing anyway. What
+    struck me wasn’t that the agents misjudged. It’s that in each case the human had no
+    artifact to point at. Nothing that said <em>here is what it was allowed to do</em>,
+    nothing that proved <em>here is what it did</em>. The permission was a vibe, and the
+    evidence was a chat scroll.</p>
+    <p>Docket is the tool I wanted on those days: the boundary written down once, calmly,
+    in a file I can diff and commit — and a record I can hand to anyone, including my own
+    future self, that doesn’t depend on trusting the agent’s memory or mine. It’s
+    deliberately small. The problem isn’t that we lack platforms; it’s that the most
     important question in agent autonomy — <em>what exactly was it allowed to do?</em> —
-    didn't have a file format. Now it has one, and it's short enough to read.</p>
+    didn’t have a file format. Now it has one, and it’s short enough to read.</p>
     <p style="color: var(--faint); font-size: 14.5px;">— Shah
     (<a href="https://github.com/shahcolate">@shahcolate</a>)</p>
   </section>
@@ -185,7 +254,7 @@ nav.top .links a:hover { color: var(--ink); }
     and built with <b>zero runtime dependencies</b> — a grammar small enough to audit
     is part of the security posture. It works with Claude, ChatGPT/Codex, Gemini,
     Cursor, OpenClaw, Hermes, and any MCP client.</p>
-    <p>The claims are red-teamed, not asserted: <b>10,545 checks across six suites</b>
+    <p>The claims are red-teamed, not asserted: <b>10,582 checks across six suites</b>
     run against the shipped templates on every CI build — real-incident scenarios,
     adversarial phrasing (euphemism, compound intent, injection, homoglyphs),
     vague-target probes, 10,000 fuzzed targets, 239 record-tampering mutations, and a
@@ -211,5 +280,39 @@ nav.top .links a:hover { color: var(--ink); }
 </footer>
 </div>
 
+<script>
+(function () {
+  // ── theme toggle ──
+  var rootEl = document.documentElement;
+  var themeBtn = document.querySelector('.theme-btn');
+  function currentTheme() {
+    return rootEl.getAttribute('data-theme') ||
+      (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  }
+  if (themeBtn) themeBtn.addEventListener('click', function () {
+    var next = currentTheme() === 'dark' ? 'light' : 'dark';
+    rootEl.setAttribute('data-theme', next);
+    try { localStorage.setItem('docket-theme', next); } catch (e) {}
+  });
+
+  // ── mobile menu ──
+  var nav = document.getElementById('topnav');
+  var menuBtn = document.querySelector('.menu-btn');
+  if (nav && menuBtn) {
+    menuBtn.addEventListener('click', function () {
+      var open = nav.classList.toggle('open');
+      menuBtn.setAttribute('aria-expanded', String(open));
+      menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    });
+    [].slice.call(nav.querySelectorAll('.links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        nav.classList.remove('open');
+        menuBtn.setAttribute('aria-expanded', 'false');
+        menuBtn.setAttribute('aria-label', 'Open menu');
+      });
+    });
+  }
+})();
+</script>
 </body>
 </html>
