@@ -20,6 +20,7 @@ warrant:
     - family dinners, family commitments, or family events
     - workouts or workout blocks
     - cancelling anything without an explicit yes on that specific thing
+    - automations or recurring rules
 reserved:
   - what actually matters this week
   - every calendar change, one by one — approving the plan is not approving the moves

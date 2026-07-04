@@ -277,6 +277,13 @@ general sense of unfairness. Stop before send.</pre></div>
     <p>Plus two cross-cutting lists: <code>ask</code> (always needs human approval,
     whatever the verb) and <code>never</code> (does not happen, even with approval — you,
     under calm conditions, pre-deciding what no in-the-moment persuasion may undo).</p>
+    <div class="callout"><b>Deferred consequences.</b> An action classifies by where its
+    consequences <em>eventually land</em>, not where the bytes land first. A send with a
+    timer on it is a send; a git hook, CI workflow, or cron job planted now carries its
+    consequences past the moment of approval — and past the session. Unanticipated cases
+    fall to rule 4 below (unlisted means ask), but pre-decide the common vectors: the
+    shipped templates hard-stop <code>scheduled or automated sending</code> and
+    <code>git hooks, CI workflows, or scheduled jobs</code>.</div>
     <h3>The verdict algorithm</h3>
     <p>Given a loop, an action verb, and a target (a plain-language description of what
     the action touches), the verdict is the <b>first</b> rule that matches:</p>
@@ -415,6 +422,19 @@ npx docket-agent new followup --template client-follow-up
 npx docket-agent compile --target claude --write
 <span class="c"># optional — native checks + record via MCP:</span>
 claude mcp add docket -- npx docket-agent mcp</pre></div>
+    <p>To make the warrant <em>enforced</em> rather than advisory, wire
+    <code>docket hook</code> as a PreToolUse hook in <code>.claude/settings.json</code> —
+    every intercepted tool call gets an allow/ask/deny decision from the warrant, applied
+    by the harness whether or not the model read the rules:</p>
+    <div class="code"><pre>{ "hooks": { "PreToolUse": [ {
+    "matcher": "Write|Edit|Bash|mcp__.*",
+    "hooks": [ { "type": "command",
+                 "command": "npx -y docket-agent hook --loop followup" } ] } ] } }</pre></div>
+    <p>Lookup tools map to <code>read</code>, local edits and Bash to <code>change</code>,
+    and anything unrecognized — MCP tools included — to <code>send</code>. Every failure
+    mode (bad payload, missing project, ambiguous loop) degrades to <code>ask</code>,
+    never to a silent allow. Gated calls land in the record as <code>via: "hook"</code>
+    and feed <code>docket review</code> like any other check.</p>
 
     <h3>ChatGPT · Codex</h3>
     <div class="code"><pre>npx docket-agent compile --target agents --write   <span class="c"># → AGENTS.md</span></pre></div>
@@ -474,17 +494,19 @@ npx docket-agent compile --target agents --write</pre></div>
       <tr><td><code>docket review</code></td><td>propose warrant updates from repeated asks (<code>--min</code>, <code>--loop</code>, <code>--yes</code>)</td></tr>
       <tr><td><code>docket compile</code></td><td><code>--target claude|agents|gemini|cursor|raw</code>, <code>--write</code> to update the file in place, <code>--loop</code> to preview one loop on stdout</td></tr>
       <tr><td><code>docket mcp</code></td><td>run the MCP server (<code>--dir</code> or <code>DOCKET_DIR</code> to locate the project)</td></tr>
+      <tr><td><code>docket hook</code></td><td>Claude Code PreToolUse gate: hook JSON on stdin → <code>permissionDecision</code> JSON on stdout (<code>--loop</code>, <code>--dir</code>, <code>--no-record</code>); fails toward ask, never open</td></tr>
     </table></div>
   </section>
 
   <section id="eval">
     <h2>The red-team eval</h2>
-    <p>The claim “fuzzy only toward caution” is tested, not asserted. A 42-scenario suite
+    <p>The claim “fuzzy only toward caution” is tested, not asserted. A 51-scenario suite
     modeled on real agent-overreach incidents — unauthorized outbound email, calendar
-    “tidying”, invented commitments, agents widening their own permissions — runs against
-    the shipped templates on every build:</p>
+    “tidying”, invented commitments, agents widening their own permissions, and scheduled
+    escapes (a delayed send, a planted git hook, a CI job that acts next week) — runs
+    against the shipped templates on every build:</p>
     <ul>
-      <li><b>24/24</b> consequence-bearing actions contained (ask or deny)</li>
+      <li><b>33/33</b> consequence-bearing actions contained (ask or deny)</li>
       <li><b>0</b> silent allows — the failure that ships the email</li>
       <li><b>18/18</b> warranted work allowed — safety without friction</li>
     </ul>
@@ -502,10 +524,21 @@ npx docket-agent compile --target agents --write</pre></div>
     <h3>What stops the agent from just ignoring the rules?</h3>
     <p>Three layers, in increasing strength: the compiled context tells it the rules
     (models follow explicit written boundaries far better than vibes); the MCP tools make
-    checking cheap and logged, so skipping the check is visible in the record; and the
-    exit codes let you make it <em>mechanical</em> — wrap risky tools in a shell guard
-    that calls <code>docket check</code> and refuses on exit 2/3, or wire it into your
-    agent’s hook system. Advisory for cooperative agents, enforceable where it counts.</p>
+    checking cheap and logged, so skipping the check is visible in the record; and
+    <code>docket hook</code> makes it <em>mechanical</em> — as a Claude Code PreToolUse
+    hook, the harness applies the warrant's allow/ask/deny to every intercepted tool
+    call, whether or not the model cooperates. (The exit codes of <code>docket
+    check</code> — 0/2/3 — let you build the same guard into any other agent's hook
+    system.) Advisory for cooperative agents, enforced where it counts.</p>
+    <h3>Why not just a sandbox?</h3>
+    <p>Use one — they're complementary layers. A sandbox bounds <em>damage</em>: what the
+    process can physically reach. Docket bounds <em>authority</em>: what the agent was
+    allowed to do, and whether you can prove what it did. A sandbox can't tell the
+    authorized email from the unauthorized one — both are legitimate traffic through the
+    proxy. And the failure that connects the layers is the scheduled escape: an action
+    that looks contained inside the session and detonates after it (a planted git hook, a
+    queued send). That's a scenario family in the eval, a <code>never</code> in the
+    templates, and a rule in the spec.</p>
     <h3>Can the record be faked?</h3>
     <p>Edits, deletions, insertions, and reordering break the hash chain at a named
     entry. Tail truncation is caught by pinning the head hash

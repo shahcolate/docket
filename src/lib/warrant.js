@@ -29,15 +29,19 @@ const STOPWORDS = new Set([
 
 // Light stemming, candidate-set style: two words match when any of their
 // suffix-stripped forms coincide ("quotes"→{quote,quot} meets "quote"→{quote},
-// "contacting" meets "contact"). No dictionary — just enough to keep
-// phrasing from deciding permission.
+// "contacting" meets "contact"). Stripping -ing/-ed also restores a trailing
+// "e" ("scheduled"→{…,schedul,schedule} meets "schedule") — inflection must
+// not decide permission. No dictionary — just enough to keep phrasing from
+// deciding permission.
 function stemCandidates(word) {
   const c = new Set([word]);
   const base = word.replace(/'s$/, '');
   c.add(base);
   for (const suffix of ['ing', 'ed', 'es', 's']) {
     if (base.endsWith(suffix) && base.length - suffix.length >= 3) {
-      c.add(base.slice(0, -suffix.length));
+      const stem = base.slice(0, -suffix.length);
+      c.add(stem);
+      if (suffix === 'ing' || suffix === 'ed') c.add(stem + 'e');
     }
   }
   return c;

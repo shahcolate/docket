@@ -21,6 +21,7 @@ warrant:
   never:
     - unapproved prices, discounts, or scope changes
     - apologizing for things we did not do
+    - scheduled or automated sending
 reserved:
   - what gets promised
   - final approval of every outbound message

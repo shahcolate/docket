@@ -30,6 +30,7 @@ ChatGPT/Codex、Gemini、Cursor、OpenClaw、Hermes 以及任何 MCP 客户端�
 
 ## 最新动态
 
+- **2026.07** — `v0.3.0` 推出 **`docket hook`**：把授权令变成 Claude Code 的 PreToolUse 门禁——allow/ask/deny 由执行框架强制执行，而不是靠提示词。同时规范新增“延迟后果”规则，红队套件新增**定时逃逸**场景族。
 - **2026.07** — `v0.2.1` 发布至 npm：软件包内附带最新的 README 与 CLI 帮助。
 - **2026.07** — `v0.2.0` 推出 **`docket review`**：记录会自动提议授权令修正案，但每一条都必须由人来按键批准。
 - **2026.07** — 新增 [OpenClaw](https://docs.openclaw.ai) 与 [Hermes](https://hermes-agent.nousresearch.com/docs/) 集成，上线完整[文档站点](https://shahcolate.github.io/docket/docs.html)。
@@ -140,7 +141,15 @@ DENY  change → "accepting a settlement"
 `"status email to the team"` 这样具体的 allow 条目继承到权限。
 措辞上的差异可能带来一次多余的询问，但绝不会带来一次意外的放行。
 
-我们对这个论断做红队测试：[42 个场景](eval/REPORT.md)取材于真实的智能体越权事件，
+披着伪装的发送仍然是发送。套件里最新的失败类别是**定时逃逸**——
+“把邮件安排在周五发”、埋在仓库里的 git 钩子、下周才动手的 CI 任务：
+这些动作此刻看起来是被包住的，却在会话结束之后、越过所有审批引爆。
+内置模板对它们设了硬停（`scheduled or automated sending`；
+`git hooks, CI workflows, or scheduled jobs`），而
+[规范里的规则](spec/SPEC.md#deferred-consequences)是通用的：
+**动作按其后果最终落在哪里来归类**，而不是按字节先落在哪里。
+
+我们对这一切做红队测试：[51 个场景](eval/REPORT.md)取材于真实的智能体越权事件，
 在每次 CI 构建中对内置模板全量运行——**零静默放行，零误拦已授权的工作**。
 你可以用 `npm run eval` 自行复现。
 
@@ -218,6 +227,56 @@ $ claude mcp add docket -- npx docket-agent mcp
 
 智能体自己发起的授权令检查同样会进入记录。*“它到底问没问过？”*
 变成一句 grep。
+
+## 强制执行，而非建议（Claude Code 钩子）
+
+编译上下文和 MCP 工具在智能体配合时有效。`docket hook` 不需要它配合。
+把它接成 Claude Code 的 **PreToolUse 钩子**，每一次被拦截的工具调用都会
+由*执行框架本身*按授权令裁决——docket 的三种判定与 Claude Code 的权限
+决策一一对应，无论模型有没有读过你的规则：
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|Bash|mcp__.*",
+        "hooks": [
+          { "type": "command", "command": "npx -y docket-agent hook --loop repo-work" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+把它放进 `.claude/settings.json`，用 `matcher` 圈定要设门禁的工具，
+授权令就不再只是建议。查询类工具映射为 `read`，本地修改和 Bash 映射为
+`change`，docket 不认识的一切——包括 MCP 工具——映射为 `send`，
+也就是大多数 loop 刻意留空 allow 列表的那个动词。所有故障模式
+（坏载荷、找不到项目、loop 不明确）都退化为 `ask`，绝不静默放行：
+会失效开门的门禁不是门禁。
+
+被门禁的调用和其他检查一样写入记录（`via: "hook"`），你反复批准的询问
+会浮现在 `docket review` 里——门禁在教授权令下一步该写什么。
+
+## 为什么不直接用沙箱？
+
+请用——真心建议。沙箱（容器、出口过滤、只读挂载）约束的是**破坏力**：
+进程物理上能碰到什么。Docket 约束的是**授权**：智能体被允许做什么，
+以及你能否证明它做了什么。沙箱分不清获批的申诉邮件和擅发的那一封——
+两者在代理看来都是合法的 HTTPS 流量。授权令分得清，记录能证明发生的是哪一封。
+
+两层防线在最令我们警惕的失败处交汇。一次对智能体沙箱的红队测试发现，
+智能体可以在子模块里埋一个 git 钩子，它会在**会话结束几天之后、在宿主机上**
+执行。沙箱是安全的；逃逸是定时的。这个失败形态如今是我们评测套件里的一个
+[场景族](eval/REPORT.md)、内置模板里的一条 `never`、以及
+[规范](spec/SPEC.md#deferred-consequences)里的一条规则。
+
+另外要说清：应对智能体风险的答案不是逐条审批每个命令——给 Bash 脚本过安检
+是失败模式，不是目标。授权令让你在冷静时预先决定 `allow` 和 `deny`，
+使 `ask` 保持稀少而有分量；`docket review` 会替你退役那些反复批准的询问。
+门禁的职责是保持沉默，直到沉默即将变成许可的那一刻。
 
 ## OpenClaw 与 Hermes
 
@@ -322,8 +381,8 @@ allow read: "state insurance regulations" in appeal? [y/N] y
 
 ## 路线图
 
+- [x] ~~`docket check` 作为 Claude Code PreToolUse 钩子的配方~~ — 已在 v0.3.0 以 `docket hook` 发布
 - [ ] 记录链头签名（为链尖出具证明，可对外分享）
-- [ ] `docket check` 作为 Claude Code PreToolUse 钩子的配方
 - [ ] loop 继承（`extends:`），用于团队基线
 - [ ] 记录导出 → 人类可读的工作摘要
 - [ ] 适配器：OpenAI 自定义指令、Windsurf

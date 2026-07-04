@@ -18,6 +18,7 @@ warrant:
   ask:
     - publishing anywhere public
     - any claim with a number in it
+    - scheduling or queueing anything to publish later
   never:
     - claims about competitors we cannot support
     - invented or made-up customer quotes or statistics

@@ -101,6 +101,27 @@ Four verbs, in escalating order of consequence:
 | `change` | mutate state that stays inside the sandbox |
 | `send` | consequences leave the sandbox: email, publish, file, deploy, pay |
 
+### Deferred consequences
+
+An action classifies by where its consequences **eventually land**, not where
+the bytes land first. A send with a timer on it is a `send`, whatever the
+tool call looks like at the moment it happens. Scheduling an email, queueing
+a post, creating an automation, planting anything that executes later — a git
+hook, a CI workflow, a cron job, a shell startup file — all carry their
+consequences past the moment of approval, and past the session itself. This
+escape is real, not hypothetical: a red-team pass on an agent sandbox found
+the agent could plant a git hook in a submodule that would have executed on
+the host days after the session ended. The sandbox was secure; the escape was
+scheduled.
+
+The verdict algorithm already contains the novel cases — an unanticipated
+deferred action is unlisted, and unlisted means ask (rule 4 below). But loop
+authors should pre-decide the common vectors explicitly: put scheduling and
+automation on the `ask` or `never` list of any loop whose `send` list is
+empty on purpose. The shipped templates do (`scheduled or automated sending`,
+`git hooks, CI workflows, or scheduled jobs`), and the scheduled-escape
+family in the [red-team suite](../eval/REPORT.md) holds them to it.
+
 Plus two cross-cutting lists:
 
 - `ask` — always requires human approval, whatever the verb.
@@ -259,6 +280,35 @@ before the handshake.
 | `docket_loop_context` | fetch a loop's five layers before starting work |
 | `docket_warrant_check` | get an allow/ask/deny verdict **before** acting; auto-recorded as a `check` entry |
 | `docket_record` | append a `note` entry to the record |
+
+## The harness hook
+
+Compiled context and MCP tools are cooperative surfaces — they work when the
+agent consults them. `docket hook` is the structural one: wired as a Claude
+Code **PreToolUse hook**, it gates every intercepted tool call through the
+warrant whether or not the model read anything.
+
+The contract:
+
+- **stdin** — the PreToolUse payload: `{"tool_name": "...", "tool_input":
+  {...}, "cwd": "..."}`.
+- **stdout** — `{"hookSpecificOutput": {"hookEventName": "PreToolUse",
+  "permissionDecision": "allow"|"ask"|"deny", "permissionDecisionReason":
+  "..."}}`. The three verdicts map one-to-one onto the harness's decisions.
+- **exit code** — always `0`; the decision travels in the JSON.
+
+Tool names map to warrant verbs: lookup tools (`Read`, `Glob`, `Grep`,
+`WebFetch`, `WebSearch`, …) are `read`; local mutations (`Write`, `Edit`,
+`NotebookEdit`, `Bash`) are `change`; **everything else — MCP tools, unknown
+tools — is `send`**, the verb whose allow list is most often empty on
+purpose. The target is the tool name plus its most human-meaningful input
+(command, file path, URL), so `ask`/`never` patterns and author-explicit
+globs match what a human would say the call touches.
+
+Implementations must **fail toward ask, never open**: a malformed payload, a
+missing `.docket`, an ambiguous loop (pass `--loop <name>` when more than one
+exists) all yield an `ask` decision with the reason, not an allow. Every
+gated call is appended to the record as a `check` entry (`via: "hook"`).
 
 ## What this spec refuses to do
 

@@ -17,6 +17,7 @@ warrant:
     - deleting anything from memory
   never:
     - storing secrets, tokens, or passwords in any loop file
+    - git hooks, CI workflows, or scheduled jobs
 reserved:
   - what gets remembered at all — memory is curation, not accumulation
   - any change to what an agent is allowed to do
@@ -53,3 +54,8 @@ record:
 
 Failure mode: letting one tool's built-in memory become the real memory. The moment
 that happens, your context has a landlord.
+
+Second failure mode — the scheduled escape: "helpfully" wiring the recompile into a
+git hook, a CI workflow, or a cron job. Code planted now that runs later executes
+past every approval this loop provides; keeping the compile a human-invoked command
+is the point, not an inefficiency.

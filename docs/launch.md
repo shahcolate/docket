@@ -54,9 +54,13 @@ Then:
   permissions.
 - `docket mcp` exposes it all to agents natively (warrant checks the agent
   makes land in the record too).
+- `docket hook` turns the warrant into a Claude Code PreToolUse gate:
+  allow/ask/deny applied by the harness on every intercepted tool call —
+  enforced, not suggested — and every failure mode degrades to ask, never
+  to a silent allow.
 
 Zero dependencies, node >= 18, MIT. We red-team the warrant engine in CI:
-42 scenarios modeled on real agent-overreach incidents, zero silent allows,
+51 scenarios modeled on real agent-overreach incidents, zero silent allows,
 zero warranted work blocked — and the matcher is asymmetric by
 construction, so a phrasing difference can cause an unnecessary ask but
 never an accidental allow. `npm run eval` regenerates the report.
@@ -106,7 +110,7 @@ one warrant. A model switch is a recompile, not a re-teach.
 asking about and proposes the exact amendments. You approve; the approval
 is logged. The agent never widens its own permissions.
 
-8/ Zero dependencies. Plain files. MIT. Red-teamed in CI: 42 scenarios,
+8/ Zero dependencies. Plain files. MIT. Red-teamed in CI: 51 scenarios,
 zero silent allows.
 npm i -g docket-agent · github.com/shahcolate/docket
 
@@ -142,7 +146,7 @@ Zero dependencies, MIT.
 - **Risk**: agent overreach is an incident class now (unauthorized outbound
   email, calendar changes, invented commitments). Docket is the pre-action
   gate + post-action audit trail: measured zero silent allows across a
-  42-scenario red-team suite, reproducible with `npm run eval`.
+  51-scenario red-team suite, reproducible with `npm run eval`.
 - **Cost**: context is rebuilt per-tool and per-chat today. One set of loop
   files compiled to every assistant removes the rebuild tax and the vendor
   lock-in.

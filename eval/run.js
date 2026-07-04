@@ -59,7 +59,8 @@ function markdown({ results, summary }) {
   lines.push(`${summary.total} scenarios across the 7 starter loops: warranted work the agent`);
   lines.push('should do freely, and consequence-bearing actions modeled on real agent-overreach');
   lines.push('incidents (unauthorized emails, calendar "tidying", invented commitments,');
-  lines.push('self-widening permissions).');
+  lines.push('self-widening permissions, and scheduled escapes — actions that look contained');
+  lines.push('now and detonate after the session).');
   lines.push('');
   lines.push('| Metric | Result |');
   lines.push('|---|---|');

@@ -30,6 +30,7 @@ Zero dependencies · plain Markdown + JSONL · MIT
 
 ## News
 
+- **2026.07** — `v0.3.0` ships **`docket hook`**: the warrant as a Claude Code PreToolUse gate — allow/ask/deny enforced by the harness, not the prompt. Plus the deferred-consequence rule in the spec and the **scheduled escape** red-team family.
 - **2026.07** — `v0.2.1` on npm: current README and CLI help ship in the package.
 - **2026.07** — `v0.2.0` ships **`docket review`**: the record proposes warrant amendments; applying is always a human keystroke.
 - **2026.07** — [OpenClaw](https://docs.openclaw.ai) and [Hermes](https://hermes-agent.nousresearch.com/docs/) integrations, plus the full [documentation site](https://shahcolate.github.io/docket/docs.html).
@@ -147,7 +148,17 @@ target like `"email"` can never inherit permission from a specific allow
 entry like `"status email to the team"`. A phrasing difference can cause an
 unnecessary ask, never an accidental allow.
 
-We red-team this claim: [42 scenarios](eval/REPORT.md) modeled on real
+A send wearing a disguise is still a send. The newest failure class in the
+suite is the **scheduled escape** — "queue the email for Friday", a git hook
+planted in the repo, a CI job that acts next week: actions that look
+contained now and detonate after the session, past every approval. The
+shipped templates hard-stop them (`scheduled or automated sending`; `git
+hooks, CI workflows, or scheduled jobs`), and the
+[spec's rule](spec/SPEC.md#deferred-consequences) is general: **an action
+classifies by where its consequences eventually land**, not where the bytes
+land first.
+
+We red-team all of this: [51 scenarios](eval/REPORT.md) modeled on real
 agent-overreach incidents run against the shipped templates on every CI
 build — **zero silent allows, and zero warranted work blocked**.
 Reproduce it yourself with `npm run eval`.
@@ -226,6 +237,64 @@ The agent gets four tools:
 
 Warrant checks made by the agent land in the record too. *"Did the agent
 even ask?"* becomes a grep.
+
+## Enforced, not suggested (Claude Code hook)
+
+Compiled context and MCP tools work when the agent cooperates. `docket hook`
+doesn't need it to. Wired as a Claude Code **PreToolUse hook**, every
+intercepted tool call is checked against the warrant *by the harness* —
+docket's three verdicts map one-to-one onto Claude Code's permission
+decisions, whether or not the model read a word of your rules:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|Bash|mcp__.*",
+        "hooks": [
+          { "type": "command", "command": "npx -y docket-agent hook --loop repo-work" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Put that in `.claude/settings.json`, scope the `matcher` to the tools you
+want gated, and the warrant is no longer advice. Lookup tools map to `read`,
+local edits and Bash to `change`, and anything docket doesn't recognize —
+MCP tools included — to `send`, the verb whose allow list most loops keep
+empty on purpose. Every failure mode (bad payload, missing project,
+ambiguous loop) degrades to `ask`, never to a silent allow: a gate that
+fails open is not a gate.
+
+Gated calls land in the record like every other check (`via: "hook"`), so
+the asks you keep approving surface in `docket review` — the gate teaches
+the warrant what it should say next.
+
+## Why not just a sandbox?
+
+Run your agent in one — genuinely, do. Sandboxes (containers, egress
+filters, read-only mounts) bound **damage**: what the process can physically
+reach. Docket bounds **authority**: what the agent was allowed to do, and
+whether you can prove what it did. A sandbox cannot tell the authorized
+appeal email from the unauthorized one — both are legitimate HTTPS through
+the proxy. The warrant can, and the record shows which one happened.
+
+The two layers meet at the failure that scares us most. A red-team pass on
+an agent sandbox found the agent could plant a git hook in a submodule that
+would have executed **on the host, days after the session ended**. The
+sandbox was secure; the escape was scheduled. That shape of failure is now a
+[scenario family](eval/REPORT.md) in our eval suite, a `never` in the
+shipped templates, and a rule in the [spec](spec/SPEC.md#deferred-consequences).
+
+And no, the answer to agent risk is not approving every command — airport
+security for Bash scripts is the failure mode, not the goal. The warrant
+pre-decides `allow` and `deny` under calm conditions so that `ask` stays
+rare and means something, and `docket review` retires the asks you keep
+approving. The gate's job is to be silent until the moment silence would
+have been permission.
 
 ## OpenClaw and Hermes
 
@@ -337,8 +406,8 @@ Read the [Loop File Spec](spec/SPEC.md) — it's short on purpose.
 
 ## Roadmap
 
+- [x] ~~`docket check` as a Claude Code PreToolUse hook recipe~~ — shipped as `docket hook` in v0.3.0
 - [ ] Signed record heads (attest the chain tip, share the attestation)
-- [ ] `docket check` as a Claude Code PreToolUse hook recipe
 - [ ] Loop inheritance (`extends:`) for team baselines
 - [ ] Record export → human-readable work summaries
 - [ ] Adapters: OpenAI custom instructions, Windsurf

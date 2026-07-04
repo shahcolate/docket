@@ -21,6 +21,7 @@ warrant:
   never:
     - accepting or rejecting a settlement
     - inventing symptoms or events not in the record
+    - scheduled or automated sending
 reserved:
   - whether to appeal at all
   - the final wording of anything the insurer will read
@@ -56,4 +57,6 @@ record:
 
 Known failure mode — the one this loop exists to prevent: an agent reading frustration
 in a message ("I'm so sick of fighting this claim") as authorization, and sending the
-appeal itself. Frustration is not permission. Nothing in this loop sends anything.
+appeal itself. Frustration is not permission. Nothing in this loop sends anything —
+and a scheduled send is the same violation on a timer. "Queue it for Friday" is not
+a draft; it's a send whose consequences arrive after anyone is watching.
