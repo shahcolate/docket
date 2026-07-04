@@ -425,6 +425,8 @@ footer.site {
 @media (max-width: 760px) { .install-points { grid-template-columns: 1fr; gap: 16px; } }
 .install-points .pt { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); }
 .install-points p { margin-top: 6px; color: var(--mut); font-size: 14.5px; line-height: 1.55; }
+.install-note { margin-top: 24px; border-top: 1px solid var(--hair); padding-top: 18px; font-size: 13.5px; line-height: 1.6; color: var(--faint); }
+.install-note b { color: var(--mut); font-weight: 700; }
 .per-tool-head { margin-top: 68px; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-top: 1px solid var(--hair); padding-top: 34px; }
 .per-tool-head h3 { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
 .per-tool-head .sub-note { color: var(--faint); font-size: 14px; max-width: 40ch; }
@@ -763,6 +765,13 @@ npx docket-agent install                             <span class="c"># wire it i
           dependencies. Delete docket and you lose nothing but the tooling.</p>
         </div>
       </div>
+      <p class="install-note"><b>One honest detail:</b> the context layer (the compiled
+      rule files) is read automatically — truly zero setup for everyone who clones. The
+      <b>enforcement hook</b> is different: Claude Code asks each developer to approve the
+      committed hook once, the first time it runs. That prompt is Claude Code’s own safety
+      gate — a cloned repo shouldn’t be able to run commands on your machine unattended —
+      and it’s the exact ambient-execution risk docket exists to catch. Rules and record
+      travel instantly; mechanical enforcement is one click per person.</p>
     </div>
 
     <div class="per-tool-head">

@@ -145,19 +145,22 @@ repo:
   Cursor rules are read automatically at the start of every session — Claude
   Code, Codex/ChatGPT, Gemini, Cursor, any MCP client, **zero setup on anyone's
   end.**
-- **Enforcement, mechanical.** A Claude Code PreToolUse hook in
-  `.claude/settings.json` gates tool calls through the warrant (deny blocks,
-  ask prompts, allow is silent), and `.mcp.json` gives any MCP client the
-  native tools. The hook routes by content and stays out of the way when no
-  loop claims a call (pass-through); pin one loop with `--loop`, or `--strict`
-  to ask on anything uncovered.
+- **Enforcement, mechanical** *(one-time approval per developer).* A Claude
+  Code PreToolUse hook in `.claude/settings.json` gates tool calls through the
+  warrant (deny blocks, ask prompts, allow is silent), and `.mcp.json` gives
+  any MCP client the native tools. The hook routes by content and stays out of
+  the way when no loop claims a call (pass-through); pin one loop with
+  `--loop`, or `--strict` to ask on anything uncovered.
 
-It's merge-safe (your existing `settings.json` hooks and MCP servers are
-preserved), idempotent (add a loop, re-run, the context refreshes), and
+The two layers set up different expectations, and it's worth being precise:
+the **context** travels instantly — everyone who clones is under the warrant
+with zero setup. The **enforcement hook** asks each developer to approve the
+committed hook once, the first time it runs; that prompt is Claude Code's own
+safety gate (a cloned repo shouldn't run commands on your machine unattended —
+the exact ambient-execution risk docket exists to catch). It's also merge-safe
+(existing `settings.json` hooks and MCP servers are preserved), idempotent, and
 zero-dependency. Commit `.docket/` and the files above, and the whole team
-inherits it on the next `git pull`. Claude Code asks each collaborator to
-approve the committed hook once — a cloned repo can't silently run commands,
-which is the same ambient-execution risk docket exists to catch.
+inherits it on the next `git pull`.
 
 Prefer to wire a single tool by hand? `docket init` → `docket new` →
 `docket compile --target <tool> --write` does one target at a time; the
