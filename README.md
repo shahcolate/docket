@@ -122,34 +122,29 @@ Read the denial letter first. Answer the stated reason, not a general
 sense of unfairness. Quote the policy both ways. Stop before send.
 ```
 
-## Sixty seconds
+## Add docket to a repo — every agent, one command
+
+You don't standardize on a client or set anything up per developer. Add docket
+to the repo, commit it, and **every agent that touches the code — and everyone
+who clones — is under the same warrant and leaves the same record.** This is
+the enterprise path: govern the repository, not each person's toolchain.
 
 ```console
-$ npm install -g docket-agent   # or: npx docket-agent <command>
-$ docket init
-✓ created .docket
-
-$ docket new appeal --template insurance-appeal
-✓ wrote .docket/loops/appeal.loop.md
-```
-
-## Make it run for every agent in a repo
-
-One command wires docket into the whole repo so any agent that touches it is
-under the warrant:
-
-```console
-$ docket install
+$ npm install -g docket-agent                  # or: npx docket-agent <command>
+$ docket new deploy --template prod-hotfix      # one rule file for a recurring task
+$ docket install                                # wire it into the repo for every agent
 ✓ docket installed into .
   CLAUDE.md · AGENTS.md · GEMINI.md · .cursor/rules/docket.mdc
   .claude/settings.json · .mcp.json
 ```
 
-Two layers, set up together and committed with the repo:
+`docket install` sets up two layers together, all in files committed with the
+repo:
 
 - **Context, for free.** The compiled `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` /
-  Cursor rules are read automatically at the start of every session — anyone
-  who clones is under the warrant with **zero setup on their end**.
+  Cursor rules are read automatically at the start of every session — Claude
+  Code, Codex/ChatGPT, Gemini, Cursor, any MCP client, **zero setup on anyone's
+  end.**
 - **Enforcement, mechanical.** A Claude Code PreToolUse hook in
   `.claude/settings.json` gates tool calls through the warrant (deny blocks,
   ask prompts, allow is silent), and `.mcp.json` gives any MCP client the
@@ -158,10 +153,16 @@ Two layers, set up together and committed with the repo:
   to ask on anything uncovered.
 
 It's merge-safe (your existing `settings.json` hooks and MCP servers are
-preserved) and idempotent — add a loop, re-run `docket install`, and the
-context refreshes. Claude Code asks each collaborator to approve the
-committed hook once: a cloned repo can't silently run commands, which is the
-same ambient-execution risk docket itself is built to catch.
+preserved), idempotent (add a loop, re-run, the context refreshes), and
+zero-dependency. Commit `.docket/` and the files above, and the whole team
+inherits it on the next `git pull`. Claude Code asks each collaborator to
+approve the committed hook once — a cloned repo can't silently run commands,
+which is the same ambient-execution risk docket exists to catch.
+
+Prefer to wire a single tool by hand? `docket init` → `docket new` →
+`docket compile --target <tool> --write` does one target at a time; the
+[per-tool setup](https://shahcolate.github.io/docket/docs.html#integrations)
+covers each.
 
 No template that fits? Bare `docket new` is a **step-by-step creator**: five
 steps, one per layer, each explained as you answer. It previews the finished
