@@ -329,7 +329,7 @@ footer.site {
           <p class="cli" id="v-cli"></p>
         </div>
       </div>
-      <div class="widget-foot">Every check is appended to a hash-chained record — exit codes <code>0/2/3</code> so hooks and CI can enforce it.</div>
+      <div class="widget-foot">Every check is appended to a hash-chained record — and in Claude Code, <code>docket hook</code> makes the verdict the harness’s own permission decision.</div>
     </div>
   </div>
 </header>
@@ -509,7 +509,9 @@ npx docket-agent compile --target agents --write
         <div class="n">02</div>
         <h3>The agent must check first</h3>
         <p>Before acting, it gets a deterministic verdict. Not listed? It asks.
-        Marked never? Denied — even with approval. No guessing, ever.</p>
+        Marked never? Denied — even with approval. No guessing, ever. In Claude
+        Code, the PreToolUse hook enforces the verdict even if the agent never
+        checks.</p>
         <div class="mini">$ docket check appeal draft "letter"
 <span class="ga">ALLOW</span>  within the draft warrant
 $ docket check appeal send "email"
@@ -543,7 +545,7 @@ $ docket check appeal change "settle"
         <div class="case"><span class="name">marketing-brain</span><span class="does"><b>✓</b> drafts from messaging that already worked</span><span class="stops"><b>■</b> publishing; invented quotes and statistics are never</span></div>
         <div class="case"><span class="name">ticket-handoff</span><span class="does"><b>✓</b> writes tickets a stranger can pick up cold</span><span class="stops"><b>■</b> assigning people; deleting tickets is never</span></div>
         <div class="case"><span class="name">travel-morning</span><span class="does"><b>✓</b> plans around your rules, with a rain backup</span><span class="stops"><b>■</b> bookings; nonrefundable anything is never</span></div>
-        <div class="case"><span class="name">cross-tool-memory</span><span class="does"><b>✓</b> keeps one context current across every AI tool</span><span class="stops"><b>■</b> widening its own permissions; secrets in files are never</span></div>
+        <div class="case"><span class="name">cross-tool-memory</span><span class="does"><b>✓</b> keeps one context current across every AI tool</span><span class="stops"><b>■</b> widening its own permissions; secrets, git hooks, and CI jobs are never</span></div>
       </div>
     </div>
   </div>

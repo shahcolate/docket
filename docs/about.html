@@ -119,6 +119,10 @@ nav.top .links a:hover { color: var(--ink); }
     leaves a tamper-evident record. The default is the point: anything the file
     doesn’t grant, the agent must ask about. <b>Unlisted means ask. Silence is never
     permission.</b></p>
+    <p>And the rules aren’t only advice. In Claude Code, <code>docket hook</code> wires
+    the warrant into the harness itself as a PreToolUse gate — every intercepted tool
+    call gets its allow/ask/deny from your file, whether or not the model read a word
+    of it. Advisory for cooperative agents, mechanical where it counts.</p>
   </section>
 
   <section id="principles">
@@ -129,7 +133,13 @@ nav.top .links a:hover { color: var(--ink); }
       failure to be protected from it.</li>
       <li><b>Degrade toward the human.</b> Pattern matching is asymmetric by design:
       a phrasing difference may cause an unnecessary ask; it must never cause an
-      accidental allow.</li>
+      accidental allow. The enforcement hook holds the same line — every failure mode
+      gates to ask, never open.</li>
+      <li><b>Consequences count from where they land.</b> A send with a timer is still
+      a send; a git hook or CI job planted now is not a “local change” — it executes
+      after the session, past every approval. Actions classify by where their
+      consequences eventually land, and the templates pre-decide the common escape
+      vectors as hard stops.</li>
       <li><b>On the record, not on trust.</b> Every check and every piece of finished
       work lands in an append-only, hash-chained log. A record that can be edited
       quietly is not a record.</li>
@@ -151,10 +161,11 @@ nav.top .links a:hover { color: var(--ink); }
     and built with <b>zero runtime dependencies</b> — a grammar small enough to audit
     is part of the security posture. It works with Claude, ChatGPT/Codex, Gemini,
     Cursor, OpenClaw, Hermes, and any MCP client.</p>
-    <p>The claims are red-teamed, not asserted: 42 scenarios modeled on real
-    agent-overreach incidents run against the shipped templates on every CI build —
-    zero silent allows, zero warranted work blocked. Reproduce it yourself with
-    <code>npm run eval</code>.</p>
+    <p>The claims are red-teamed, not asserted: 51 scenarios modeled on real
+    agent-overreach incidents — unauthorized sends, invented commitments, and
+    scheduled escapes that detonate after the session — run against the shipped
+    templates on every CI build: zero silent allows, zero warranted work blocked.
+    Reproduce it yourself with <code>npm run eval</code>.</p>
     <p>Start with the <a href="index.html">homepage</a>, read the
     <a href="docs.html">docs</a> or the
     <a href="https://github.com/shahcolate/docket/blob/main/spec/SPEC.md">loop file
