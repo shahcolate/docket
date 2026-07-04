@@ -284,6 +284,7 @@ footer.site {
   <div class="links">
     <a href="#start">Get started</a>
     <a href="#how">How it works</a>
+    <a href="#fit">Who it’s for</a>
     <a href="#record">The record</a>
     <a href="docs.html">Docs</a>
     <a href="about.html">About</a>
@@ -298,9 +299,10 @@ footer.site {
       <div class="klabel"><span class="tick">■</span> Open source · zero dependencies · works with Claude, ChatGPT, Gemini, Cursor, OpenClaw, Hermes</div>
       <h1>Let your agent act. Decide what it&rsquo;s <span class="r">allowed</span>&nbsp;to&nbsp;do.</h1>
       <p class="sub">AI agents now send emails, move meetings, and change records on your
-      behalf. Docket gives each recurring task a one-page rule file the agent must
-      check before acting — <b>allow, ask, or deny</b> — and a tamper-evident record of
-      everything it did. Anything you didn’t write down, it has to ask about.</p>
+      behalf. Docket is how you hand one real, recurring work without babysitting it:
+      a one-page rule file per task — <b>allow, ask, or deny</b>, checked before acting —
+      and a tamper-evident record after. Anything you didn’t write down, it has to ask
+      about. <b>You keep the authority; you get the receipts.</b></p>
       <div class="ctas">
         <a class="btn primary" href="#start">Set up in 60 seconds</a>
         <a class="btn ghost" href="https://github.com/shahcolate/docket">View on GitHub</a>
@@ -552,6 +554,57 @@ $ docket check appeal change "settle"
   </div>
 </section>
 
+<section id="fit">
+  <div class="wrap">
+    <span class="klabel"><span class="tick">■</span> Where it earns its keep</span>
+    <h2>The same file answers three different people.</h2>
+    <div class="value" style="margin-top: 44px;">
+      <div>
+        <h3 style="margin-top: 0;">The team lead asks “is this governed?”</h3>
+        <p>Agent permissions become written, versioned, and reviewable — in the repo,
+        under code review, inherited by everyone who clones. When something goes wrong
+        (or an auditor asks), the answer is a file and a log, not a reconstruction from
+        chat history. And none of it bets the workflow on a single AI vendor.</p>
+      </div>
+      <div>
+        <h3 style="margin-top: 0;">The builder asks “what am I adopting?”</h3>
+        <p>A file format, a CLI, and a log — not a platform. Deterministic verdicts with
+        exit codes you can gate CI on, a JSONL hash chain, an MCP server, a PreToolUse
+        gate. Zero dependencies, so the supply chain that holds your agent’s permissions
+        is readable in an afternoon.</p>
+      </div>
+      <div>
+        <h3 style="margin-top: 0;">You ask “can I stop watching every keystroke?”</h3>
+        <p>Yes — that’s the point. Decide the boundaries once, calmly, in writing. The
+        agent drafts the appeal, builds the plan, writes the follow-up — and stops
+        exactly where you said. It never sends without you.</p>
+      </div>
+    </div>
+
+    <h2 style="margin-top: 72px;">And, honestly, what it is not.</h2>
+    <div class="value" style="margin-top: 32px;">
+      <div>
+        <h3 style="margin-top: 0;">Not a sandbox</h3>
+        <p>Docket bounds <b>authority</b> and proves what happened; a sandbox bounds what
+        the process can physically reach. Run both — a sandbox can’t tell the authorized
+        email from the unauthorized one. The warrant can.</p>
+      </div>
+      <div>
+        <h3 style="margin-top: 0;">Not another framework</h3>
+        <p>No runtime, no server, no account. Plain files in your repo; deleting docket
+        loses you nothing but the tooling. It sits under whichever agent you already
+        use — and whichever you try next.</p>
+      </div>
+      <div>
+        <h3 style="margin-top: 0;">Not a magic cage</h3>
+        <p>A cooperative agent follows the compiled rules; the Claude Code hook enforces
+        them mechanically; either way, every check lands on the record. Each layer is
+        exactly as strong as it claims — and the eval numbers are measured, not asserted.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="record">
   <div class="wrap">
     <span class="klabel"><span class="tick">■</span> The record</span>
@@ -603,7 +656,8 @@ $ docket check appeal change "settle"
   <div class="wrap">
     <h2>Put your agent on the record.</h2>
     <p>One command to start. Plain files you own. Works with every AI tool you already
-    pay for — and every one you’ll try next.</p>
+    pay for — and every one you’ll try next. Hand it real work; keep the authority;
+    get the receipts.</p>
     <div class="ctas">
       <a class="btn primary" href="#start">Get started</a>
       <a class="btn ghost" href="https://github.com/shahcolate/docket">github.com/shahcolate/docket</a>

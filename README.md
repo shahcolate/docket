@@ -19,6 +19,8 @@ or deny. After, it leaves a tamper-evident record. Anything you didn't write
 down, the agent must ask about. Plain Markdown in your repo; works with
 Claude, ChatGPT/Codex, Gemini, Cursor, OpenClaw, Hermes, and any MCP client.
 
+**Hand your agent real work. Keep the authority. Get the receipts.**
+
 **Install:** `npm install -g docket-agent` · **Docs:**
 [shahcolate.github.io/docket/docs.html](https://shahcolate.github.io/docket/docs.html)
 
@@ -56,6 +58,21 @@ So the question that matters isn't *"what does the AI know?"* It's:
 > **What exactly was the agent allowed to do — and can you prove it?**
 
 Docket makes the answer a file instead of a vibe.
+
+## What that buys you
+
+- **Delegation without babysitting.** The boundaries are decided once, in
+  writing, under calm conditions — so the agent works unattended and stops
+  exactly where you said. `ask` stays rare and meaningful: across the
+  red-team program, warranted work runs without a single unnecessary prompt
+  (18/18), and `docket review` retires the asks you keep approving.
+- **Evidence you can hand to anyone.** A client, a manager, a compliance
+  review, a postmortem — the record answers *"what was it allowed to do,
+  and what did it do?"* from a hash-chained file, not from memory.
+  239/239 tampering attempts detected in the eval.
+- **No vendor bet.** The rules and the record are plain files in your repo,
+  compiled to whichever assistant you use this quarter. A model switch is a
+  recompile; deleting docket loses you nothing but the tooling.
 
 ## One bounded task at a time
 
@@ -402,6 +419,25 @@ Seven templates, each a complete worked example (`docket templates`):
 | `marketing-brain` | marketing memory that compounds; confident vs. unsupportable, in writing |
 | `ticket-handoff` | tasks a stranger can pick up cold: source, owner, status, blocker, warrant, record |
 | `cross-tool-memory` | one context readable from Claude / GPT / Kimi / Codex |
+
+## What docket is not
+
+Selling this honestly means saying where the edges are:
+
+- **Not a sandbox.** Docket bounds *authority* and proves what happened; a
+  sandbox bounds what the process can physically reach. Run both —
+  [they compose](#why-not-just-a-sandbox).
+- **Not another agent framework.** There is no runtime, server, or account
+  to adopt. It's a file format, a checker, and a log — the layer under
+  whichever agent you already use.
+- **Not a magic cage.** A cooperative agent follows the compiled rules; the
+  [hook](#enforced-not-suggested-claude-code-hook) enforces them mechanically
+  where you wire it; and either way, every check lands on the record. Each
+  layer is exactly as strong as it claims, and no stronger.
+- **Not finished.** This is v0.3.x, and the spec may still break before 1.0
+  (loop files carry a `version` field for exactly that reason). What won't
+  move: unlisted means ask, failures land on the human, and the record stays
+  tamper-evident.
 
 ## Design principles
 
