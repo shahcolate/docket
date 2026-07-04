@@ -404,6 +404,26 @@ rare and means something, and `docket review` retires the asks you keep
 approving. The gate's job is to be silent until the moment silence would
 have been permission.
 
+## When there's no loop — or you want docket to stay out
+
+Docket is deliberately scoped, and it never invents a verdict for work you
+didn't write a loop for. **Retrieval fails open to the human; the warrant
+fails closed.** What "no loop covers this" means depends on where you are:
+
+| Surface | No loop covers it | Why |
+|---|---|---|
+| The hook, default | **pass-through** — docket stays silent, your normal permission flow decides | docket governs what you wrote loops for; it doesn't seize unowned work |
+| The hook, `--strict` | **ask** — a human approves anything outside the loops | opt-in "nothing moves without a loop" posture |
+| Inside a matched loop, unlisted action | **ask** (the default verdict) | *unlisted means ask — silence is never permission* |
+| `docket match <task>` | exit code **2** ("no loop covers it") | so scripts and CI can branch cleanly on "unrouted" |
+
+And if you want docket out of something entirely: it **never executes
+anything** — it only ever returns a verdict and appends to the record, so
+there's nothing to "turn off" mid-action. Engagement is opt-in per surface —
+don't wire the hook and it only answers when explicitly asked; scope the
+hook's `matcher` to the tools you actually want gated; and outside a
+`.docket` project a bare hook costs nothing.
+
 ## OpenClaw and Hermes
 
 **[OpenClaw](https://docs.openclaw.ai)** injects your workspace's `AGENTS.md`

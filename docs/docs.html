@@ -752,6 +752,21 @@ npx docket-agent compile --target agents --write</pre></div>
     that looks contained inside the session and detonates after it (a planted git hook, a
     queued send). That’s a scenario family in the eval, a <code>never</code> in the
     templates, and a rule in the spec.</p>
+    <h3>What happens when no loop covers the task?</h3>
+    <p>Docket never invents a verdict for work you didn’t write a loop for — retrieval
+    fails open to the human, the warrant fails closed. What “no loop” means depends on
+    where you are: the <a href="#hooks">hook</a> by default is <b>pass-through</b> (silent,
+    your normal permission flow decides), or under <code>--strict</code> it <b>asks</b>;
+    inside a matched loop an unlisted action is <b>ask</b> (the default verdict —
+    <em>silence is never permission</em>); and <code>docket match</code> exits <b>2</b> so
+    scripts and CI can branch on “unrouted.” Docket only governs what you wrote loops for;
+    it doesn’t seize unowned work.</p>
+    <h3>How do I keep docket out of something?</h3>
+    <p>It never executes anything — it only returns a verdict and appends to the record, so
+    there’s nothing to switch off mid-action. Engagement is opt-in per surface: don’t wire
+    the hook and docket only answers when explicitly asked (<code>docket check</code> / the
+    MCP tools); scope the hook’s <code>matcher</code> to the tools you actually want gated;
+    and outside a <code>.docket</code> project a bare hook costs nothing.</p>
     <h3>Can the record be faked?</h3>
     <p>Edits, deletions, insertions, and reordering break the hash chain at a named
     entry. Tail truncation is caught by pinning the head hash
