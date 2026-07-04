@@ -413,6 +413,21 @@ footer.site {
 .reframe .kill .r { color: var(--red); }
 .reframe .kicker { color: var(--mut); font-size: 16px; }
 .reframe .kicker b { color: var(--ink); }
+
+/* ── repo install (primary path) ── */
+.install-card { border: 1.5px solid var(--ink); padding: 32px 32px 34px; margin-top: 40px; box-shadow: 14px 14px 0 var(--bg-2); }
+@media (max-width: 640px) { .install-card { box-shadow: 8px 8px 0 var(--bg-2); padding: 22px 20px 26px; } }
+.install-card h3 { font-size: clamp(20px, 2.4vw, 25px); font-weight: 800; letter-spacing: -0.02em; margin: 0 0 8px; }
+.install-card .lede-sm { color: var(--mut); font-size: 16px; max-width: 58ch; }
+.install-out { font-family: var(--mono); font-size: 12px; color: var(--faint); margin-top: 12px; overflow-x: auto; white-space: nowrap; }
+.install-out .ok { color: var(--allow); font-weight: 700; }
+.install-points { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 28px; border-top: 1px solid var(--hair); padding-top: 24px; }
+@media (max-width: 760px) { .install-points { grid-template-columns: 1fr; gap: 16px; } }
+.install-points .pt { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); }
+.install-points p { margin-top: 6px; color: var(--mut); font-size: 14.5px; line-height: 1.55; }
+.per-tool-head { margin-top: 68px; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-top: 1px solid var(--hair); padding-top: 34px; }
+.per-tool-head h3 { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
+.per-tool-head .sub-note { color: var(--faint); font-size: 14px; max-width: 40ch; }
 </style>
 </head>
 <body>
@@ -718,17 +733,49 @@ NO LOOP  "wire funds to a vendor"
 <section id="start">
   <div class="wrap">
     <span class="klabel"><span class="tick">■</span> Get started</span>
-    <h2>60 seconds, in the tool you already use.</h2>
-    <p class="sec-intro">One command makes docket ambient across the whole repo — every agent
-    that touches it, under the warrant, with nothing to install on their end.</p>
+    <h2>Add it to the repo. Every agent is under the warrant.</h2>
+    <p class="sec-intro">No per-developer setup, no client to standardize on. One command
+    installs docket into the repo and commits it — so every agent that touches the code,
+    and everyone who clones, works under the same rules and leaves the same record.</p>
 
-    <div class="codeblock" style="margin-top: 28px;"><button class="copy" type="button">copy</button><pre>npx docket-agent new hotfix --template prod-hotfix   <span class="c"># write one rule file</span>
-npx docket-agent install                             <span class="c"># context + hook + MCP, committed with the repo</span></pre></div>
-    <p class="after" style="margin-bottom: 8px;">Compiles the warrant into CLAUDE.md / AGENTS.md / GEMINI.md / Cursor rules,
-    wires the Claude Code enforcement hook, and adds an MCP config — merge-safe and idempotent.
-    Or set it up by hand for your specific tool:</p>
+    <div class="install-card">
+      <h3>Two commands, and the repo is governed</h3>
+      <p class="lede-sm">Write one rule file for a recurring task, then install — docket
+      compiles the warrant into every agent’s context, wires the enforcement hook, and adds
+      the MCP config, all in files that live in your repo.</p>
+      <div class="codeblock" style="margin-top: 18px;"><button class="copy" type="button">copy</button><pre>npx docket-agent new deploy --template prod-hotfix   <span class="c"># one rule file for a recurring task</span>
+npx docket-agent install                             <span class="c"># wire it into the repo for every agent</span></pre></div>
+      <div class="install-out"><span class="ok">✓</span> CLAUDE.md · AGENTS.md · GEMINI.md · .cursor/rules · .claude/settings.json · .mcp.json</div>
+      <div class="install-points">
+        <div>
+          <div class="pt">Committed &amp; shared</div>
+          <p>It travels with the repo. Every clone inherits the warrant and the record —
+          zero setup on any teammate’s machine.</p>
+        </div>
+        <div>
+          <div class="pt">Every agent at once</div>
+          <p>Claude Code, Codex / ChatGPT, Gemini, Cursor, and any MCP client — governed
+          from one rule file, not configured tool by tool.</p>
+        </div>
+        <div>
+          <div class="pt">Safe &amp; reversible</div>
+          <p>Merge-safe (your existing config is preserved), idempotent, zero
+          dependencies. Delete docket and you lose nothing but the tooling.</p>
+        </div>
+      </div>
+    </div>
 
-    <div style="margin-top: 32px;">
+    <div class="per-tool-head">
+      <div>
+        <span class="klabel" style="color:var(--faint)"><span class="tick">■</span> Prefer to wire one tool by hand?</span>
+        <h3 style="margin-top:8px;">Per-tool setup</h3>
+      </div>
+      <p class="sub-note">Every path is <code>init</code> → <code>new</code> →
+      <code>compile</code> into the file that tool already reads. <code>docket install</code>
+      does all of these at once.</p>
+    </div>
+
+    <div style="margin-top: 28px;">
       <div class="tabs" role="tablist" aria-label="choose your tool">
         <button role="tab" aria-selected="true" data-tab="claude">Claude Code</button>
         <button role="tab" aria-selected="false" data-tab="chatgpt">ChatGPT · Codex</button>
