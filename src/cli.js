@@ -10,6 +10,7 @@ import { cmdCompile } from './commands/compile.js';
 import { cmdReview } from './commands/review.js';
 import { cmdMcp } from './commands/mcp.js';
 import { cmdHook } from './commands/hook.js';
+import { cmdInstall } from './commands/install.js';
 
 const HELP = `
 ${bold('docket')} — brief the agent, warrant the actions, keep the record
@@ -18,6 +19,8 @@ ${bold('Usage:')} docket <command> [args]
 
 ${bold('Getting started')}
   ${cyan('init')}                       create a .docket directory here
+  ${cyan('install')}                    make docket ambient in this repo: compile context for
+                             every agent, wire the Claude Code hook, add MCP config
   ${cyan('new')} [name]                 create a loop — a step-by-step guided creator
                              that teaches the five layers (or --template <t>, --blank)
   ${cyan('templates')}                  list the starter loop templates
@@ -75,6 +78,8 @@ export async function main(argv) {
       return 0;
     case 'init':
       return cmdInit(rest);
+    case 'install':
+      return cmdInstall(rest);
     case 'new':
       return cmdNew(rest);
     case 'templates':

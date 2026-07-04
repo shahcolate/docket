@@ -133,6 +133,36 @@ $ docket new appeal --template insurance-appeal
 ✓ wrote .docket/loops/appeal.loop.md
 ```
 
+## Make it run for every agent in a repo
+
+One command wires docket into the whole repo so any agent that touches it is
+under the warrant:
+
+```console
+$ docket install
+✓ docket installed into .
+  CLAUDE.md · AGENTS.md · GEMINI.md · .cursor/rules/docket.mdc
+  .claude/settings.json · .mcp.json
+```
+
+Two layers, set up together and committed with the repo:
+
+- **Context, for free.** The compiled `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` /
+  Cursor rules are read automatically at the start of every session — anyone
+  who clones is under the warrant with **zero setup on their end**.
+- **Enforcement, mechanical.** A Claude Code PreToolUse hook in
+  `.claude/settings.json` gates tool calls through the warrant (deny blocks,
+  ask prompts, allow is silent), and `.mcp.json` gives any MCP client the
+  native tools. The hook routes by content and stays out of the way when no
+  loop claims a call (pass-through); pin one loop with `--loop`, or `--strict`
+  to ask on anything uncovered.
+
+It's merge-safe (your existing `settings.json` hooks and MCP servers are
+preserved) and idempotent — add a loop, re-run `docket install`, and the
+context refreshes. Claude Code asks each collaborator to approve the
+committed hook once: a cloned repo can't silently run commands, which is the
+same ambient-execution risk docket itself is built to catch.
+
 No template that fits? Bare `docket new` is a **step-by-step creator**: five
 steps, one per layer, each explained as you answer. It previews the finished
 file, asks before writing, then runs live allow/ask/deny checks against the
