@@ -300,6 +300,19 @@ $ docket check appeal change "accepting a settlement"
 <span class="r">DENY</span>  matches a hard stop. Never happens, with or without approval.</pre></div>
     <p>Run <code>docket new &lt;name&gt;</code> without a template to get the five-question
     interview instead, and <code>docket templates</code> to list all eight starters.</p>
+    <h3>Make it ambient in a repo</h3>
+    <p>One command wires docket into the whole repo so every agent that touches it is
+    under the warrant — context <em>and</em> enforcement, committed with the code:</p>
+    <div class="code"><pre>docket install        <span class="c"># compile context for every agent + hook + MCP config</span></pre></div>
+    <p>It compiles the loops into <code>CLAUDE.md</code>, <code>AGENTS.md</code>,
+    <code>GEMINI.md</code>, and Cursor rules (read automatically at session start — zero
+    setup for anyone who clones), writes a Claude Code PreToolUse hook into
+    <code>.claude/settings.json</code> (the <a href="#hooks">mechanical gate</a>), and
+    adds a <code>.mcp.json</code> for native tools. It’s merge-safe (existing hooks and
+    MCP servers are preserved) and idempotent — add a loop, re-run, the context
+    refreshes. Flags: <code>--loop &lt;name&gt;</code> to pin one loop, <code>--strict</code>
+    to ask on uncovered calls, <code>--no-hook</code> / <code>--no-mcp</code> for
+    context-only, <code>--targets claude,agents</code> to narrow the context files.</p>
   </section>
 
   <section id="loop">
@@ -677,6 +690,7 @@ npx docket-agent compile --target agents --write</pre></div>
     <div class="table-scroll"><table>
       <tr><th>Command</th><th>Does</th></tr>
       <tr><td><code>docket init</code></td><td>create <code>.docket/</code> here (<code>--dir</code>, <code>--quiet</code>)</td></tr>
+      <tr><td><code>docket install</code></td><td>make docket ambient in the repo: compile context for every agent, wire the Claude Code PreToolUse hook, add MCP config (<code>--loop</code>, <code>--strict</code>, <code>--no-hook</code>, <code>--no-mcp</code>, <code>--targets</code>); merge-safe and idempotent</td></tr>
       <tr><td><code>docket new &lt;name&gt;</code></td><td>create a loop — interactive five-question interview on a TTY, <code>--template &lt;t&gt;</code> to start from a starter, <code>--blank</code> for a scaffold</td></tr>
       <tr><td><code>docket templates</code></td><td>list the eight starter loops</td></tr>
       <tr><td><code>docket list</code></td><td>list your loops</td></tr>
