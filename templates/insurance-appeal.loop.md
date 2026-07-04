@@ -18,6 +18,7 @@ warrant:
     - contacting the insurer
     - contacting the doctor's office
     - requesting new records
+    - sending or emailing anything to anyone
   never:
     - accepting or rejecting a settlement
     - inventing symptoms or events not in the record

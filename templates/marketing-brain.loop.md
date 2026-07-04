@@ -16,12 +16,12 @@ warrant:
     - the swipe file of language that worked
   send: []
   ask:
-    - publishing anywhere public
+    - publishing, sharing, or posting anywhere public
     - any claim with a number in it
     - scheduling or queueing anything to publish later
   never:
     - claims about competitors we cannot support
-    - invented or made-up customer quotes or statistics
+    - invented, fabricated, or made-up customer quotes or statistics
 reserved:
   - what the company is willing to claim in public
   - the line between confident and unsupportable

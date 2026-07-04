@@ -14,7 +14,7 @@ warrant:
   send: []
   ask:
     - moving any calendar event
-    - declining any meeting
+    - declining or cancelling anything
     - anything involving other people's time
   never:
     - family dinners, family commitments, or family events

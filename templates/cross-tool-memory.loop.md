@@ -5,7 +5,7 @@ version: 1
 warrant:
   read:
     - the loops in this .docket directory
-    - existing CLAUDE.md, AGENTS.md, and rules files
+    - CLAUDE.md, AGENTS.md, and other rules files
   draft:
     - updates to loop brief sections
     - compiled context blocks
@@ -18,6 +18,7 @@ warrant:
   never:
     - storing secrets, tokens, or passwords in any loop file
     - git hooks, CI workflows, or scheduled jobs
+    - hooks, workflows, cron, crontab, or startup scripts
 reserved:
   - what gets remembered at all — memory is curation, not accumulation
   - any change to what an agent is allowed to do

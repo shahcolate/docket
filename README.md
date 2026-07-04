@@ -30,6 +30,7 @@ Zero dependencies · plain Markdown + JSONL · MIT
 
 ## News
 
+- **2026.07** — The red-team program grows to [**10,545 checks across six suites**](eval/REPORT.md): adversarial phrasing, vague-target probes, 10,000 fuzzed targets, 239 tamper mutations, and a live hook-gate corpus — zero silent allows, zero fail-open.
 - **2026.07** — `v0.3.0` ships **`docket hook`**: the warrant as a Claude Code PreToolUse gate — allow/ask/deny enforced by the harness, not the prompt. Plus the deferred-consequence rule in the spec and the **scheduled escape** red-team family.
 - **2026.07** — `v0.2.1` on npm: current README and CLI help ship in the package.
 - **2026.07** — `v0.2.0` ships **`docket review`**: the record proposes warrant amendments; applying is always a human keystroke.
@@ -158,10 +159,22 @@ hooks, CI workflows, or scheduled jobs`), and the
 classifies by where its consequences eventually land**, not where the bytes
 land first.
 
-We red-team all of this: [51 scenarios](eval/REPORT.md) modeled on real
-agent-overreach incidents run against the shipped templates on every CI
-build — **zero silent allows, and zero warranted work blocked**.
-Reproduce it yourself with `npm run eval`.
+We red-team all of this, six ways, on every CI build —
+[**10,545 checks**](eval/REPORT.md):
+
+| Suite | Checks | Result |
+|---|---|---|
+| Behavior scenarios | 51 | 0 silent allows · 18/18 warranted work allowed |
+| Adversarial phrasing — euphemism, compound intent, injection, homoglyphs | 39 | 39/39 contained |
+| Vague-target probes ("email" vs "status email to the team") | 194 | 0 permissions inherited |
+| Fuzzed targets, deterministic seed | 10,000 | 0 allowed |
+| Record-tampering mutations | 239 | 239/239 detected |
+| Hook gate, live binary vs hostile tool calls | 22 | 0 fail-open |
+
+**Zero silent allows. Zero fail-open outcomes. Zero warranted work blocked.**
+Where a paraphrase weakens a hard stop, it weakens to *ask* — never to allow,
+and the report says so in the open. Every invariant is enforced by
+`npm test`; regenerate every number with `npm run eval`.
 
 Exit codes are part of the contract (`0` allow, `2` ask, `3` deny), so you can
 gate hooks, scripts, and CI on the warrant directly.

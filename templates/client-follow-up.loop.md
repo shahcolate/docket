@@ -18,6 +18,7 @@ warrant:
   ask:
     - anything the client will see
     - scheduling anything on the client's calendar
+    - sending anything to anyone
   never:
     - unapproved prices, discounts, or scope changes
     - apologizing for things we did not do

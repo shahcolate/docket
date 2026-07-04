@@ -17,3 +17,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - run: npm test
+      # The committed red-team report must match what the code actually
+      # produces — published numbers cannot drift from measured ones.
+      - name: report is current
+        run: node eval/run.js --markdown && git diff --exit-code eval/REPORT.md

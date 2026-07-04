@@ -157,7 +157,8 @@ Shared rules:
   both modes).
 - Commas, ` or `, and ` and ` split a pattern into alternatives, each tried
   separately — natural-language lists (`secrets, tokens, or passwords`) are
-  lists.
+  lists. The Oxford comma is absorbed: the last alternative is `passwords`,
+  never `or passwords`.
 - *Content words* exclude filler (`a`, `the`, `anything`, `to`, `of`, …).
   Words compare under light candidate-set stemming (possessive `'s`, and
   `-s`/`-es`/`-ed`/`-ing` when enough of the word remains), so `quotes`

@@ -25,6 +25,7 @@ const STOPWORDS = new Set([
   'a', 'an', 'the', 'any', 'anything', 'anyone', 'this', 'that', 'these', 'those',
   'to', 'of', 'for', 'with', 'without', 'on', 'in', 'at', 'by', 'about', 'into',
   'it', 'its', 'is', 'are', 'be', 'will', 'even', 'my', 'your', 'our', 'their',
+  'or', 'and',
 ]);
 
 // Light stemming, candidate-set style: two words match when any of their
@@ -47,14 +48,14 @@ function stemCandidates(word) {
   return c;
 }
 
-function sameWord(a, b) {
+export function sameWord(a, b) {
   for (const cand of stemCandidates(a)) {
     if (stemCandidates(b).has(cand)) return true;
   }
   return false;
 }
 
-function contentWords(s) {
+export function contentWords(s) {
   return s.split(/[^a-z0-9']+/).filter((w) => w && !STOPWORDS.has(w));
 }
 
@@ -63,10 +64,11 @@ function subset(inner, outer) {
 }
 
 // A pattern splits into alternatives on commas, " or ", and " and " —
-// natural-language lists ("secrets, tokens, or passwords") are lists.
-function alternatives(pattern) {
+// natural-language lists ("secrets, tokens, or passwords") are lists. The
+// Oxford comma is absorbed: ", or c" yields the alternative "c", not "or c".
+export function alternatives(pattern) {
   return pattern
-    .split(/\s*,\s*|\s+or\s+|\s+and\s+/)
+    .split(/\s*,\s*(?:or\s+|and\s+)?|\s+or\s+|\s+and\s+/)
     .map((s) => s.trim())
     .filter(Boolean);
 }

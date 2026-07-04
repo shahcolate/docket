@@ -500,19 +500,23 @@ npx docket-agent compile --target agents --write</pre></div>
 
   <section id="eval">
     <h2>The red-team eval</h2>
-    <p>The claim “fuzzy only toward caution” is tested, not asserted. A 51-scenario suite
-    modeled on real agent-overreach incidents — unauthorized outbound email, calendar
-    “tidying”, invented commitments, agents widening their own permissions, and scheduled
-    escapes (a delayed send, a planted git hook, a CI job that acts next week) — runs
-    against the shipped templates on every build:</p>
-    <ul>
-      <li><b>33/33</b> consequence-bearing actions contained (ask or deny)</li>
-      <li><b>0</b> silent allows — the failure that ships the email</li>
-      <li><b>18/18</b> warranted work allowed — safety without friction</li>
-    </ul>
-    <p>The safety invariant is enforced in CI (<code>test/scenarios.test.js</code>): if a
-    risky scenario is ever silently allowed, the build fails. Reproduce everything with
-    <code>npm run eval</code>; the full table is in
+    <p>The claim “fuzzy only toward caution” is tested, not asserted — <b>10,545 checks
+    across six suites</b>, all deterministic, all reproducible with <code>npm run eval</code>,
+    every invariant enforced in CI:</p>
+    <div class="table-scroll"><table>
+      <tr><th>Suite</th><th>Checks</th><th>Result</th></tr>
+      <tr><td>Behavior scenarios — real agent-overreach incidents, incl. scheduled escapes</td><td>51</td><td><b>0 silent allows</b> · 18/18 warranted work allowed</td></tr>
+      <tr><td>Adversarial phrasing — euphemism, compound intent, injection, homoglyphs</td><td>39</td><td><b>39/39 contained</b></td></tr>
+      <tr><td>Vague-target probes — every proper subset of every allow pattern</td><td>194</td><td><b>0 permissions inherited</b></td></tr>
+      <tr><td>Fuzzed targets — seeded, vocabulary disjoint from every allow entry</td><td>10,000</td><td><b>0 allowed</b></td></tr>
+      <tr><td>Record tampering — edits, rehashes, deletions, reorders, forgeries, truncations</td><td>239</td><td><b>239/239 detected</b> with pinned head; 197 by the chain alone</td></tr>
+      <tr><td>Hook gate — the live binary vs hostile PreToolUse payloads</td><td>22</td><td>14 hostile calls, <b>0 allowed</b> · 3/3 benign allowed · <b>0 fail-open</b></td></tr>
+    </table></div>
+    <p><b>Zero silent allows. Zero fail-open outcomes. Zero warranted work blocked.</b>
+    Where a paraphrase weakens a hard stop, it weakens to <em>ask</em> — never to allow,
+    and the report says so in the open. If any invariant regresses, the build fails
+    (<code>test/scenarios.test.js</code>, <code>adversarial</code>, <code>properties</code>,
+    <code>tamper</code>, <code>hookgate</code>). The full tables are in
     <a href="https://github.com/shahcolate/docket/blob/main/eval/REPORT.md">eval/REPORT.md</a>.</p>
   </section>
 

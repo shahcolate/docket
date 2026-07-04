@@ -14,7 +14,7 @@ warrant:
     - ticket status on tickets this loop created
   send: []
   ask:
-    - assigning a ticket to a person
+    - assigning anything to anyone
     - setting priority above default
     - closing anyone else's ticket
   never:
