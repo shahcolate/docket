@@ -12,6 +12,13 @@
 // Claude Code's own permission prompts. Docket must only ever tighten the
 // gate, never loosen it — a docket allow means "the warrant has no
 // objection", not "skip the other locks".
+//
+// Failure posture follows configuration intent. A bare `docket hook claude`
+// is safe to wire globally: outside a docket project, or when no loop routes,
+// it costs nothing (exit 0, silent). But once the config expresses intent to
+// gate — `--loop <name>` or `--strict` — every failure mode fails CLOSED to
+// ask: a bad payload, a missing project, a misnamed loop. A gate you asked
+// for that fails open is not a gate.
 
 import { parseArgs } from '../lib/args.js';
 import { findDocketDir, listLoops, loadLoop, loopExists, loopNames } from '../lib/loop.js';
@@ -76,34 +83,43 @@ function readStdin() {
 
 // Exit codes follow the hook contract, not the warrant's: the DECISION rides
 // in the JSON on stdout. Exit 1 is "misconfigured" — Claude Code shows the
-// human our stderr without blocking the call.
+// human our stderr without blocking the call — and is only used when the
+// config expressed no gating intent.
 export async function cmdHook(argv) {
   const { flags, positional } = parseArgs(argv, { booleans: ['strict'] });
   if (positional[0] !== 'claude') {
     console.error('usage: docket hook claude [--loop <name>] [--strict] [--dir <project>]');
     return 1;
   }
+  // --loop or --strict means the user asked for a gate: from here on,
+  // failures block (ask) instead of passing through.
+  const gated = Boolean(flags.loop) || Boolean(flags.strict);
+  const failClosed = (why) => {
+    console.error(`docket hook: ${why}`);
+    if (gated) {
+      emitDecision('ask', `docket hook is misconfigured (${why}) — failing closed. A human must approve this call.`);
+      return 0;
+    }
+    return 1;
+  };
 
   let event;
   try {
     event = JSON.parse(await readStdin());
   } catch {
-    console.error('docket hook: stdin was not hook JSON — wire this command under hooks.PreToolUse');
-    return 1;
+    return failClosed('stdin was not hook JSON — wire this command under hooks.PreToolUse');
   }
   if (event.hook_event_name && event.hook_event_name !== 'PreToolUse') return 0;
   const toolName = typeof event.tool_name === 'string' ? event.tool_name : '';
   if (!toolName) return 0;
 
-  const startDir = flags.dir ?? process.env.DOCKET_DIR ?? event.cwd ?? process.cwd();
+  // `DOCKET_DIR=` (set but empty) must not shadow the payload's cwd.
+  const startDir = flags.dir ?? (process.env.DOCKET_DIR || undefined) ?? event.cwd ?? process.cwd();
   const docketDir = findDocketDir(startDir);
   if (!docketDir) {
-    // Only loud when the config names a loop: a global hook in a project
-    // that doesn't use docket should cost nothing.
-    if (flags.loop) {
-      console.error(`docket hook: --loop ${flags.loop} given but no .docket directory found from ${startDir}`);
-      return 1;
-    }
+    // Only consequential when the config asked for a gate: a global hook in
+    // a project that doesn't use docket should cost nothing.
+    if (gated) return failClosed(`no .docket directory found from ${startDir}`);
     return 0;
   }
 
@@ -113,10 +129,9 @@ export async function cmdHook(argv) {
   let loop;
   if (flags.loop) {
     if (!loopExists(docketDir, flags.loop)) {
-      console.error(
-        `docket hook: no loop named "${flags.loop}" — have: ${loopNames(docketDir).join(', ') || '(none)'}`
+      return failClosed(
+        `no loop named "${flags.loop}" — have: ${loopNames(docketDir).join(', ') || '(none)'}`
       );
-      return 1;
     }
     loop = loadLoop(docketDir, flags.loop);
   } else {
@@ -137,12 +152,20 @@ export async function cmdHook(argv) {
   }
 
   const result = checkWarrant(loop, action, target);
-  recordCheck(docketDir, loop.name, action, target, result, { via: 'hook' });
 
+  // Emit the decision BEFORE recording. The record is evidence; the decision
+  // is the gate. If appending evidence fails (read-only .docket, full disk, a
+  // concurrent partial write), a deny must still reach the harness — a lost
+  // record is a bug, a lost deny is a breach.
   if (result.verdict === 'deny') {
     emitDecision('deny', `docket loop "${loop.name}" (${result.rule}): ${result.reason}`);
   } else if (result.verdict === 'ask') {
     emitDecision('ask', `docket loop "${loop.name}" (${result.rule}): ${result.reason}`);
+  }
+  try {
+    recordCheck(docketDir, loop.name, action, target, result, { via: 'hook', tool: toolName });
+  } catch (err) {
+    console.error(`docket hook: decision emitted but record append failed — ${err.message}`);
   }
   return 0;
 }

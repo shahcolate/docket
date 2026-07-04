@@ -81,9 +81,14 @@ test('word-subset matching survives phrasing differences', () => {
   assert.ok(matchPattern('contacting the insurer', 'insurer contact form'));
   // trailing s is ignored
   assert.ok(matchPattern('appeal letters', 'the appeal letter'));
+  // -ed/-ing restore the trailing e: inflection must not decide permission
+  assert.ok(matchPattern('scheduled or automated sending', 'schedule the email for Friday'));
+  assert.ok(matchPattern('scheduled or automated sending', 'scheduling the email for Friday'));
   // " or " splits into alternatives
   assert.ok(matchPattern('accepting or rejecting a settlement', 'accepting a settlement'));
   assert.ok(matchPattern('accepting or rejecting a settlement', 'rejecting the settlement'));
+  // the Oxford comma is absorbed — the last alternative is "startup scripts", not "or startup scripts"
+  assert.ok(matchPattern('hooks, cron jobs, or startup scripts', 'edit the startup script'));
   // unrelated targets still don't match
   assert.ok(!matchPattern('accepting or rejecting a settlement', 'drafting a timeline'));
   assert.ok(!matchPattern('contacting the insurer', 'reading the policy'));

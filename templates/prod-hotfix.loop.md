@@ -24,6 +24,7 @@ warrant:
     - anything that changes production
     - merging to the release branch
     - restarting shared services
+    - cron jobs, scheduled tasks, or CI workflow changes
   never:
     - destructive commands in production
     - drop, delete, truncate, or wipe production data

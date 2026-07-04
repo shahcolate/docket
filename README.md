@@ -19,6 +19,8 @@ or deny. After, it leaves a tamper-evident record. Anything you didn't write
 down, the agent must ask about. Plain Markdown in your repo; works with
 Claude, ChatGPT/Codex, Gemini, Cursor, OpenClaw, Hermes, and any MCP client.
 
+**Hand your agent real work. Keep the authority. Get the receipts.**
+
 **Install:** `npm install -g docket-agent` · **Docs:**
 [shahcolate.github.io/docket/docs.html](https://shahcolate.github.io/docket/docs.html)
 
@@ -30,6 +32,8 @@ Zero dependencies · plain Markdown + JSONL · MIT
 
 ## News
 
+- **2026.07** — The red-team program grows to [**10,582 checks across six suites**](eval/REPORT.md): adversarial phrasing, vague-target probes, 10,000 fuzzed targets, 239 tamper mutations, and a live hook-gate corpus — zero silent allows, zero fail-open. The matcher now splits compound targets clause by clause, so a consequence can't ride along with an allowed phrase.
+- **2026.07** — `v0.3.0` ships **`docket hook`**: the warrant as a Claude Code PreToolUse gate — allow/ask/deny enforced by the harness, not the prompt. Plus the deferred-consequence rule in the spec and the **scheduled escape** red-team family.
 - **2026.07** — `v0.2.1` on npm: current README and CLI help ship in the package.
 - **2026.07** — `v0.2.0` ships **`docket review`**: the record proposes warrant amendments; applying is always a human keystroke.
 - **2026.07** — [OpenClaw](https://docs.openclaw.ai) and [Hermes](https://hermes-agent.nousresearch.com/docs/) integrations, plus the full [documentation site](https://shahcolate.github.io/docket/docs.html).
@@ -56,6 +60,21 @@ So the question that matters isn't *"what does the AI know?"* It's:
 > **What exactly was the agent allowed to do — and can you prove it?**
 
 Docket makes the answer a file instead of a vibe.
+
+## What that buys you
+
+- **Delegation without babysitting.** The boundaries are decided once, in
+  writing, under calm conditions — so the agent works unattended and stops
+  exactly where you said. `ask` stays rare and meaningful: across the
+  red-team program, warranted work runs without a single unnecessary prompt
+  (21/21), and `docket review` retires the asks you keep approving.
+- **Evidence you can hand to anyone.** A client, a manager, a compliance
+  review, a postmortem — the record answers *"what was it allowed to do,
+  and what did it do?"* from a hash-chained file, not from memory.
+  239/239 tampering attempts detected in the eval.
+- **No vendor bet.** The rules and the record are plain files in your repo,
+  compiled to whichever assistant you use this quarter. A model switch is a
+  recompile; deleting docket loses you nothing but the tooling.
 
 ## One bounded task at a time
 
@@ -151,10 +170,34 @@ target like `"email"` can never inherit permission from a specific allow
 entry like `"status email to the team"`. A phrasing difference can cause an
 unnecessary ask, never an accidental allow.
 
-We red-team this claim: [51 scenarios](eval/REPORT.md) modeled on real
-agent-overreach incidents run against the shipped templates on every CI
-build — **zero silent allows, and zero warranted work blocked**.
-Reproduce it yourself with `npm run eval`.
+A send wearing a disguise is still a send. The newest failure class in the
+suite is the **scheduled escape** — "queue the email for Friday", a git hook
+planted in the repo, a CI job that acts next week: actions that look
+contained now and detonate after the session, past every approval. The
+shipped templates hard-stop them (`scheduled or automated sending`; `git
+hooks, CI workflows, or scheduled jobs`), and the
+[spec's rule](spec/SPEC.md#deferred-consequences) is general: **an action
+classifies by where its consequences eventually land**, not where the bytes
+land first. Compound intent gets the same treatment: the matcher splits a
+target on conjunctions and requires *every* clause to be warranted, so
+"draft the appeal **and send it**" cannot ride the allow for "draft".
+
+We red-team all of this, six ways, on every CI build —
+[**10,582 checks**](eval/REPORT.md):
+
+| Suite | Checks | Result |
+|---|---|---|
+| Behavior scenarios | 61 | 0 silent allows · 21/21 warranted work allowed |
+| Adversarial phrasing — euphemism, compound intent, injection, homoglyphs | 42 | 42/42 contained |
+| Vague-target probes ("email" vs "status email to the team") | 218 | 0 permissions inherited |
+| Fuzzed targets, deterministic seed | 10,000 | 0 allowed |
+| Record-tampering mutations | 239 | 239/239 detected |
+| Hook gate, live binary vs hostile tool calls | 22 | 0 fail-open |
+
+**Zero silent allows. Zero fail-open outcomes. Zero warranted work blocked.**
+Where a paraphrase weakens a hard stop, it weakens to *ask* — never to allow,
+and the report says so in the open. Every invariant is enforced by
+`npm test`; regenerate every number with `npm run eval`.
 
 Exit codes are part of the contract (`0` allow, `2` ask, `3` deny), so you can
 gate hooks, scripts, and CI on the warrant directly.
@@ -268,34 +311,68 @@ The agent gets five tools:
 Warrant checks made by the agent land in the record too. *"Did the agent
 even ask?"* becomes a grep.
 
-## Make it mechanical (Claude Code hooks)
+## Enforced, not suggested (Claude Code hook)
 
-Compiled context tells the agent the rules; MCP makes checking cheap. For
-the tool calls you actually fear, make the warrant **mechanical** — wire it
-into Claude Code's permission system as a PreToolUse hook, in
-`.claude/settings.json`:
+Compiled context and MCP tools work when the agent cooperates. `docket hook
+claude` doesn't need it to. Wired as a Claude Code **PreToolUse hook**, every
+intercepted tool call is checked against the warrant *by the harness* —
+docket's verdicts map onto Claude Code's permission decisions, whether or not
+the model read a word of your rules:
 
 ```json
 {
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash|Write|Edit",
-        "hooks": [{ "type": "command", "command": "npx docket-agent hook claude" }]
+        "matcher": "Bash|Write|Edit|mcp__.*",
+        "hooks": [
+          { "type": "command", "command": "npx -y docket-agent hook claude --loop repo-work" }
+        ]
       }
     ]
   }
 }
 ```
 
-Every matched tool call now passes through the warrant *before it runs*:
-**deny** blocks the call and tells the model why, **ask** makes Claude Code
-prompt you, and **allow** stays silent — docket only ever *tightens* the
-gate; it never bypasses Claude Code's own permission prompts. Without
-`--loop` the hook routes each call with the same scoring as `docket match`
-and stays out of the way when no loop claims the call (pin one loop with
-`--loop <name>`; add `--strict` to force an ask instead). Every check lands
-on the record with `via: "hook"` — enforcement and evidence in one move.
+Put that in `.claude/settings.json`, scope the `matcher` to the tools you
+want gated, and the warrant is no longer advice. **deny** blocks the call and
+tells the model why; **ask** makes Claude Code prompt you; **allow** stays
+silent — docket only ever *tightens* the gate, never bypasses Claude Code's
+own prompts. Lookup and edit tools map to `read`/`change`; anything docket
+doesn't recognize — Bash, MCP tools, tools that don't exist yet — falls to
+`send`, the verb whose allow list most loops keep empty on purpose, so an
+unknown tool asks rather than slips through.
+
+Pin one loop with `--loop <name>`; drop it to route each call by content
+(add `--strict` to ask when no loop claims a call). Once you name a loop or
+pass `--strict`, every failure mode — bad payload, missing project, misnamed
+loop — fails **closed** to ask: a gate you asked for that fails open is not a
+gate. Gated calls land in the record (`via: "hook"`), so the asks you keep
+approving surface in `docket review` — the gate teaches the warrant what to
+say next.
+
+## Why not just a sandbox?
+
+Run your agent in one — genuinely, do. Sandboxes (containers, egress
+filters, read-only mounts) bound **damage**: what the process can physically
+reach. Docket bounds **authority**: what the agent was allowed to do, and
+whether you can prove what it did. A sandbox cannot tell the authorized
+appeal email from the unauthorized one — both are legitimate HTTPS through
+the proxy. The warrant can, and the record shows which one happened.
+
+The two layers meet at the failure that scares us most. A red-team pass on
+an agent sandbox found the agent could plant a git hook in a submodule that
+would have executed **on the host, days after the session ended**. The
+sandbox was secure; the escape was scheduled. That shape of failure is now a
+[scenario family](eval/REPORT.md) in our eval suite, a `never` in the
+shipped templates, and a rule in the [spec](spec/SPEC.md#deferred-consequences).
+
+And no, the answer to agent risk is not approving every command — airport
+security for Bash scripts is the failure mode, not the goal. The warrant
+pre-decides `allow` and `deny` under calm conditions so that `ask` stays
+rare and means something, and `docket review` retires the asks you keep
+approving. The gate's job is to be silent until the moment silence would
+have been permission.
 
 ## OpenClaw and Hermes
 
@@ -392,6 +469,25 @@ Eight templates, each a complete worked example (`docket templates`):
 | `ticket-handoff` | tasks a stranger can pick up cold: source, owner, status, blocker, warrant, record |
 | `cross-tool-memory` | one context readable from Claude / GPT / Kimi / Codex |
 
+## What docket is not
+
+Selling this honestly means saying where the edges are:
+
+- **Not a sandbox.** Docket bounds *authority* and proves what happened; a
+  sandbox bounds what the process can physically reach. Run both —
+  [they compose](#why-not-just-a-sandbox).
+- **Not another agent framework.** There is no runtime, server, or account
+  to adopt. It's a file format, a checker, and a log — the layer under
+  whichever agent you already use.
+- **Not a magic cage.** A cooperative agent follows the compiled rules; the
+  [hook](#enforced-not-suggested-claude-code-hook) enforces them mechanically
+  where you wire it; and either way, every check lands on the record. Each
+  layer is exactly as strong as it claims, and no stronger.
+- **Not finished.** This is v0.3.x, and the spec may still break before 1.0
+  (loop files carry a `version` field for exactly that reason). What won't
+  move: unlisted means ask, failures land on the human, and the record stays
+  tamper-evident.
+
 ## Design principles
 
 - **Plain files, forever.** Markdown + JSONL in your repo. `grep` works,
@@ -408,7 +504,7 @@ Read the [Loop File Spec](spec/SPEC.md) — it's short on purpose.
 
 ## Roadmap
 
-- [x] `docket check` as a Claude Code PreToolUse hook — shipped as `docket hook claude`
+- [x] ~~`docket check` as a Claude Code PreToolUse hook~~ — shipped as `docket hook claude`
 - [ ] Signed record heads (attest the chain tip, share the attestation)
 - [ ] Loop inheritance (`extends:`) for team baselines
 - [ ] Record export → human-readable work summaries

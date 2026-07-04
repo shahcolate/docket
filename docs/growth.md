@@ -73,7 +73,7 @@ the voice.
   version. Don't stagger them by weeks; the compounding works when they
   land in the same few days.
 - [ ] **Write the technical report.** The arXiv-equivalent: a post titled
-  something like *"Red-teaming an agent permission layer: 42 scenarios,
+  something like *"Red-teaming an agent permission layer: 10,582 checks,
   zero silent allows"* walking through the asymmetric matcher and the eval
   suite. This is the piece researchers and newsletters can cite.
 

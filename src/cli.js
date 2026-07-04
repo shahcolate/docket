@@ -47,9 +47,12 @@ ${bold('Portability')}
                              (--index: one line per loop + the protocol, instead of
                              full loops — keeps context flat as rule count grows)
   ${cyan('mcp')}                        run the MCP server (stdio) for agent integration
+
+${bold('Enforcement')}
   ${cyan('hook')} claude [--loop <name>] [--strict]
-                             Claude Code PreToolUse hook: gate tool calls on
-                             the warrant — deny blocks, ask prompts the human
+                             Claude Code PreToolUse hook: gate every tool call on
+                             the warrant — deny blocks, ask prompts the human, allow
+                             stays silent. --loop or --strict makes failures fail closed.
 
 ${dim('Every loop answers five questions: what must it know, how is the work')}
 ${dim('done, what may it do without asking, where does it stop, and what')}
