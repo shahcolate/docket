@@ -32,7 +32,7 @@ Zero dependencies · plain Markdown + JSONL · MIT
 
 ## News
 
-- **2026.07** — **The loop is the agent contract.** New `goal` / `stop` / `budget` fields make a loop the full contract an autonomous run needs, and **`docket metrics`** reads the record back as your autonomy posture — auto-approve vs ask vs deny, longest unattended run, actions per intervention. ([why this matters](#the-loop-is-the-agent-contract))
+- **2026.07** — **`v0.4.0` on npm.** One command to make docket ambient in a repo (**`docket install`** — context + hook + MCP, committed and shared); the loop becomes the full **agent contract** (`goal` / `stop` / `budget`); and **`docket metrics`** reads the record back as your autonomy posture — auto-approve vs ask vs deny, longest unattended run, actions per intervention. ([why this matters](#the-loop-is-the-agent-contract))
 - **2026.07** — The red-team program grows to [**10,582 checks across six suites**](eval/REPORT.md): adversarial phrasing, vague-target probes, 10,000 fuzzed targets, 239 tamper mutations, and a live hook-gate corpus — zero silent allows, zero fail-open. The matcher now splits compound targets clause by clause, so a consequence can't ride along with an allowed phrase.
 - **2026.07** — `v0.3.0` ships **`docket hook`**: the warrant as a Claude Code PreToolUse gate — allow/ask/deny enforced by the harness, not the prompt. Plus the deferred-consequence rule in the spec and the **scheduled escape** red-team family.
 - **2026.07** — `v0.2.1` on npm: current README and CLI help ship in the package.
