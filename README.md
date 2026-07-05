@@ -615,6 +615,8 @@ Read the [Loop File Spec](spec/SPEC.md) — it's short on purpose.
 ## Roadmap
 
 - [x] ~~`docket check` as a Claude Code PreToolUse hook~~ — shipped as `docket hook claude`
+- [ ] Per-agent / worktree attribution in the record (a `by:` field) — the merge-time audit trail when many agents write in parallel (autonomy levels 4–5)
+- [ ] Autonomy-levels guide — mapping loops and readiness to L0–L5, so teams pick a level by its verification, not the task name
 - [ ] Signed record heads (attest the chain tip, share the attestation)
 - [ ] Loop inheritance (`extends:`) for team baselines
 - [ ] Record export → human-readable work summaries
