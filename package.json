@@ -1,6 +1,6 @@
 {
   "name": "docket-agent",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "The permission layer and paper trail for AI agents. Your agent checks a rule file before it acts - allow, ask, or deny - and leaves a tamper-evident record after.",
   "type": "module",
   "bin": {
