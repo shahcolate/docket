@@ -2,6 +2,7 @@
 name: prod-hotfix
 description: Diagnose and fix on staging — production asks, destructive commands never.
 version: 1
+goal: A reviewed fix on staging with tests green and a rollback plan — ready for a human to ship to production.
 triggers:
   - hotfix, production bug, prod incident, site is down
   - failing deploy, broken migration, error logs, stack trace
@@ -29,6 +30,13 @@ warrant:
     - destructive commands in production
     - drop, delete, truncate, or wipe production data
     - fabricating test results, fake records, inventing data
+stop:
+  - the fix passes on staging with the failing test now green
+  - a change would touch production, or anything on the ask/never list
+  - the same fix has failed three times — hand back to a human
+budget:
+  attempts: 3
+  parallelism: 1
 reserved:
   - the decision to deploy to production
   - anything irreversible

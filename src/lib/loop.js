@@ -57,6 +57,24 @@ export function extractSections(body) {
   return out;
 }
 
+// A budget is a small map of scalar limits (tokens, attempts, parallelism,
+// time) — the human's cap on how far a run may go before it stops. Scalars
+// only, so it stays auditable and never smuggles logic into a limit.
+function asScalarMap(value, where) {
+  if (value === null || value === undefined) return {};
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    throw new LoopError(`\`${where}\` must be a map of limits (e.g. tokens: 200000)`);
+  }
+  const out = {};
+  for (const [k, v] of Object.entries(value)) {
+    if (v === null || (typeof v !== 'string' && typeof v !== 'number' && typeof v !== 'boolean')) {
+      throw new LoopError(`\`${where}.${k}\` must be a scalar (a number or a short string)`);
+    }
+    out[k] = typeof v === 'string' ? v.trim() : v;
+  }
+  return out;
+}
+
 function asStringList(value, where) {
   if (value === null || value === undefined) return [];
   if (!Array.isArray(value)) {
@@ -120,12 +138,22 @@ export function parseLoop(text, { file } = {}) {
   }
 
   const sections = extractSections(body);
+  if (meta.goal !== undefined && (typeof meta.goal !== 'string' || !meta.goal.trim())) {
+    throw new LoopError('`goal` must be a non-empty string — the outcome the loop is trying to reach');
+  }
+
   const loop = {
     name: meta.name,
     description: typeof meta.description === 'string' ? meta.description : '',
     version,
+    // The agent contract: the outcome (goal), what it may do (warrant), when
+    // to stop (stop), what stays human (reserved), what it must prove
+    // (record), and the ceiling on the run (budget).
+    goal: typeof meta.goal === 'string' ? meta.goal.trim() : '',
     warrant,
     triggers: asStringList(meta.triggers, 'triggers'),
+    stop: asStringList(meta.stop, 'stop'),
+    budget: asScalarMap(meta.budget, 'budget'),
     reserved: asStringList(meta.reserved, 'reserved'),
     record: asStringList(meta.record, 'record'),
     brief: sections.brief ?? '',

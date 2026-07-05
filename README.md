@@ -32,6 +32,7 @@ Zero dependencies · plain Markdown + JSONL · MIT
 
 ## News
 
+- **2026.07** — **The loop is the agent contract.** New `goal` / `stop` / `budget` fields make a loop the full contract an autonomous run needs, and **`docket metrics`** reads the record back as your autonomy posture — auto-approve vs ask vs deny, longest unattended run, actions per intervention. ([why this matters](#the-loop-is-the-agent-contract))
 - **2026.07** — The red-team program grows to [**10,582 checks across six suites**](eval/REPORT.md): adversarial phrasing, vague-target probes, 10,000 fuzzed targets, 239 tamper mutations, and a live hook-gate corpus — zero silent allows, zero fail-open. The matcher now splits compound targets clause by clause, so a consequence can't ride along with an allowed phrase.
 - **2026.07** — `v0.3.0` ships **`docket hook`**: the warrant as a Claude Code PreToolUse gate — allow/ask/deny enforced by the harness, not the prompt. Plus the deferred-consequence rule in the spec and the **scheduled escape** red-team family.
 - **2026.07** — `v0.2.1` on npm: current README and CLI help ship in the package.
@@ -121,6 +122,61 @@ The denial reason code, the claim timeline, the appeal deadline…
 Read the denial letter first. Answer the stated reason, not a general
 sense of unfairness. Quote the policy both ways. Stop before send.
 ```
+
+## The loop is the agent contract
+
+Addy Osmani's [Agentic Autonomy Levels](https://addyo.substack.com/p/agentic-autonomy-levels)
+makes the point cleanly: *"Every run of an agent should be preceded by a
+contract that defines what it's trying to do"* — goal, scope, non-goals, tools
+and permissions, stopping condition, evidence, escalation, budget. And *"the
+autonomy level should follow the verification process, not the task name."*
+
+That contract is a loop file. Docket already carried most of it; a loop now
+names the whole thing:
+
+| The contract asks | The loop answers |
+|---|---|
+| What outcome? | `goal` |
+| What may it do, where must it ask, what's forbidden? | `warrant` (read/draft/change/send · `ask` · `never`) |
+| When does it stop? | `stop` |
+| What stays human? | `reserved` |
+| What must it prove? | `record` |
+| What's the ceiling on the run? | `budget` (tokens, attempts, parallelism…) |
+
+```yaml
+goal: A reviewed fix on staging with tests green and a rollback plan — ready to ship.
+stop:
+  - the failing test is now green on staging
+  - a change would touch production, or anything on the ask/never list
+  - the same fix has failed three times — hand back to a human
+budget: { attempts: 3, parallelism: 1 }
+```
+
+`goal`/`stop`/`budget` are **descriptive** — compiled into the agent's context
+so it knows its own contract. Docket doesn't execute, so it can't count tokens
+or evaluate a stop condition; enforcement of *actions* stays the warrant's job
+(and the [hook's](#enforced-not-suggested-claude-code-hook)). Writing the
+contract down is what makes an autonomy level *defensible* — the agent, the
+human, and any reviewer read the same thing.
+
+**And you can watch the posture, not assume it.** `docket metrics` derives your
+autonomy numbers straight from the record — no new data:
+
+```console
+$ docket metrics
+Warrant checks  7
+  allow     4  ██████████░░░░░░░░   57%  ran on its own
+  ask       2  █████░░░░░░░░░░░░░   29%  stopped for a human
+  deny      1  ███░░░░░░░░░░░░░░░   14%  hard stop
+
+Autonomy
+  actions per intervention     2.3   proxy — checks ÷ (asks + denies)
+  longest unattended run         3   consecutive allows, no human stop
+```
+
+The record was always the evidence; now it's the dashboard for climbing the
+autonomy ladder deliberately — the *"calibrated autonomy"* Osmani argues is
+the mature posture. Add `--json` to wire it into CI.
 
 ## Add docket to a repo — every agent, one command
 

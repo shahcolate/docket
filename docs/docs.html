@@ -235,6 +235,7 @@ nav.top .links a[aria-current="page"] { color: var(--ink); box-shadow: inset 0 -
       <a href="#warrant">The warrant</a>
       <a href="#record">The record</a>
       <a href="#review">Review: iteration</a>
+      <a href="#metrics">Autonomy metrics</a>
       <div class="group">Using it</div>
       <a href="#compile">Compiling to your tools</a>
       <a href="#routing">Routing &amp; context scale</a>
@@ -330,6 +331,23 @@ $ docket check appeal change "accepting a settlement"
     </table></div>
     <p>Prose layers live in the body because humans write and diff prose well; machine
     layers live in frontmatter because tools enforce structure well.</p>
+    <h3>The loop is an agent contract</h3>
+    <p>Addy Osmani’s <a href="https://addyo.substack.com/p/agentic-autonomy-levels">Agentic
+    Autonomy Levels</a> argues that <em>“every run of an agent should be preceded by a
+    contract”</em> — goal, scope, permissions, stopping condition, evidence, budget — and
+    that <em>“the autonomy level should follow the verification process, not the task
+    name.”</em> A loop is that contract. Three optional frontmatter fields complete it:</p>
+    <div class="table-scroll"><table>
+      <tr><th>Field</th><th>Answers</th><th>Enforced?</th></tr>
+      <tr><td><b>goal</b></td><td>The outcome to reach — not an activity.</td><td>descriptive (in context)</td></tr>
+      <tr><td><b>stop</b></td><td>The conditions that end the run; the agent halts at any of them.</td><td>descriptive (in context)</td></tr>
+      <tr><td><b>budget</b></td><td>The ceiling on the run — <code>tokens</code>, <code>attempts</code>, <code>parallelism</code>, <code>time</code>.</td><td>descriptive (in context)</td></tr>
+    </table></div>
+    <p><code>goal</code>/<code>stop</code>/<code>budget</code> are compiled into the agent’s
+    context so it knows its own contract, but docket doesn’t execute — it can’t count tokens
+    or evaluate a stop condition. Enforcement of <em>actions</em> stays the warrant’s job;
+    these bound the <em>run</em>, and belong to whatever harness runs the agent. Writing the
+    contract down is what makes an autonomy level <em>defensible</em>.</p>
   </section>
 
   <section id="loopfile">
@@ -489,6 +507,30 @@ allow read: "state insurance regulations" in appeal? [y/N] y
     <p>Flags: <code>--min N</code> (repeat threshold, default 2), <code>--loop name</code>
     (one loop), <code>--yes</code> (apply all — for when <em>you</em> run it in a script
     or cron). After approving, recompile so your tools see the new warrant.</p>
+  </section>
+
+  <section id="metrics">
+    <h2>Metrics: your autonomy posture, from the record</h2>
+    <p>Because every check carries its verdict, the record is enough to report how much
+    the agent runs on its own versus stops for a human — no new data collected.
+    <code>docket metrics</code> reads it back:</p>
+    <div class="code"><pre>$ docket metrics
+Warrant checks  7
+  <span class="g">allow</span>     4  ██████████░░░░░░░░   57%  ran on its own
+  <span class="y">ask</span>       2  █████░░░░░░░░░░░░░   29%  stopped for a human
+  <span class="r">deny</span>      1  ███░░░░░░░░░░░░░░░   14%  hard stop
+
+Autonomy
+  actions per intervention     2.3   proxy — checks ÷ (asks + denies)
+  longest unattended run         3   consecutive allows, no human stop
+  warrant amendments             0   human-approved widenings (docket review)</pre></div>
+    <p>It reports the auto-approve / ask / deny split, the longest unattended run
+    (consecutive allows with no human stop), a proxy for actions-per-intervention, and a
+    per-loop and per-channel breakdown. Every number is exact from the hash chain except
+    the labeled proxies — the record measures actions and verdicts, not wall-clock or
+    intent. This is the dashboard Addy Osmani argues teams need to climb the autonomy
+    ladder deliberately toward <em>“calibrated autonomy.”</em> Add <code>--json</code> to
+    gate CI on it, or <code>--loop &lt;name&gt;</code> to scope it.</p>
   </section>
 
   <section id="compile">
@@ -700,6 +742,7 @@ npx docket-agent compile --target agents --write</pre></div>
       <tr><td><code>docket record add &lt;loop&gt;</code></td><td>append evidence: <code>--saw --did --skipped --stopped --note</code></td></tr>
       <tr><td><code>docket record log [loop]</code></td><td>show recent entries (<code>--n 20</code>)</td></tr>
       <tr><td><code>docket record verify</code></td><td>verify the chain end to end; <code>--head &lt;hash&gt;</code> pins against tail truncation</td></tr>
+      <tr><td><code>docket metrics</code></td><td>autonomy posture from the record: auto-approve / ask / deny split, longest unattended run, actions per intervention, per-loop &amp; per-channel (<code>--loop</code>, <code>--json</code>)</td></tr>
       <tr><td><code>docket review</code></td><td>propose warrant updates from repeated asks (<code>--min</code>, <code>--loop</code>, <code>--yes</code>)</td></tr>
       <tr><td><code>docket compile</code></td><td><code>--target claude|agents|gemini|cursor|raw</code>, <code>--write</code> to update the file in place, <code>--loop</code> to preview one loop on stdout, <code>--index</code> to compile the routing table instead of full loops</td></tr>
       <tr><td><code>docket mcp</code></td><td>run the MCP server (<code>--dir</code> or <code>DOCKET_DIR</code> to locate the project)</td></tr>

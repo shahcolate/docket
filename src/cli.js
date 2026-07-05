@@ -6,6 +6,7 @@ import { cmdList, cmdShow } from './commands/list.js';
 import { cmdCheck } from './commands/check.js';
 import { cmdMatch } from './commands/match.js';
 import { cmdRecord } from './commands/record.js';
+import { cmdMetrics } from './commands/metrics.js';
 import { cmdCompile } from './commands/compile.js';
 import { cmdReview } from './commands/review.js';
 import { cmdMcp } from './commands/mcp.js';
@@ -43,6 +44,9 @@ ${bold('The record')}
   ${cyan('record add')} <loop> [--did ..] [--saw ..] [--skipped ..] [--stopped ..] [--note ..]
   ${cyan('record log')} [loop] [--n 20]
   ${cyan('record verify')}             verify the hash chain end to end
+  ${cyan('metrics')} [--loop <name>] [--json]
+                             autonomy posture from the record: auto-approve vs
+                             ask vs deny, longest unattended run, actions/intervention
 
 ${bold('Portability')}
   ${cyan('compile')} [--target claude|agents|gemini|cursor|raw] [--loop <name>] [--index] [--write]
@@ -94,6 +98,8 @@ export async function main(argv) {
       return cmdCheck(rest);
     case 'record':
       return cmdRecord(rest);
+    case 'metrics':
+      return cmdMetrics(rest);
     case 'compile':
       return cmdCompile(rest);
     case 'review':

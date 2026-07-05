@@ -39,6 +39,7 @@ export function cmdShow(argv) {
     console.log(dim(`triggers: ${loop.triggers.join(' · ')}`));
   }
   console.log();
+  if (loop.goal) console.log(`${bold('Goal — the outcome')}\n  ${loop.goal}\n`);
   section('Brief — what it knows before it starts', loop.brief);
   section('Procedure — how the work is done', loop.procedure);
 
@@ -51,6 +52,10 @@ export function cmdShow(argv) {
   }
   console.log(dim('  unlisted = ask. Silence is never permission.\n'));
 
+  if (loop.stop.length) section('Stop when — the run is done', loop.stop.map((s) => `- ${s}`).join('\n'));
+  if (Object.keys(loop.budget).length) {
+    section('Budget — the ceiling on the run', Object.entries(loop.budget).map(([k, v]) => `- ${k}: ${v}`).join('\n'));
+  }
   section('Reserved — stays human', loop.reserved.map((j) => `- ${j}`).join('\n'));
   section('Record — evidence it owes', loop.record.map((r) => `- ${r}`).join('\n'));
   return 0;
