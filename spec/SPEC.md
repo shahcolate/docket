@@ -66,10 +66,37 @@ in frontmatter because tools enforce structure well.
 | `name` | string | yes | `[a-z0-9][a-z0-9-]*`; must match the filename |
 | `description` | string | no | one line, shown in listings and compiled context |
 | `version` | number | no | spec version, default `1` |
+| `goal` | string | no | the outcome the loop is trying to reach (not an activity) |
 | `warrant` | map | no | see below |
 | `triggers` | list of strings | no | phrases that mark a task as this loop's job; used only for routing (see below) |
+| `stop` | list of strings | no | conditions under which the run is done; the agent halts at any of them |
+| `budget` | map of scalars | no | ceiling on the run (`tokens`, `attempts`, `parallelism`, `time`, …) |
 | `reserved` | list of strings | no | what stays with the human, always |
 | `record` | list of strings | no | what the agent must report when it finishes or stops |
+
+### The loop as an agent contract
+
+A run that matters should be preceded by a contract: what it's for, what it
+may do, when to stop, what it must prove. A loop file *is* that contract, and
+the frontmatter fields map onto it directly:
+
+| Contract question | Loop field |
+|---|---|
+| What outcome? | `goal` |
+| What may it do / where must it ask / what's forbidden? | `warrant` (read/draft/change/send, `ask`, `never`) |
+| When does it stop? | `stop` |
+| What stays human? | `reserved` |
+| What must it prove? | `record` |
+| What's the ceiling on the run? | `budget` |
+
+`goal`, `stop`, and `budget` are **descriptive** — they are compiled into the
+agent's context so it knows its own contract, but docket does not execute, so
+it cannot *enforce* a token budget or evaluate a stopping condition itself.
+Enforcement of *actions* is the warrant's job (checked outside the model, and
+optionally gated by the hook); `stop`/`budget` bound the *run*, and belong to
+whatever harness runs the agent. Writing them down is what makes an autonomy
+level defensible — the agent, the human, and any reviewer see the same
+contract.
 
 ### Body sections
 
@@ -271,6 +298,17 @@ with `docket record verify --head <hash>`, which reports likely truncation
 when the heads disagree. The chain doesn't stop tampering — it's a plain
 file — it makes tampering **visible**, which is what an audit trail is for.
 (Cryptographically signing the head is on the roadmap.)
+
+### Derived metrics
+
+Because every check carries its verdict, the record is enough to report an
+agent's **autonomy posture** without collecting anything new. `docket metrics`
+derives it: the auto-approve / ask / deny split, the longest unattended run
+(consecutive `allow` checks with no human stop between them), a proxy for
+actions-per-intervention (checks ÷ asks+denies), amendment count, and a
+per-loop and per-channel breakdown. Every number is exact from the hash chain
+except proxies, which must be labeled as such — the record can measure actions
+and their verdicts, not wall-clock or human intent.
 
 ## Review
 

@@ -49,10 +49,20 @@ export function warrantLines(loop) {
   return lines;
 }
 
+function budgetLine(budget) {
+  return Object.entries(budget)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join(' · ');
+}
+
 export function renderLoop(loop) {
   const lines = [];
   lines.push(`### Loop: ${loop.name}`);
   if (loop.description) lines.push('', `*${loop.description}*`);
+
+  if (loop.goal) {
+    lines.push('', `**Goal — the outcome to reach:** ${loop.goal}`);
+  }
 
   if (loop.brief) {
     lines.push('', '**Brief — know this before you start:**', '', loop.brief);
@@ -71,6 +81,14 @@ export function renderLoop(loop) {
     '',
     'Anything not listed above requires asking a human first. Silence is never permission.'
   );
+
+  if (loop.stop.length) {
+    lines.push('', '**Stop when — the run is done at any of these:**', '', bulletList(loop.stop));
+  }
+
+  if (Object.keys(loop.budget).length) {
+    lines.push('', `**Budget — the ceiling on this run:** ${budgetLine(loop.budget)}`);
+  }
 
   if (loop.reserved.length) {
     lines.push('', '**Reserved — stays human, do not touch:**', '', bulletList(loop.reserved));
