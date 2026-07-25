@@ -3,6 +3,7 @@
 // Zero dependencies — the protocol surface we need is small.
 
 import readline from 'node:readline';
+import path from 'node:path';
 import { parseArgs } from '../lib/args.js';
 import { requireDocketDir, listLoops, loadLoop, loopExists, loopNames, ACTIONS } from '../lib/loop.js';
 import { checkWarrant } from '../lib/warrant.js';
@@ -87,7 +88,10 @@ function textResult(text, isError = false) {
   return { content: [{ type: 'text', text }], ...(isError ? { isError: true } : {}) };
 }
 
-export function handleToolCall(docketDir, name, args = {}) {
+// `actor` carries the server's attribution hint ({ by, cwd }) into every write.
+// An MCP host often spawns the server with cwd `/`, so the project dir — not
+// the process cwd — is what tells us the branch and worktree.
+export function handleToolCall(docketDir, name, args = {}, actor = {}) {
   switch (name) {
     case 'docket_list_loops': {
       const loops = listLoops(docketDir);
@@ -129,7 +133,7 @@ export function handleToolCall(docketDir, name, args = {}) {
     case 'docket_warrant_check': {
       const loop = loadLoop(docketDir, args.loop);
       const result = checkWarrant(loop, args.action, args.target);
-      recordCheck(docketDir, loop.name, args.action, args.target, result, { via: 'mcp' });
+      recordCheck(docketDir, loop.name, args.action, args.target, result, { via: 'mcp' }, actor);
       const instruction = {
         allow: 'Proceed.',
         ask: 'STOP. Do not do this yet — tell the human what you want to do and why, and wait for approval.',
@@ -153,7 +157,11 @@ export function handleToolCall(docketDir, name, args = {}) {
       if (!Object.keys(fields).length) {
         return textResult('a record entry needs at least one of: saw, did, skipped, stopped, note', true);
       }
-      const entry = appendRecord(docketDir, { loop: args.loop, kind: 'note', via: 'mcp', ...fields });
+      const entry = appendRecord(
+        docketDir,
+        { loop: args.loop, kind: 'note', via: 'mcp', ...fields },
+        actor
+      );
       return textResult(`record #${entry.seq} appended (${entry.hash.slice(0, 23)}…)`);
     }
     default:
@@ -175,6 +183,9 @@ export function cmdMcp(argv = []) {
   } catch (err) {
     startupError = `${err.message} (searched upward from ${startDir}; pass --dir <project> or set DOCKET_DIR)`;
   }
+  // Name the client in the record: `--by cursor` in the MCP config is the one
+  // place a host that sets no env signal can still identify itself.
+  const actor = { by: flags.by, cwd: docketDir ? path.dirname(docketDir) : startDir };
   const rl = readline.createInterface({ input: process.stdin, terminal: false });
   const send = (msg) => process.stdout.write(JSON.stringify(msg) + '\n');
 
@@ -215,7 +226,7 @@ export function cmdMcp(argv = []) {
             reply(textResult(startupError, true));
             break;
           }
-          reply(handleToolCall(docketDir, params?.name, params?.arguments ?? {}));
+          reply(handleToolCall(docketDir, params?.name, params?.arguments ?? {}, actor));
           break;
         default:
           fail(-32601, `method not found: ${method}`);

@@ -9,15 +9,24 @@ import {
 } from '../lib/record.js';
 import { bold, cyan, dim, green, red, VERDICT_STYLE } from '../lib/ui.js';
 
+// Who wrote it, appended dim so it never crowds out what was written.
+// Entries predating attribution simply have nothing to show — the log stays
+// readable across the whole history of a project.
+function attribution(e) {
+  if (!e.by) return '';
+  const where = e.worktree ? `${e.worktree}:${e.branch ?? '?'}` : e.branch;
+  return dim(`  ← ${e.by}${where ? ` @ ${where}` : ''}`);
+}
+
 function formatEntry(e) {
-  const ts = dim(e.ts.replace('T', ' ').replace(/\.\d+Z$/, 'Z'));
+  const ts = dim(String(e.ts ?? '').replace('T', ' ').replace(/\.\d+Z$/, 'Z'));
   const head = `${dim(`#${e.seq}`)} ${ts} ${cyan(e.loop)}`;
   if (e.kind === 'check') {
     const style = VERDICT_STYLE[e.verdict] ?? { color: (s) => s, badge: e.verdict };
-    return `${head} ${style.color(style.badge.toLowerCase())} ${e.action} → "${e.target}" ${dim(`(${e.rule})`)}`;
+    return `${head} ${style.color(style.badge.toLowerCase())} ${e.action} → "${e.target}" ${dim(`(${e.rule})`)}${attribution(e)}`;
   }
   if (e.kind === 'amend') {
-    return `${head} amended warrant: ${e.action} now covers "${e.added}" ${dim(`(after ${e.asks} asks)`)}`;
+    return `${head} amended warrant: ${e.action} now covers "${e.added}" ${dim(`(after ${e.asks} asks)`)}${attribution(e)}`;
   }
   const parts = [];
   if (e.saw) parts.push(`saw: ${e.saw}`);
@@ -25,7 +34,7 @@ function formatEntry(e) {
   if (e.skipped) parts.push(`skipped: ${e.skipped}`);
   if (e.stopped) parts.push(`stopped: ${e.stopped}`);
   if (e.note) parts.push(e.note);
-  return `${head} ${parts.join(' · ') || dim('(empty note)')}`;
+  return `${head} ${parts.join(' · ') || dim('(empty note)')}${attribution(e)}`;
 }
 
 export function cmdRecord(argv) {
@@ -48,7 +57,7 @@ function recordAdd(argv) {
   const loopName = positional[0];
   if (!loopName) {
     console.error(
-      'usage: docket record add <loop> [--saw ..] [--did ..] [--skipped ..] [--stopped ..] [--note ..]'
+      'usage: docket record add <loop> [--saw ..] [--did ..] [--skipped ..] [--stopped ..] [--note ..] [--by <agent>]'
     );
     return 1;
   }
@@ -75,8 +84,15 @@ function recordAdd(argv) {
     console.error('docket: a record entry with nothing in it proves nothing — pass --saw/--did/--skipped/--stopped/--note');
     return 1;
   }
-  const entry = appendRecord(docketDir, { loop: loopName, kind: 'note', via: 'cli', ...fields });
-  console.log(green('✓') + ` record #${entry.seq} ${dim(entry.hash.slice(0, 23) + '…')}`);
+  const entry = appendRecord(
+    docketDir,
+    { loop: loopName, kind: 'note', via: 'cli', ...fields },
+    { by: flags.by }
+  );
+  console.log(
+    green('✓') +
+      ` record #${entry.seq} ${dim(entry.hash.slice(0, 23) + '…')} ${dim(`by ${entry.by}`)}`
+  );
   return 0;
 }
 
@@ -84,15 +100,24 @@ function recordLog(argv) {
   const { flags, positional } = parseArgs(argv);
   const docketDir = requireDocketDir();
   const loopName = positional[0];
+  // A mistyped --n must not silently print the whole log: "20 lines" and
+  // "everything since March" are very different answers to the same command.
   const n = Number(flags.n ?? 20);
+  if (!Number.isFinite(n) || n <= 0) {
+    console.error(`docket: --n must be a positive number (got "${flags.n}")`);
+    return 1;
+  }
+  const by = typeof flags.by === 'string' ? flags.by : null;
   let entries = readRecords(docketDir);
   if (loopName) entries = entries.filter((e) => e.loop === loopName);
+  if (by) entries = entries.filter((e) => e.by === by);
   if (!entries.length) {
-    console.log('no record entries yet');
+    console.log(by ? `no record entries by "${by}"` : 'no record entries yet');
     return 0;
   }
   for (const e of entries.slice(-n)) console.log(formatEntry(e));
-  console.log(dim(`\n${entries.length} total · file: ${recordFile(docketDir)}`));
+  const scope = by ? ` by ${by}` : '';
+  console.log(dim(`\n${entries.length} total${scope} · file: ${recordFile(docketDir)}`));
   return 0;
 }
 

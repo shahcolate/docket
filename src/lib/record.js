@@ -12,12 +12,17 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { resolveActor } from './actor.js';
 
 export const GENESIS = 'GENESIS';
 
 // The evidentiary fields a note entry may carry. Every writer (CLI, MCP)
 // filters through collectRecordFields so the audit schema has one owner.
 export const RECORD_FIELDS = ['saw', 'did', 'skipped', 'stopped', 'note'];
+
+// Who wrote the entry — stamped by appendRecord, never by a caller's hand.
+// See lib/actor.js for how each is resolved and why `by` is self-reported.
+export const ATTRIBUTION_FIELDS = ['by', 'branch', 'worktree', 'session'];
 
 export function collectRecordFields(source) {
   const fields = {};
@@ -100,32 +105,118 @@ export function readLastRecord(docketDir) {
   }
 }
 
-export function appendRecord(docketDir, fields) {
-  const last = readLastRecord(docketDir);
-  const prev = last ? last.hash : GENESIS;
-  const entry = {
-    seq: last ? last.seq + 1 : 1,
-    ts: new Date().toISOString(),
-    ...fields,
-    prev,
-  };
-  entry.hash = hashEntry(entry, prev);
-  fs.appendFileSync(recordFile(docketDir), JSON.stringify(entry) + '\n');
-  return entry;
+// Appending is read-then-write — read the head, chain to it, append — and that
+// pair must be ATOMIC. Two agents working the same repo in parallel would
+// otherwise both read entry 5 and both write entry 6, and `verify` would
+// report "an entry was removed, added, or reordered": a tamper alarm raised by
+// honest concurrent work. A false alarm in an audit trail is not a small bug;
+// it teaches people to ignore the alarm.
+//
+// The lock is an exclusively-created file next to the record. Zero
+// dependencies, works across processes and worktrees on one machine (which is
+// the multi-agent case; a record shared over NFS is out of scope and says so).
+export class RecordLockError extends Error {}
+
+const LOCK_STALE_MS = 10_000; // a holder older than this crashed mid-write
+const LOCK_WAIT_MS = 15_000; // > STALE, so a stale lock is always broken, never waited out
+
+function lockFile(docketDir) {
+  return recordFile(docketDir) + '.lock';
+}
+
+// Sync sleep with no dependencies and no busy-wait: appendRecord is sync
+// everywhere it's called (CLI, hook, MCP handler), and making it async would
+// change every writer's signature for a millisecond of contention.
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+export function withRecordLock(docketDir, fn, { waitMs = LOCK_WAIT_MS, staleMs = LOCK_STALE_MS } = {}) {
+  const lock = lockFile(docketDir);
+  const deadline = Date.now() + waitMs;
+  let fd;
+  for (;;) {
+    try {
+      fd = fs.openSync(lock, 'wx');
+      break;
+    } catch (err) {
+      if (err.code !== 'EEXIST') throw err;
+      let age;
+      try {
+        age = Date.now() - fs.statSync(lock).mtimeMs;
+      } catch {
+        continue; // the holder released it between our open and our stat
+      }
+      if (age > staleMs) {
+        // The holder died mid-write. Break the lock rather than block the
+        // record forever — evidence that can't be written isn't evidence.
+        try {
+          fs.unlinkSync(lock);
+        } catch {
+          /* someone else broke it first */
+        }
+        continue;
+      }
+      if (Date.now() >= deadline) {
+        throw new RecordLockError(
+          `could not lock ${lock} within ${waitMs}ms — another process is holding it. ` +
+            'If nothing else is running, delete that file.'
+        );
+      }
+      // Jittered backoff: without it, N waiters wake together and one wins N
+      // times in a row while the rest keep colliding.
+      sleepSync(2 + Math.floor(Math.random() * 8));
+    }
+  }
+  try {
+    return fn();
+  } finally {
+    fs.closeSync(fd);
+    try {
+      fs.unlinkSync(lock);
+    } catch {
+      /* already broken as stale — the next writer creates it fresh */
+    }
+  }
+}
+
+// `actor` is the attribution hint from the caller ({ by, session }); every
+// writer passes it and none of them can forget to, because stamping happens
+// here. Attribution is part of the hashed entry, so it is as tamper-evident
+// as the verdict it sits next to.
+export function appendRecord(docketDir, fields, actor = {}) {
+  return withRecordLock(docketDir, () => {
+    const last = readLastRecord(docketDir);
+    const prev = last ? last.hash : GENESIS;
+    const entry = {
+      seq: last ? last.seq + 1 : 1,
+      ts: new Date().toISOString(),
+      ...fields,
+      ...resolveActor(actor),
+      prev,
+    };
+    entry.hash = hashEntry(entry, prev);
+    fs.appendFileSync(recordFile(docketDir), JSON.stringify(entry) + '\n');
+    return entry;
+  });
 }
 
 // One writer for warrant-check evidence, whoever asked (CLI or MCP) —
 // the audit schema for checks is defined here and nowhere else.
-export function recordCheck(docketDir, loopName, action, target, result, extra = {}) {
-  return appendRecord(docketDir, {
-    loop: loopName,
-    kind: 'check',
-    action,
-    target,
-    verdict: result.verdict,
-    rule: result.rule,
-    ...extra,
-  });
+export function recordCheck(docketDir, loopName, action, target, result, extra = {}, actor = {}) {
+  return appendRecord(
+    docketDir,
+    {
+      loop: loopName,
+      kind: 'check',
+      action,
+      target,
+      verdict: result.verdict,
+      rule: result.rule,
+      ...extra,
+    },
+    actor
+  );
 }
 
 // Returns { ok, count, head, brokenAt, problem }.

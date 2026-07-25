@@ -32,6 +32,7 @@ Zero dependencies · plain Markdown + JSONL · MIT
 
 ## News
 
+- **2026.07** — **`v0.5.0`: the record learns *who*.** Every entry is now stamped with the agent, branch, and worktree that wrote it (**`by`**), so parallel agents stay separable at merge time — with `docket record log --by` and `docket metrics --by` to read one agent's posture back. Appends are now serialized across processes, fixing a real bug: agents writing in parallel could break the hash chain and make `verify` report tampering that never happened. ([who did what](#who-did-what-attribution-for-parallel-agents))
 - **2026.07** — **`v0.4.0` on npm.** One command to make docket ambient in a repo (**`docket install`** — context + hook + MCP, committed and shared); the loop becomes the full **agent contract** (`goal` / `stop` / `budget`); and **`docket metrics`** reads the record back as your autonomy posture — auto-approve vs ask vs deny, longest unattended run, actions per intervention. ([why this matters](#the-loop-is-the-agent-contract))
 - **2026.07** — The red-team program grows to [**10,582 checks across six suites**](eval/REPORT.md): adversarial phrasing, vague-target probes, 10,000 fuzzed targets, 239 tamper mutations, and a live hook-gate corpus — zero silent allows, zero fail-open. The matcher now splits compound targets clause by clause, so a consequence can't ride along with an allowed phrase.
 - **2026.07** — `v0.3.0` ships **`docket hook`**: the warrant as a Claude Code PreToolUse gate — allow/ask/deny enforced by the harness, not the prompt. Plus the deferred-consequence rule in the spec and the **scheduled escape** red-team family.
@@ -302,7 +303,7 @@ $ docket record add appeal \
     --saw "policy §4.2, denial letter 2026-06-12" \
     --did "drafted appeal citing §4.2(b), built evidence list" \
     --stopped "before send — two claims need human verification"
-✓ record #4 sha256:fd4394fc8cd4b288…
+✓ record #4 sha256:fd4394fc8cd4b288… by claude-code
 
 $ docket record verify
 ✓ chain intact — 4 entries, every entry commits to the one before it
@@ -322,6 +323,49 @@ plain JSONL file you can read, grep, and commit — but not silently rewrite.
 And because a hash chain can't see its own tail being cut off, `verify`
 prints the head hash: pin it anywhere the log can't reach, then
 `docket record verify --head <hash>` catches truncation too.
+
+## Who did what: attribution for parallel agents
+
+One human running one agent needs no subject in the log — everything in it is
+*the* agent. That stops being true the moment you run three, in three
+worktrees, on the same repo. At merge time, "what was it allowed to do, and
+what did it do?" needs a **who**.
+
+Every entry now carries one, stamped automatically:
+
+```console
+$ docket record log
+#7  2026-07-24 09:12Z deploy  allow change → "src/api/rates.ts" (change: source files)   ← claude-code @ hotfix-402
+#8  2026-07-24 09:12Z deploy  ask   send   → "Bash: gh pr merge" (default)               ← claude-code @ hotfix-402
+#9  2026-07-24 09:14Z deploy  allow read  → "test/rates.test.ts" (read: the repo)        ← cursor @ wt-perf:perf-pass
+
+$ docket metrics --by claude-code      # one agent's posture, not the team average
+```
+
+`by` is resolved in precedence order — `--by <agent>`, then `DOCKET_BY`, then
+a detected agent (Claude Code, Cursor, Gemini CLI, Codex, Aider, GitHub
+Actions), then the OS user — alongside the git `branch`, the `worktree` name
+when the write came from a linked one, and the harness's `session` id when it
+supplies one (the Claude Code hook does). Fields with no honest value are
+**left out** rather than filled with a placeholder that reads like a fact.
+
+Two things worth being precise about, because attribution is easy to oversell:
+
+- **`by` is self-reported.** A process that can write to the record can claim
+  any subject. This is provenance, not authentication.
+- **But it can't be revised.** `by` is inside the hashed entry, so rewriting
+  who an old entry blames breaks the chain at that entry. Whoever wrote it is
+  stuck with what they claimed at the time — which is the property an audit
+  actually needs.
+
+**And parallel agents no longer break the chain.** Appending is
+read-the-head-then-chain-to-it, so two agents writing at once could both chain
+to entry 5 — after which `verify` reported *"an entry was removed, added, or
+reordered"* on a log nobody had touched. Appends are now serialized across
+processes (an exclusive lock file, stale locks broken after 10s, an error
+rather than an unlocked write if it can't acquire one). A false tamper alarm
+is worse than no alarm: it teaches people to disbelieve the real one. Five
+agents × twelve writes each, landing simultaneously, is now a test.
 
 ## Your context, every model
 
@@ -593,7 +637,7 @@ Selling this honestly means saying where the edges are:
   [hook](#enforced-not-suggested-claude-code-hook) enforces them mechanically
   where you wire it; and either way, every check lands on the record. Each
   layer is exactly as strong as it claims, and no stronger.
-- **Not finished.** This is v0.3.x, and the spec may still break before 1.0
+- **Not finished.** This is v0.5.x, and the spec may still break before 1.0
   (loop files carry a `version` field for exactly that reason). What won't
   move: unlisted means ask, failures land on the human, and the record stays
   tamper-evident.
@@ -615,7 +659,7 @@ Read the [Loop File Spec](spec/SPEC.md) — it's short on purpose.
 ## Roadmap
 
 - [x] ~~`docket check` as a Claude Code PreToolUse hook~~ — shipped as `docket hook claude`
-- [ ] Per-agent / worktree attribution in the record (a `by:` field) — the merge-time audit trail when many agents write in parallel (autonomy levels 4–5)
+- [x] ~~Per-agent / worktree attribution in the record (a `by:` field)~~ — shipped in v0.5.0, [with the concurrency fix it needed](#who-did-what-attribution-for-parallel-agents)
 - [ ] Autonomy-levels guide — mapping loops and readiness to L0–L5, so teams pick a level by its verification, not the task name
 - [ ] Signed record heads (attest the chain tip, share the attestation)
 - [ ] Loop inheritance (`extends:`) for team baselines

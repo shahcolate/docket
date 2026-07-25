@@ -24,9 +24,10 @@ export function cmdCheck(argv) {
   const loop = loadLoop(docketDir, loopName);
   const result = checkWarrant(loop, action, target);
 
-  // The check itself is evidence: record what was asked and what was answered.
+  // The check itself is evidence: record what was asked, what was answered,
+  // and who asked — `--by` names the agent when the environment can't.
   if (!flags['no-record']) {
-    recordCheck(docketDir, loop.name, action, target, result, { via: 'cli' });
+    recordCheck(docketDir, loop.name, action, target, result, { via: 'cli' }, { by: flags.by });
   }
 
   const style = VERDICT_STYLE[result.verdict];

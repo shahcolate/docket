@@ -466,6 +466,36 @@ general sense of unfairness. Stop before send.</pre></div>
       <tr><td><b>note</b></td><td>work evidence: <code>saw</code>, <code>did</code>, <code>skipped</code>, <code>stopped</code>, <code>note</code></td></tr>
       <tr><td><b>amend</b></td><td>a human-approved warrant widening from <code>docket review</code> — rule changes are evidence too</td></tr>
     </table></div>
+    <h3>Who wrote it</h3>
+    <p>Every entry is stamped with its subject, so several agents working the same repo
+    in parallel worktrees stay separable at merge time:</p>
+    <div class="code"><pre>$ docket record log
+#7  2026-07-24 09:12Z deploy  <span class="g">allow</span> change → "src/api/rates.ts" (change: source files)   <span class="c">← claude-code @ hotfix-402</span>
+#9  2026-07-24 09:14Z deploy  <span class="g">allow</span> read  → "test/rates.test.ts" (read: the repo)        <span class="c">← cursor @ wt-perf:perf-pass</span></pre></div>
+    <div class="table-scroll"><table>
+      <tr><th>Field</th><th>Where it comes from</th></tr>
+      <tr><td><code>by</code></td><td><code>--by &lt;agent&gt;</code>, then <code>DOCKET_BY</code>, then a detected agent (Claude Code, Cursor, Gemini CLI, Codex, Aider, GitHub Actions), then <code>user:&lt;name&gt;</code></td></tr>
+      <tr><td><code>branch</code></td><td>the git branch at write time (a short sha when HEAD is detached)</td></tr>
+      <tr><td><code>worktree</code></td><td>the linked worktree’s name, when the write came from one</td></tr>
+      <tr><td><code>session</code></td><td>the harness’s session id, when it supplies one — the Claude Code hook does</td></tr>
+    </table></div>
+    <p>Read it back with <code>docket record log --by &lt;agent&gt;</code> or
+    <code>docket metrics --by &lt;agent&gt;</code>. Fields with no honest value are omitted
+    rather than filled with a placeholder, and entries written before attribution existed
+    read as <em>unattributed</em> — never guessed at.</p>
+    <p><b>Attribution is self-reported, and cannot be revised.</b> A process that can
+    write to the record can claim any <code>by</code> it likes — this is provenance, not
+    authentication. But <code>by</code> is inside the hashed entry, so rewriting who an
+    old entry blames breaks the chain at that entry. Whoever wrote it is held to what
+    they claimed at the time.</p>
+    <h3>Parallel writers</h3>
+    <p>Appending is read-the-head-then-chain-to-it, so appends are serialized across
+    processes with an exclusive lock file next to the record (stale locks broken after
+    10s; an error rather than an unlocked write if it can’t acquire one). Without that,
+    two agents writing at once both chain to the same entry and <code>verify</code>
+    reports tampering nobody did — and a false alarm in an audit trail is worse than no
+    alarm. Scope is one machine; a record on a shared network filesystem is outside what
+    this guarantees.</p>
     <h3>The hash chain</h3>
     <p>Each entry commits to the previous one:
     <code>hash = sha256(prev + canonical(entry))</code>. Any edit, deletion, insertion, or
@@ -526,11 +556,13 @@ Autonomy
   warrant amendments             0   human-approved widenings (docket review)</pre></div>
     <p>It reports the auto-approve / ask / deny split, the longest unattended run
     (consecutive allows with no human stop), a proxy for actions-per-intervention, and a
-    per-loop and per-channel breakdown. Every number is exact from the hash chain except
+    per-loop, per-channel, and per-agent breakdown. Every number is exact from the hash chain except
     the labeled proxies — the record measures actions and verdicts, not wall-clock or
     intent. This is the dashboard Addy Osmani argues teams need to climb the autonomy
     ladder deliberately toward <em>“calibrated autonomy.”</em> Add <code>--json</code> to
-    gate CI on it, or <code>--loop &lt;name&gt;</code> to scope it.</p>
+    gate CI on it, or <code>--loop &lt;name&gt;</code> / <code>--by &lt;agent&gt;</code> to scope it — with several
+    agents on one repo, “how autonomous is <em>this</em> agent?” is the question that has an
+    actionable answer.</p>
   </section>
 
   <section id="compile">
@@ -738,15 +770,15 @@ npx docket-agent compile --target agents --write</pre></div>
       <tr><td><code>docket list</code></td><td>list your loops</td></tr>
       <tr><td><code>docket show &lt;loop&gt;</code></td><td>print a loop’s five layers</td></tr>
       <tr><td><code>docket match &lt;task…&gt;</code></td><td>which loop covers this task? — ranked with why (<code>--limit N</code>); exits 0 matched / 2 no coverage</td></tr>
-      <tr><td><code>docket check &lt;loop&gt; &lt;verb&gt; &lt;target…&gt;</code></td><td>verdict + rule; exits 0/2/3; logged unless <code>--no-record</code>; <code>--quiet</code> prints the bare verdict</td></tr>
-      <tr><td><code>docket record add &lt;loop&gt;</code></td><td>append evidence: <code>--saw --did --skipped --stopped --note</code></td></tr>
-      <tr><td><code>docket record log [loop]</code></td><td>show recent entries (<code>--n 20</code>)</td></tr>
+      <tr><td><code>docket check &lt;loop&gt; &lt;verb&gt; &lt;target…&gt;</code></td><td>verdict + rule; exits 0/2/3; logged unless <code>--no-record</code>; <code>--quiet</code> prints the bare verdict; <code>--by &lt;agent&gt;</code> names the writer</td></tr>
+      <tr><td><code>docket record add &lt;loop&gt;</code></td><td>append evidence: <code>--saw --did --skipped --stopped --note</code>; <code>--by &lt;agent&gt;</code> names the writer</td></tr>
+      <tr><td><code>docket record log [loop]</code></td><td>show recent entries (<code>--n 20</code>), each with who wrote it; <code>--by &lt;agent&gt;</code> shows one agent’s</td></tr>
       <tr><td><code>docket record verify</code></td><td>verify the chain end to end; <code>--head &lt;hash&gt;</code> pins against tail truncation</td></tr>
-      <tr><td><code>docket metrics</code></td><td>autonomy posture from the record: auto-approve / ask / deny split, longest unattended run, actions per intervention, per-loop &amp; per-channel (<code>--loop</code>, <code>--json</code>)</td></tr>
+      <tr><td><code>docket metrics</code></td><td>autonomy posture from the record: auto-approve / ask / deny split, longest unattended run, actions per intervention, per-loop, per-channel &amp; per-agent (<code>--loop</code>, <code>--by</code>, <code>--json</code>)</td></tr>
       <tr><td><code>docket review</code></td><td>propose warrant updates from repeated asks (<code>--min</code>, <code>--loop</code>, <code>--yes</code>)</td></tr>
       <tr><td><code>docket compile</code></td><td><code>--target claude|agents|gemini|cursor|raw</code>, <code>--write</code> to update the file in place, <code>--loop</code> to preview one loop on stdout, <code>--index</code> to compile the routing table instead of full loops</td></tr>
-      <tr><td><code>docket mcp</code></td><td>run the MCP server (<code>--dir</code> or <code>DOCKET_DIR</code> to locate the project)</td></tr>
-      <tr><td><code>docket hook claude</code></td><td>Claude Code PreToolUse hook: deny blocks, ask prompts the human, allow stays silent (<code>--loop</code> pins a loop, <code>--strict</code> asks on no coverage, <code>--dir</code> locates the project); with a gate pinned, every failure mode fails closed to ask</td></tr>
+      <tr><td><code>docket mcp</code></td><td>run the MCP server (<code>--dir</code> or <code>DOCKET_DIR</code> to locate the project; <code>--by</code> names the client in the record)</td></tr>
+      <tr><td><code>docket hook claude</code></td><td>Claude Code PreToolUse hook: deny blocks, ask prompts the human, allow stays silent (<code>--loop</code> pins a loop, <code>--strict</code> asks on no coverage, <code>--dir</code> locates the project, <code>--by</code> names the writer); with a gate pinned, every failure mode fails closed to ask</td></tr>
     </table></div>
   </section>
 

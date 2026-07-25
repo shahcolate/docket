@@ -163,7 +163,17 @@ export async function cmdHook(argv) {
     emitDecision('ask', `docket loop "${loop.name}" (${result.rule}): ${result.reason}`);
   }
   try {
-    recordCheck(docketDir, loop.name, action, target, result, { via: 'hook', tool: toolName });
+    // The harness hands us the session id — the one attribution docket never
+    // has to guess. Two agents in two worktrees become two subjects at merge.
+    recordCheck(
+      docketDir,
+      loop.name,
+      action,
+      target,
+      result,
+      { via: 'hook', tool: toolName },
+      { by: flags.by, session: event.session_id, cwd: startDir }
+    );
   } catch (err) {
     console.error(`docket hook: decision emitted but record append failed — ${err.message}`);
   }

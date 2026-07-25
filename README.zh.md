@@ -32,6 +32,7 @@ ChatGPT/Codex、Gemini、Cursor、OpenClaw、Hermes 以及任何 MCP 客户端�
 
 ## 最新动态
 
+- **2026.07** — **`v0.5.0`：记录开始回答“是谁”。** 每一条记录都会自动盖上写入者的智能体、分支与工作树（**`by`**），并行工作的多个智能体在合并时依然可以分辨；配套 `docket record log --by` 与 `docket metrics --by`，可单独回看某一个智能体的自治姿态。同时修复了一个真实缺陷：并行写入的智能体会撑破哈希链，让 `verify` 报出根本没发生过的篡改——现在追加写入在进程之间串行化。（[谁做了什么](#谁做了什么并行智能体的归属)）
 - **2026.07** — **`v0.4.0` 发布至 npm。** 一条命令让 docket 覆盖整个仓库（**`docket install`**——上下文 + 钩子 + MCP，随仓库提交共享）；loop 成为完整的**智能体契约**（`goal` / `stop` / `budget`）；**`docket metrics`** 把记录读回为你的自治姿态——自动放行 vs 询问 vs 拒绝、最长无人值守连续、每次干预的动作数。
 - **2026.07** — 红队测试计划扩展到[**六个套件、10,582 项检查**](eval/REPORT.md)：对抗性措辞、模糊目标探针、10,000 次模糊测试、239 次篡改变异、真实钩子门禁语料——零静默放行，零失效开门。匹配器现按子句拆分复合目标，后果无法搭上被许可短语的顺风车。
 - **2026.07** — `v0.3.0` 推出 **`docket hook claude`**：把授权令变成 Claude Code 的 PreToolUse 门禁——allow/ask/deny 由执行框架强制执行，而不是靠提示词。同时规范新增“延迟后果”规则，红队套件新增**定时逃逸**场景族。
@@ -201,7 +202,7 @@ $ docket record add appeal \
     --saw "policy §4.2, denial letter 2026-06-12" \
     --did "drafted appeal citing §4.2(b), built evidence list" \
     --stopped "before send — two claims need human verification"
-✓ record #4 sha256:fd4394fc8cd4b288…
+✓ record #4 sha256:fd4394fc8cd4b288… by claude-code
 
 $ docket record verify
 ✓ chain intact — 4 entries, every entry commits to the one before it
@@ -221,6 +222,42 @@ $ docket record verify
 由于哈希链看不见自己的尾部被截断，`verify` 会打印链头哈希：
 把它钉在日志够不到的任何地方，之后用 `docket record verify --head <hash>`
 连截尾也能查出来。
+
+## 谁做了什么：并行智能体的归属
+
+一个人跑一个智能体时，日志里不需要“主语”——里面的一切都是*那个*智能体。
+但当你在同一个仓库的三个工作树里跑三个智能体，这一点立刻失效。
+到了合并的时刻，“它被允许做什么、它又做了什么”需要一个**谁**。
+
+现在每一条记录都自动带上它：
+
+```console
+$ docket record log
+#7  2026-07-24 09:12Z deploy  allow change → "src/api/rates.ts" (change: source files)   ← claude-code @ hotfix-402
+#8  2026-07-24 09:12Z deploy  ask   send   → "Bash: gh pr merge" (default)               ← claude-code @ hotfix-402
+#9  2026-07-24 09:14Z deploy  allow read  → "test/rates.test.ts" (read: the repo)        ← cursor @ wt-perf:perf-pass
+
+$ docket metrics --by claude-code      # 只看这一个智能体的姿态，而不是团队平均值
+```
+
+`by` 按优先级解析——`--by <agent>`、`DOCKET_BY`、自动识别的智能体
+（Claude Code、Cursor、Gemini CLI、Codex、Aider、GitHub Actions），最后才是操作系统用户；
+同时记录 git `branch`、来自关联工作树时的 `worktree` 名，
+以及执行框架提供的 `session` id（Claude Code 钩子会提供）。
+没有确切值的字段会被**留空省略**，而不是填一个读起来像事实的占位符。
+
+有两点必须说清楚，因为归属很容易被夸大：
+
+- **`by` 是自述的。** 能写入记录的进程就能声称任意身份。这是来源信息，不是身份认证。
+- **但它无法被事后改写。** `by` 参与条目哈希，改动旧条目归属谁会当场撑破哈希链。
+  写的人被钉在他当时的声称上——这才是审计真正需要的性质。
+
+**并行的智能体也不再撑破链条。** 追加写入是“先读链头、再锚定它”，
+所以两个同时写入的智能体可能都锚定到第 5 条——之后 `verify` 会对一份
+没人碰过的日志报出*“有条目被删除、插入或重排”*。
+现在追加写入在进程之间串行化（独占锁文件、超过 10 秒的陈旧锁会被打破、
+拿不到锁就报错而不是无锁写入）。误报的篡改警报比没有警报更糟：
+它教会人们不相信真正的警报。五个智能体各写十二条、同时落盘，现在是一条测试。
 
 ## 你的上下文，任何模型
 
@@ -416,7 +453,7 @@ allow read: "state insurance regulations" in appeal? [y/N] y
 - **不是魔法牢笼。** 配合的智能体遵循编译进上下文的规则；钩子在你接线的地方
   机械地强制执行；无论哪种情况，每次检查都落在记录上。每一层的强度恰如其分，
   不多不少。
-- **还没有完成。** 现在是 v0.3.x，规范在 1.0 之前仍可能有破坏性变更
+- **还没有完成。** 现在是 v0.5.x，规范在 1.0 之前仍可能有破坏性变更
   （loop 文件带 `version` 字段正是为此）。不会变的是：未列出即询问、
   故障落向人类、记录防篡改。
 
@@ -435,6 +472,8 @@ allow read: "state insurance regulations" in appeal? [y/N] y
 ## 路线图
 
 - [x] ~~`docket check` 作为 Claude Code PreToolUse 钩子~~ — 已以 `docket hook claude` 发布
+- [x] ~~记录中的按智能体 / 工作树归属（`by:` 字段）~~ — 已在 v0.5.0 发布，[连同它所需要的并发修复](#谁做了什么并行智能体的归属)
+- [ ] 自治层级指南——把 loop 与就绪度映射到 L0–L5，让团队按验证方式而不是任务名称来选层级
 - [ ] 记录链头签名（为链尖出具证明，可对外分享）
 - [ ] loop 继承（`extends:`），用于团队基线
 - [ ] 记录导出 → 人类可读的工作摘要
