@@ -42,11 +42,15 @@ ${bold('Iterating')}
 
 ${bold('The record')}
   ${cyan('record add')} <loop> [--did ..] [--saw ..] [--skipped ..] [--stopped ..] [--note ..]
-  ${cyan('record log')} [loop] [--n 20]
+  ${cyan('record log')} [loop] [--n 20] [--by <agent>]
   ${cyan('record verify')}             verify the hash chain end to end
-  ${cyan('metrics')} [--loop <name>] [--json]
+  ${cyan('metrics')} [--loop <name>] [--by <agent>] [--json]
                              autonomy posture from the record: auto-approve vs
                              ask vs deny, longest unattended run, actions/intervention
+
+${dim('Every entry is stamped with who wrote it — agent, branch, worktree —')}
+${dim('so parallel agents stay separable at merge time. Override the guess')}
+${dim('with --by <agent> or DOCKET_BY; scope any read back with --by.')}
 
 ${bold('Portability')}
   ${cyan('compile')} [--target claude|agents|gemini|cursor|raw] [--loop <name>] [--index] [--write]

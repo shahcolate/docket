@@ -11,8 +11,12 @@
 // record can't measure directly. They're marked so nobody reads more into
 // them than the data supports.
 
-export function computeMetrics(entries, { loop } = {}) {
-  const scoped = loop ? entries.filter((e) => e.loop === loop) : entries;
+export function computeMetrics(entries, { loop, by } = {}) {
+  let scoped = entries;
+  if (loop) scoped = scoped.filter((e) => e.loop === loop);
+  // Scoping by agent answers the level-4 question directly: not "how
+  // autonomous are we?" but "how autonomous is *this* agent, on this branch?"
+  if (by) scoped = scoped.filter((e) => e.by === by);
   const checks = scoped.filter((e) => e.kind === 'check');
   const notes = scoped.filter((e) => e.kind === 'note');
   const amends = scoped.filter((e) => e.kind === 'amend');
@@ -49,6 +53,18 @@ export function computeMetrics(entries, { loop } = {}) {
     byChannel[via] = (byChannel[via] || 0) + 1;
   }
 
+  // Per-agent posture. Entries written before attribution existed have no
+  // `by`, and are counted as `unattributed` rather than guessed at — the
+  // record says what it knows and nothing more.
+  const byActor = {};
+  for (const c of checks) {
+    const who = c.by || 'unattributed';
+    const b = (byActor[who] ??= { checks: 0, allow: 0, ask: 0, deny: 0, branches: [] });
+    b.checks++;
+    if (c.verdict in b) b[c.verdict]++;
+    if (c.branch && !b.branches.includes(c.branch)) b.branches.push(c.branch);
+  }
+
   const rate = (n) => (total ? n / total : 0);
   const ts = scoped.map((e) => e.ts).filter(Boolean).sort();
 
@@ -69,6 +85,7 @@ export function computeMetrics(entries, { loop } = {}) {
     work: { notes: notes.length, withStop: notes.filter((n) => n.stopped).length },
     byLoop,
     byChannel,
+    byActor,
     span: ts.length ? { first: ts[0], last: ts[ts.length - 1] } : null,
   };
 }

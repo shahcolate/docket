@@ -265,7 +265,7 @@ do, leave alone, and where did it stop?*
 Storage: `.docket/record.jsonl`, one JSON object per line, append-only.
 
 ```json
-{"seq":3,"ts":"2026-07-03T10:15:00.000Z","loop":"insurance-appeal","kind":"check","action":"send","target":"appeal email to insurer","verdict":"ask","rule":"ask: anything addressed to the insurer","prev":"sha256:…","hash":"sha256:…"}
+{"seq":3,"ts":"2026-07-03T10:15:00.000Z","loop":"insurance-appeal","kind":"check","action":"send","target":"appeal email to insurer","verdict":"ask","rule":"ask: anything addressed to the insurer","by":"claude-code","branch":"fix/claim-402","prev":"sha256:…","hash":"sha256:…"}
 ```
 
 Three kinds today:
@@ -276,6 +276,47 @@ Three kinds today:
   `note`.
 - `amend` — a human-approved warrant widening (`action`, `added`, `asks`),
   written by `docket review`. Rule changes are evidence too.
+
+### Attribution
+
+Every entry carries the subject that wrote it. With one human and one agent,
+`loop` was enough; with several agents working the same repo in parallel
+worktrees, "what was it allowed to do, and what did it do?" needs a *who*.
+
+| Field | Meaning |
+|---|---|
+| `by` | the writer — a detected agent id (`claude-code`, `cursor`, …), an explicit `--by`, or `user:<name>` |
+| `branch` | the git branch at write time; a short sha when HEAD is detached |
+| `worktree` | the linked worktree's name, when the write came from one |
+| `session` | the harness's own session id, when it supplies one (the hook does) |
+
+`by` resolves in precedence order — explicit `--by`, then `DOCKET_BY`, then a
+detected agent, then the OS user — and every field is **omitted** rather than
+filled with a placeholder when there is no honest value. Implementations must
+not invent a subject for entries that lack one; readers report those as
+unattributed.
+
+**`by` is self-reported, and that limit is the point of stating it.** A
+process that can append to the record can append any `by` it likes — this is
+provenance, not authentication. What the chain does guarantee is that
+attribution cannot be *revised*: `by` is inside the hashed entry, so changing
+who an old entry blames breaks the chain at that entry. Whoever wrote it is
+held to what they claimed at the time.
+
+### Concurrent writers
+
+Appending is read-the-head-then-chain-to-it, so the read and the write must be
+atomic with respect to other writers. Two agents that both chain to entry 5
+produce two entry 6s, and `verify` then reports tampering that nobody did —
+a false alarm in an audit trail is worse than a missing one, because it
+teaches people to disbelieve the real alarm.
+
+Implementations must serialize appends across processes. The reference
+implementation takes an exclusive lock file next to the record
+(`record.jsonl.lock`), breaks a lock older than 10s as a crashed holder, and
+raises an error rather than writing unlocked if it cannot acquire one within
+15s. The scope is one machine — a record on a shared network filesystem is
+outside what this guarantees.
 
 ### The hash chain
 
@@ -306,7 +347,10 @@ agent's **autonomy posture** without collecting anything new. `docket metrics`
 derives it: the auto-approve / ask / deny split, the longest unattended run
 (consecutive `allow` checks with no human stop between them), a proxy for
 actions-per-intervention (checks ÷ asks+denies), amendment count, and a
-per-loop and per-channel breakdown. Every number is exact from the hash chain
+per-loop, per-channel, and per-agent breakdown. Because every entry carries a
+subject, the same numbers scope to one agent (`--by`) — the level-4 question
+is not "how autonomous are we?" but "how autonomous is *this* agent, on this
+branch?" Every number is exact from the hash chain
 except proxies, which must be labeled as such — the record can measure actions
 and their verdicts, not wall-clock or human intent.
 

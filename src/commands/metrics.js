@@ -28,18 +28,27 @@ export function cmdMetrics(argv) {
   }
 
   const entries = readRecords(docketDir);
-  const m = computeMetrics(entries, { loop: flags.loop ? String(flags.loop) : undefined });
+  const m = computeMetrics(entries, {
+    loop: flags.loop ? String(flags.loop) : undefined,
+    by: typeof flags.by === 'string' ? flags.by : undefined,
+  });
 
   if (flags.json) {
     console.log(JSON.stringify(m, null, 2));
     return 0;
   }
 
-  const scope = flags.loop ? ` · loop ${cyan(String(flags.loop))}` : '';
+  const scope =
+    (flags.loop ? ` · loop ${cyan(String(flags.loop))}` : '') +
+    (typeof flags.by === 'string' ? ` · by ${cyan(flags.by)}` : '');
   console.log(`${bold('docket metrics')}${scope} ${dim(`· ${recordFile(docketDir)}`)}`);
 
   if (!m.checks) {
-    console.log(dim('\nno warrant checks recorded yet — the numbers appear once the agent starts checking.'));
+    const why =
+      typeof flags.by === 'string'
+        ? `\nno warrant checks recorded by "${flags.by}" — check \`docket metrics\` for who has been writing.`
+        : '\nno warrant checks recorded yet — the numbers appear once the agent starts checking.';
+    console.log(dim(why));
     return 0;
   }
 
@@ -60,6 +69,20 @@ export function cmdMetrics(argv) {
     for (const [name, b] of Object.entries(m.byLoop).sort((a, c) => c[1].checks - a[1].checks)) {
       console.log(`  ${cyan(name.padEnd(20))} ${String(b.checks).padStart(4)} checks   ${dim(`allow ${b.allow} · ask ${b.ask} · deny ${b.deny}`)}`);
     }
+  }
+
+  // Only worth a section when the record has more than one subject: with a
+  // single agent this is a row that says what the header already said.
+  const actorKeys = Object.keys(m.byActor);
+  if (actorKeys.length > 1) {
+    console.log(`\n${bold('By agent')}`);
+    for (const [who, b] of Object.entries(m.byActor).sort((a, c) => c[1].checks - a[1].checks)) {
+      const where = b.branches.length ? ` ${dim(`· ${b.branches.join(', ')}`)}` : '';
+      console.log(
+        `  ${cyan(who.padEnd(20))} ${String(b.checks).padStart(4)} checks   ${dim(`allow ${b.allow} · ask ${b.ask} · deny ${b.deny}`)}${where}`
+      );
+    }
+    console.log(dim('  scope to one with --by <agent> · attribution is self-reported, and hash-chained once written'));
   }
 
   const chans = Object.entries(m.byChannel).map(([k, v]) => `${k} ${v}`).join(' · ');
