@@ -5,7 +5,7 @@
 **The permission layer — and the paper trail — for AI agents.**
 
 [![npm](https://img.shields.io/npm/v/docket-agent?style=flat-square&color=FF4B3A&label=npm)](https://www.npmjs.com/package/docket-agent)
-[![CI](https://img.shields.io/github/actions/workflow/status/shahcolate/docket/ci.yml?style=flat-square&label=CI)](https://github.com/shahcolate/docket/actions)
+[![CI](https://img.shields.io/github/actions/workflow/status/shahcolate/docket/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/shahcolate/docket/actions)
 [![node](https://img.shields.io/node/v/docket-agent?style=flat-square&color=3FB950)](package.json)
 [![zero dependencies](https://img.shields.io/badge/dependencies-0-3FB950?style=flat-square)](package.json)
 [![license](https://img.shields.io/badge/license-MIT-8B8E96?style=flat-square)](LICENSE)
