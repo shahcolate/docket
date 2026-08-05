@@ -123,7 +123,7 @@ or, with no Node on the host, as a container:
 
 ```console
 $ docker mcp gateway run \
-    --interceptor 'before:docker:docket-agent intercept --loop deploy'
+    --interceptor 'before:docker:ghcr.io/shahcolate/docket-agent intercept --loop deploy'
 ```
 
 Now all four boundaries are in place at once, and each is doing the job it is

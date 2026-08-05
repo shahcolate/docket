@@ -1,6 +1,6 @@
 # The warrant in front of the Docker MCP Gateway.
 #
-# Run it:   docker compose up --build
+# Run it:   docker compose up
 #
 # The gateway fronts real MCP servers; `docket intercept` sits in front of the
 # gateway's `tools/call` path. Every call any client makes, to any server, is
@@ -11,43 +11,38 @@
 
 services:
   gateway:
-    image: docker/mcp-gateway
+    build:
+      # (a) `exec` — docket copied into the gateway image and called directly.
+      #     Lowest latency: no container start per tool call. docket is
+      #     zero-dependency, so installing it is a copy, not a package manager
+      #     run.
+      dockerfile_inline: |
+        FROM docker/mcp-gateway
+        COPY --from=ghcr.io/shahcolate/docket-agent:latest /app /docket
+        RUN ln -s /docket/bin/docket.js /usr/local/bin/docket
     command:
       - --transport=streaming
       - --port=9011
       - --servers=duckduckgo
 
-      # (a) `exec` — the gateway calls the docket binary directly. Lowest
-      #     latency, needs node on the gateway image.
       - --interceptor
       - 'before:exec:docket intercept --loop research --dir /work'
 
-      # (b) `docker` — the gateway runs docket as a container per call. No node
-      #     on the host, and the interceptor is pinned to an image digest you
-      #     can attest. Swap it in for (a) by moving the comment.
+      # (b) `docker` — the gateway runs docket as a container per call. Nothing
+      #     is copied into the gateway image, and the interceptor can be pinned
+      #     to a digest you can verify against the image's attestations. Swap it
+      #     in for (a) by moving the comment.
       # - --interceptor
-      # - 'before:docker:docket-agent intercept --loop research --dir /work'
+      # - 'before:docker:ghcr.io/shahcolate/docket-agent intercept --loop research --dir /work'
     volumes:
-      # The gateway needs the docker socket only for deployment (b).
+      # Deployment (b) needs the docker socket to start the interceptor
+      # container per call. Deployment (a) does not — drop this line if you
+      # use it, since handing the gateway the host's docker socket is not a
+      # small thing to do by default.
       - /var/run/docker.sock:/var/run/docker.sock
       # The repo — loops in, record out. This mount is the whole durability
       # story: the record is written on the host, so it outlives every
       # container in this file. See docs/sandboxes.md.
       - ./workspace:/work
-    build:
-      # docket is zero-dependency, so "install it into the gateway image" is a
-      # copy, not a package manager run.
-      dockerfile_inline: |
-        FROM docker/mcp-gateway
-        COPY --from=docket-agent /app /docket
-        RUN ln -s /docket/bin/docket.js /usr/local/bin/docket
-      additional_contexts:
-        docket-agent: service:docket
-
-  # Built so the gateway image can copy docket out of it, and so deployment (b)
-  # has an image to run.
-  docket:
-    build:
-      context: ../..
-    image: docket-agent
-    command: ['version']
+    ports:
+      - '9011:9011'

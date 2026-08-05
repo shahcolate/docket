@@ -56,3 +56,80 @@ jobs:
       # legacy path and skip OIDC entirely. Provenance is automatic under
       # trusted publishing, so `--provenance` is not needed either.
       - run: npm publish
+
+  # The image is a shipped surface: the Docker MCP Gateway runs the
+  # interceptor as `before:docker:<image>`, and until this job existed that
+  # line in the README required everyone to `docker build` first. Same tag,
+  # same commit, same moment as npm — a registry that lags the package is how
+  # you end up gating tool calls with last month's warrant engine.
+  image:
+    runs-on: ubuntu-latest
+    needs: publish # never ship an image for a release npm rejected
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # arm64 matters here specifically: a large share of the developers
+      # running an agent sandbox locally are on Apple Silicon, and an
+      # amd64-only interceptor would emulate on every single tool call.
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/docket-agent"
+          {
+            echo "image=$image"
+            echo "tags=$image:$version,$image:latest"
+          } >> "$GITHUB_OUTPUT"
+
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ github.ref_name }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.description=The permission layer and paper trail for AI agents — CLI, MCP server, and MCP gateway interceptor.
+          # A tool that exists to answer "what was this allowed to do, and can
+          # you prove it?" should be able to answer the same question about
+          # itself. Both are attached to the image in the registry.
+          provenance: mode=max
+          sbom: true
+
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ steps.meta.outputs.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      # Pulling the published image and running the gate against a hostile
+      # call: the last chance to catch an image that builds but cannot
+      # actually refuse anything.
+      - name: the published image refuses an unwarranted call
+        run: |
+          set -euo pipefail
+          image="${{ steps.meta.outputs.image }}:${GITHUB_REF_NAME#v}"
+          mkdir -p /tmp/smoke/.docket/loops && chmod -R 777 /tmp/smoke
+          cp templates/cross-tool-memory.loop.md /tmp/smoke/.docket/loops/
+          out=$(echo '{"params":{"name":"gmail_send_email","arguments":{"to":"x@y.z"}}}' \
+            | docker run --rm -i -v /tmp/smoke:/work "$image" intercept --loop cross-tool-memory)
+          echo "$out"
+          echo "$out" | grep -q '"isError":true'
+          test -s /tmp/smoke/.docket/record.jsonl

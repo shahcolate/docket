@@ -32,6 +32,14 @@ Zero dependencies · plain Markdown + JSONL · MIT
 
 ## News
 
+- **2026.08** — **`v0.7.0`: policy travels.** **[`docket policy push/pull`](#ship-the-baseline-the-way-you-ship-everything-else)**
+  publishes loops as an OCI artifact, so one baseline reaches forty repos
+  through the registry you already run — with digest verification, a
+  publisher-can't-choose-your-paths rule, and a human keystroke before anything
+  installs. `extends:` still **cannot** name a registry, on purpose: a warrant
+  check must never depend on the network. The image now ships to
+  **ghcr.io/shahcolate/docket-agent** on every release tag, multi-arch, with
+  SBOM and provenance attestations.
 - **2026.08** — **`v0.6.0`: the warrant leaves the harness.** Enforcement was
   one vendor's hook; now it's also **[`docket intercept`](#the-gateway-gate-every-mcp-tool-call)**,
   a Docker MCP Gateway interceptor that gates every `tools/call` from any
@@ -554,7 +562,7 @@ or, with no Node on the host, as a container:
 
 ```console
 $ docker mcp gateway run \
-    --interceptor 'before:docker:docket-agent intercept --loop deploy'
+    --interceptor 'before:docker:ghcr.io/shahcolate/docket-agent intercept --loop deploy'
 ```
 
 The gateway already intercepts what a gateway can know generically — secrets in
@@ -643,6 +651,60 @@ Baselines are marked `abstract: true`: real policy, but nothing routes to them
 and they never show up as work. `docket new baseline --template org-baseline`
 ships a starting one. Budgets inherit too, with a floor — a numeric limit
 merges to the **minimum**, so a child can lower a ceiling and never raise one.
+
+## Ship the baseline the way you ship everything else
+
+`extends:` makes one file govern forty loops. It doesn't help when the forty
+loops are in forty repos. For that, put the policy in the registry you already
+run:
+
+```console
+$ docket policy push ghcr.io/acme/loops:baseline
+pushing 1 loop → ghcr.io/acme/loops:baseline
+  6b6359544a5a  org-baseline.loop.md
+✓ pushed ghcr.io/acme/loops:baseline
+  digest: sha256:e568d3f76395…
+```
+
+Each loop is its own layer, annotated with its filename — so it's individually
+addressable, readable in any registry UI, and `oras pull`-able by someone who's
+never heard of docket. Registries already have what policy distribution needs
+and a git submodule doesn't: immutable digests, tags that move deliberately,
+access control per namespace, and a retention policy somebody else operates.
+It's how the Docker MCP Catalog ships its server list, for the same reasons.
+
+**Pulling is the dangerous direction, and the command is built like it.** A
+loop file isn't data — it's the thing that decides what your agents may do.
+Fetching one off the network and dropping it into `.docket/loops/` is
+structurally the exact failure docket exists to prevent. So `pull` shows you
+what changes and *then* asks:
+
+```console
+$ docket policy pull ghcr.io/acme/loops:baseline
+ghcr.io/acme/loops:baseline
+  digest sha256:e568d3f76395…
+
+  + new      org-baseline.loop.md (abstract)
+             never 6 · ask 4
+
+install 1 loop file into .docket/loops? [y/N]
+```
+
+`docket policy inspect` reads a policy back without installing anything —
+including every `never` rule, so you can see what you'd be agreeing to. Digests
+are verified before a byte is written; a publisher-chosen filename is validated
+against the loop-name grammar (a layer titled `../../../etc/cron.d/evil.loop.md`
+is refused, and that's a test); an existing loop is never silently replaced; and
+what you installed lands on the record with its digest.
+
+**What `extends:` deliberately cannot do is name a registry.** A warrant check
+must never depend on the network — the moment it does, the interesting question
+stops being *"what is this agent allowed to do"* and becomes *"what happens to
+the gate when the registry is down, or slow, or serving a tag that moved under
+us"*, and every honest answer to that is worse than the problem it solves. So
+policy is pulled explicitly, vendored into the repo, and committed. `docket
+policy pull` is a supply-chain step, not a runtime dependency, and the warrant
+is always evaluated from local files a reviewer can read in a diff.
 
 ## Why not just a sandbox?
 
@@ -844,8 +906,8 @@ Read the [Loop File Spec](spec/SPEC.md) — it's short on purpose.
 - [x] ~~Signed record heads (attest the chain tip, share the attestation)~~ — shipped as `docket record sign`
 - [x] ~~Loop inheritance (`extends:`) for team baselines~~ — shipped in v0.6.0
 - [x] ~~The warrant as an MCP gateway policy layer~~ — shipped as `docket intercept`
+- [x] ~~Loop distribution as an OCI artifact~~ — shipped as `docket policy push/pull/inspect`
 - [ ] Autonomy-levels guide — mapping loops and readiness to L0–L5, so teams pick a level by its verification, not the task name
-- [ ] Loop distribution as an OCI artifact — `docket policy push ghcr.io/org/loops:baseline`, so a baseline ships the way everything else in a registry does
 - [ ] Record export → human-readable work summaries
 - [ ] Adapters: OpenAI custom instructions, Windsurf
 
