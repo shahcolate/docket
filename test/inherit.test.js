@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { listLoops, loadLoop, parseLoop, LoopError } from '../src/lib/loop.js';
 import { mergeBudget, resolveExtendsPath } from '../src/lib/inherit.js';
 import { checkWarrant } from '../src/lib/warrant.js';
@@ -283,6 +283,52 @@ test('extends and abstract are validated at parse time', () => {
   assert.throws(() => parseLoop(`---\nname: x\nabstract: yes please\n---\n`), /abstract/);
   assert.equal(parseLoop(`---\nname: x\n---\n`).extends, null);
   assert.equal(parseLoop(`---\nname: x\n---\n`).abstract, false);
+});
+
+test('docket review cannot retire an inherited ask, and does not flatten the baseline', () => {
+  // Two ways this could go wrong. `review` proposes warrant widenings from
+  // repeated asks — it must read the MERGED loop, or it would happily propose
+  // allowing something the baseline reserves for a human. And it rewrites the
+  // loop file, so it must write the CHILD's own frontmatter, or applying one
+  // amendment would silently copy the whole baseline into the child and cut
+  // the inheritance link.
+  const { dir, docketDir } = project({
+    baseline: BASELINE,
+    deploy: `---
+name: deploy
+extends: baseline
+warrant:
+  change: [feature branches]
+---
+`,
+  });
+  // Six asks against something the baseline reserves, and six against
+  // something nobody restricted.
+  for (let i = 0; i < 6; i++) {
+    for (const [action, target] of [['send', 'spending money'], ['change', 'the changelog']]) {
+      // `check` exits 2 on ask — that is the contract, not a failure.
+      spawnSync(process.execPath, [BIN, 'check', 'deploy', action, target], {
+        cwd: dir,
+        env: ENV,
+        encoding: 'utf8',
+      });
+    }
+  }
+
+  const out = execFileSync(process.execPath, [BIN, 'review', '--yes'], {
+    cwd: dir,
+    env: ENV,
+    encoding: 'utf8',
+  });
+  assert.doesNotMatch(out, /spending money/, 'an inherited ask is policy, never a proposal');
+  assert.match(out, /the changelog/);
+
+  const raw = fs.readFileSync(path.join(docketDir, 'loops', 'deploy.loop.md'), 'utf8');
+  assert.match(raw, /extends: baseline/, 'the inheritance link survives an applied amendment');
+  assert.doesNotMatch(raw, /deleting production data/, 'the baseline was not copied into the child');
+  assert.match(raw, /the changelog/);
+  // And the merged loop still carries the baseline's hard stop afterward.
+  assert.equal(checkWarrant(loadLoop(docketDir, 'deploy'), 'change', 'deleting production data').verdict, 'deny');
 });
 
 test('the shipped org-baseline template governs a loop that extends it', () => {
