@@ -114,7 +114,16 @@ function request(url, { method = 'GET', headers = {}, body, redirects = 0 } = {}
     const transport = target.protocol === 'http:' ? http : https;
     const req = transport.request(
       target,
-      { method, headers },
+      {
+        method,
+        headers,
+        // Happy Eyeballs. On Node 20+ this is the default; on Node 18 — which
+        // package.json still supports — a dual-stack host whose AAAA record
+        // does not answer fails outright instead of falling back to IPv4.
+        // Setting it explicitly means the same registry behaves the same way
+        // across every Node this package claims to run on.
+        autoSelectFamily: true,
+      },
       (res) => {
         const chunks = [];
         let length = 0;

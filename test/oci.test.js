@@ -53,7 +53,12 @@ function startRegistry({ requireAuth = false, corruptBlob = null } = {}) {
 
     if (requireAuth && url.pathname !== '/token' && req.headers.authorization !== 'Bearer test-token') {
       return send(401, '', {
-        'www-authenticate': `Bearer realm="http://localhost:${server.address().port}/token",service="reg",scope="repository:acme/loops:pull,push"`,
+        // 127.0.0.1, not `localhost`: this server binds v4 only, and on Node 18
+        // `localhost` resolves to ::1 first with no v4 fallback (Happy Eyeballs
+        // is on by default from Node 20). A realm the test cannot reach is a
+        // test bug, not a client bug — but see the client's autoSelectFamily,
+        // which is the client half of the same problem.
+        'www-authenticate': `Bearer realm="http://127.0.0.1:${server.address().port}/token",service="reg",scope="repository:acme/loops:pull,push"`,
       });
     }
     if (url.pathname === '/token') {
