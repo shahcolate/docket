@@ -21,3 +21,30 @@ jobs:
       # produces — published numbers cannot drift from measured ones.
       - name: report is current
         run: node eval/run.js --markdown && git diff --exit-code eval/REPORT.md
+
+  # The image is a shipped surface — the Docker MCP Gateway can run the
+  # interceptor as `before:docker:docket-agent`. An image that stops building,
+  # or stops answering, is a broken gate for everyone deploying it that way.
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t docket-agent:ci .
+      - name: the CLI answers from inside the image
+        run: docker run --rm docket-agent:ci version
+      - name: the interceptor blocks an unwarranted call from inside the image
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/gwtest/.docket/loops
+          cp templates/cross-tool-memory.loop.md /tmp/gwtest/.docket/loops/
+          # The image runs as uid 1000; the mounted record must be writable by it.
+          chmod -R 777 /tmp/gwtest
+          out=$(echo '{"params":{"name":"gmail_send_email","arguments":{"to":"x@y.z"}}}' \
+            | docker run --rm -i -v /tmp/gwtest:/work docket-agent:ci \
+                intercept --loop cross-tool-memory)
+          echo "$out"
+          echo "$out" | grep -q '"isError":true'
+      # The whole point of mounting the record: the container is gone, the
+      # evidence is not.
+      - name: the record written inside the container outlives it
+        run: test -s /tmp/gwtest/.docket/record.jsonl

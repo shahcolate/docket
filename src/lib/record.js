@@ -213,6 +213,10 @@ export function recordCheck(docketDir, loopName, action, target, result, extra =
       target,
       verdict: result.verdict,
       rule: result.rule,
+      // Present only when the rule came from an inherited baseline rather than
+      // the loop itself. "Which policy stopped this?" is the first question at
+      // an audit, and it should not require re-reading four files to answer.
+      ...(result.from ? { from: result.from } : {}),
       ...extra,
     },
     actor

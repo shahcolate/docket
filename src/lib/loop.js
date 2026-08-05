@@ -13,6 +13,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseYaml } from './yaml.js';
+// loop.js ↔ inherit.js is a deliberate two-module cycle: inherit.js needs
+// parseLoop to read a baseline off disk, and the loaders here need
+// resolveInheritance to fold one in. It is safe because neither module touches
+// the other's bindings at evaluation time — every use is inside a function
+// body, by which point both modules are fully initialized.
+import { resolveInheritance } from './inherit.js';
 
 export const ACTIONS = ['read', 'draft', 'change', 'send'];
 export const VERDICTS = ['allow', 'ask', 'deny'];
@@ -141,6 +147,17 @@ export function parseLoop(text, { file } = {}) {
   if (meta.goal !== undefined && (typeof meta.goal !== 'string' || !meta.goal.trim())) {
     throw new LoopError('`goal` must be a non-empty string — the outcome the loop is trying to reach');
   }
+  if (meta.extends !== undefined && (typeof meta.extends !== 'string' || !meta.extends.trim())) {
+    throw new LoopError(
+      '`extends` must be a loop name or a path to a .loop.md file — the baseline this loop inherits'
+    );
+  }
+  // Abstract loops are baselines: real policy, but not work anybody routes to.
+  // Without this, `docket match` could hand a task to a file that is all
+  // `never` and no `read`, and the agent would stop on everything.
+  if (meta.abstract !== undefined && typeof meta.abstract !== 'boolean') {
+    throw new LoopError('`abstract` must be true or false — true marks a loop as a baseline, not a job');
+  }
 
   const loop = {
     name: meta.name,
@@ -150,6 +167,9 @@ export function parseLoop(text, { file } = {}) {
     // to stop (stop), what stays human (reserved), what it must prove
     // (record), and the ceiling on the run (budget).
     goal: typeof meta.goal === 'string' ? meta.goal.trim() : '',
+    // The baseline this loop inherits, and whether this loop IS one.
+    extends: typeof meta.extends === 'string' ? meta.extends.trim() : null,
+    abstract: meta.abstract === true,
     warrant,
     triggers: asStringList(meta.triggers, 'triggers'),
     stop: asStringList(meta.stop, 'stop'),
@@ -204,14 +224,24 @@ export function loopExists(docketDir, name) {
   return LOOP_NAME_RE.test(name) && fs.existsSync(loopFile(docketDir, name));
 }
 
-export function listLoops(docketDir) {
+// Every loop, with its baseline already folded in. Abstract loops are
+// EXCLUDED: a baseline is policy, not a job, and everything that consumes this
+// list — routing, `docket list`, the compiled index — is asking "what work is
+// there?" Loading a baseline by name still works; `docket show baseline` is a
+// reasonable thing to want.
+export function listLoops(docketDir, { includeAbstract = false } = {}) {
   const dir = loopsDir(docketDir);
   if (!fs.existsSync(dir)) return [];
   const loops = [];
   for (const entry of fs.readdirSync(dir).sort()) {
     if (!entry.endsWith(LOOP_EXT)) continue;
     const file = path.join(dir, entry);
-    loops.push(parseLoop(fs.readFileSync(file, 'utf8'), { file }));
+    const loop = resolveInheritance(
+      parseLoop(fs.readFileSync(file, 'utf8'), { file }),
+      docketDir
+    );
+    if (loop.abstract && !includeAbstract) continue;
+    loops.push(loop);
   }
   return loops;
 }
@@ -226,5 +256,5 @@ export function loadLoop(docketDir, name) {
       `no loop named "${name}"${available.length ? ` — have: ${available.join(', ')}` : ' — create one with \`docket new\`'}`
     );
   }
-  return parseLoop(fs.readFileSync(file, 'utf8'), { file });
+  return resolveInheritance(parseLoop(fs.readFileSync(file, 'utf8'), { file }), docketDir);
 }

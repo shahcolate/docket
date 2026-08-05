@@ -66,6 +66,8 @@ in frontmatter because tools enforce structure well.
 | `name` | string | yes | `[a-z0-9][a-z0-9-]*`; must match the filename |
 | `description` | string | no | one line, shown in listings and compiled context |
 | `version` | number | no | spec version, default `1` |
+| `extends` | string | no | a baseline this loop inherits — a loop name, or a path to a `.loop.md` file (see below) |
+| `abstract` | boolean | no | `true` marks this loop as a baseline: real policy, but nothing routes to it |
 | `goal` | string | no | the outcome the loop is trying to reach (not an activity) |
 | `warrant` | map | no | see below |
 | `triggers` | list of strings | no | phrases that mark a task as this loop's job; used only for routing (see below) |
@@ -98,6 +100,55 @@ whatever harness runs the agent. Writing them down is what makes an autonomy
 level defensible — the agent, the human, and any reviewer see the same
 contract.
 
+### Inheritance
+
+`extends: <ref>` folds a baseline loop into this one before any verdict is
+computed. A bare name (`extends: org-baseline`) resolves to a sibling in the
+same loops directory; a ref containing `/` or ending in `.loop.md` resolves as
+a path **relative to the extending file**, so a vendored or submoduled baseline
+keeps pointing at the same file in every checkout.
+
+The merge rule is one sentence: **every list is a union, parent entries
+first.** That single rule is what makes inheritance safe, and the reason is the
+[verdict algorithm](#the-verdict-algorithm) — `never`, then `ask`, then the
+action's allow list:
+
+- A child cannot remove a parent's `never`. The union keeps it, and it is still
+  consulted first.
+- A child cannot remove a parent's `ask`. Same.
+- A child that *allows* something the parent asks about does not win. The
+  parent's `ask` is reached first; the child's allow entry is present and
+  simply never consulted.
+
+So **a child may widen only into space the baseline left open**, and a baseline
+closes space by writing `ask` or `never` — not by keeping its own allow lists
+short. Implementations must not offer a "override the parent" escape hatch: a
+baseline a child can opt out of is a suggestion, and the whole point of the
+field is that it is not one.
+
+Other layers follow from the same principle. `triggers`, `stop`, `reserved`,
+and `record` are unions. `description` and `goal` take the child's value when
+it has one. `brief` and `procedure` concatenate, baseline first — general
+rules, then the specifics that qualify them. `budget` merges per key, and a
+numeric limit takes the **minimum**: a ceiling only ever comes down. A limit
+the implementation cannot order (a string like `30m`) keeps the parent's value
+rather than guessing at an ordering a child could exploit.
+
+Cycles must be detected by resolved file path, not by loop name, and reported
+as errors. A missing baseline is an error, never a silently ungoverned loop —
+failing open here would leave a loop that still loads, still routes, and has
+none of the rules it claims to inherit.
+
+A verdict produced by an inherited rule should name its source (docket reports
+it as `from: <loop>`, in the record and in the reason text). "Which policy
+stopped this?" is the first question at an audit, and it should not require
+re-reading four files.
+
+`abstract: true` marks a loop as a baseline: it may be loaded and shown, but
+implementations must exclude it from routing and from listings of available
+work. Without this, a task could be routed to a file that is all `never` and no
+allow, and the agent would stop on everything.
+
 ### Body sections
 
 Headings (`#`, `##`, or `###`) named exactly `Brief` or `Procedure`
@@ -114,9 +165,13 @@ silently misreading a newer format.
 ### YAML subset
 
 Frontmatter is parsed by a deliberately small YAML subset: nested maps, lists
-of scalars, quoted/unquoted scalars, booleans, numbers, `null`, `[]`, and `#`
-comments. No anchors, no multi-line scalars, no flow collections, no lists of
-maps. A grammar small enough to audit is part of the security posture.
+of scalars, quoted/unquoted scalars, booleans, numbers, `null`, `#` comments,
+and **single-level flow collections** — `read: [a, b, c]` and
+`budget: { attempts: 3, parallelism: 1 }`. No anchors, no multi-line scalars,
+no lists of maps, no *nested* flow collections; a nested one is an error, never
+a best-effort parse. A grammar small enough to audit is part of the security
+posture, and so is refusing to guess at a shape it does not understand: a
+warrant entry that silently parses into the wrong type is a permission bug.
 
 ## The warrant
 
@@ -442,9 +497,12 @@ The contract:
 
 Tool names map to warrant verbs: lookup tools (`Read`, `Glob`, `Grep`,
 `WebFetch`, `WebSearch`, …) are `read`; local mutations (`Write`, `Edit`,
-`NotebookEdit`, `Bash`) are `change`; **everything else — MCP tools, unknown
-tools — is `send`**, the verb whose allow list is most often empty on
-purpose. The target is the tool name plus its most human-meaningful input
+`NotebookEdit`, `TodoWrite`) are `change`; **everything else — `Bash`, MCP
+tools, tools that do not exist yet — is `send`**, the verb whose allow list is
+most often empty on purpose. `Bash` belongs in that last group and not with
+the local mutations: a shell command can send mail, push a branch, or call an
+API, and classifying it by the gentler verb would hand it the permissions
+written for editing files. The target is the tool name plus its most human-meaningful input
 (command, file path, URL), so `ask`/`never` patterns and author-explicit
 globs match what a human would say the call touches.
 
@@ -452,6 +510,88 @@ Implementations must **fail toward ask, never open**: a malformed payload, a
 missing `.docket`, an ambiguous loop (pass `--loop <name>` when more than one
 exists) all yield an `ask` decision with the reason, not an allow. Every
 gated call is appended to the record as a `check` entry (`via: "hook"`).
+
+## The gateway interceptor
+
+The hook gates one harness. An **MCP gateway** gates the other side of the
+connection: every `tools/call` from any client to any server. `docket
+intercept` implements the Docker MCP Gateway's interceptor contract, and any
+gateway with the same shape can use it.
+
+The contract, and note that it **inverts the hook's**:
+
+- **stdin** — the tool-call request: `{"params": {"name": "...", "arguments":
+  {...}}}`.
+- **stdout, empty** — the gateway calls the real tool. *Silence means allow.*
+- **stdout, a `CallToolResult`** (`{"content": [{"type": "text", "text":
+  "..."}], "isError": true}`) — the gateway returns that result and the tool is
+  **never called**.
+- **exit code** — always `0` on a decision. A non-zero exit makes the gateway
+  abort the call with an opaque error, which blocks the action but tells the
+  model nothing it can act on.
+
+Because silence means allow, the failure analysis is stricter than the hook's:
+an interceptor that crashes, that writes a warning to stdout, or that emits
+anything the gateway cannot unmarshal **has allowed the call**. Implementations
+must treat all three as fail-open and test for them.
+
+Every tool behind a gateway is third-party and arbitrary, so there is no honest
+way to infer a verb from a tool name — `search_and_purge` reads like a read.
+All calls therefore default to **`send`**. An implementation may offer an
+explicit override for a gateway known to front only read-only servers, and must
+document it as the widening it is.
+
+**`ask` blocks; it does not ask.** A gateway has no human on the connection to
+prompt, so an action requiring approval is not run at all, and the returned
+message must say a human must approve it out of band. This is strictly tighter
+than the hook — the only direction a surface is permitted to differ.
+
+Gated calls are appended to the record as `check` entries with `via:
+"gateway"`.
+
+## Attestation
+
+The [hash chain](#the-hash-chain) cannot see its own tail being cut off: a
+truncated log is a valid shorter log. An **attestation** is a signed statement
+of what the record contained at a moment, portable enough to hand to someone
+else.
+
+```json
+{
+  "version": "docket-attestation/v1",
+  "head": "sha256:…",
+  "count": 47,
+  "ts": "2026-08-05T11:02:00.000Z",
+  "by": "claude-code",
+  "alg": "ed25519",
+  "key": "<base64 SPKI public key>",
+  "sig": "<base64 signature>"
+}
+```
+
+The signed payload is the fields in a **fixed order**, not a serialization of
+the object — key order in JSON is insertion order, and a re-serialized
+attestation that signed differently would look forged when it was merely
+reformatted.
+
+Verification has three parts, and all three are required:
+
+1. The chain itself verifies.
+2. The attestation's signature checks out against the key it carries.
+3. **The entry at sequence `count` hashes to `head`.** Comparing current heads
+   is not enough: cut ten entries, append one, and the head is simply a new
+   valid head. Checking the attested *position* catches a tail that was cut and
+   then grown back.
+
+Implementations must refuse to sign a chain that does not verify. A signature
+over an unverified record turns an attestation into a rubber stamp.
+
+And the honest limit, which implementations must surface rather than paper
+over: an attestation carrying its own public key proves only that the
+attestation has not been edited. Anyone can generate a key and sign anything.
+It becomes evidence about a *person* only when the verifier pins the public key
+out of band. A tool that prints an unqualified success for an unpinned
+attestation is claiming more than it checked.
 
 ## What this spec refuses to do
 

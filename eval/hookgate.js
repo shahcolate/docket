@@ -90,10 +90,21 @@ function cleanup(dirs) {
   }
 }
 
+// A project whose loop directory contains a file that cannot be resolved.
+function brokenProject() {
+  const dir = project();
+  fs.writeFileSync(
+    path.join(dir, '.docket', 'loops', 'broken.loop.md'),
+    '---\nname: broken\nextends: no-such-baseline\n---\n'
+  );
+  return dir;
+}
+
 export function runHookGate() {
   const dir = project();
   const bare = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-hookgate-bare-'));
-  const dirs = [dir, bare];
+  const broken = brokenProject();
+  const dirs = [dir, bare, broken];
   const evt = (c) => ({ hook_event_name: 'PreToolUse', tool_name: c.tool_name, tool_input: c.tool_input, cwd: dir });
 
   try {
@@ -114,6 +125,13 @@ export function runHookGate() {
       { label: 'no .docket anywhere (gated)', run: () => invoke(bare, { hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'rm -rf /' }, cwd: bare }) },
       { label: 'named loop does not exist', run: () => invoke(dir, evt(HOSTILE[0]), ['claude', '--loop', 'missing']) },
       { label: 'no route under --strict', run: () => invoke(dir, { hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls -la' }, cwd: dir }, ['claude', '--strict']) },
+      // A loop file that cannot be loaded — bad frontmatter, a baseline that
+      // isn't there, an inheritance cycle — used to throw straight out of the
+      // command. Exit 1 is Claude Code's NON-blocking error: stderr shown,
+      // tool runs. A broken rule file must never be a way to switch the gate
+      // off, so both of these have to reach `ask`.
+      { label: 'a loop file with a missing baseline (--strict)', run: () => invoke(broken, { hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'rm -rf /' }, cwd: broken }, ['claude', '--strict']) },
+      { label: 'the pinned loop itself is unparseable', run: () => invoke(broken, { hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'rm -rf /' }, cwd: broken }, ['claude', '--loop', 'broken']) },
     ].map((c) => {
       const r = c.run();
       // "tool_name ignored" legitimately produces a silent pass (allow) — it is

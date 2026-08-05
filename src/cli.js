@@ -11,6 +11,7 @@ import { cmdCompile } from './commands/compile.js';
 import { cmdReview } from './commands/review.js';
 import { cmdMcp } from './commands/mcp.js';
 import { cmdHook } from './commands/hook.js';
+import { cmdIntercept } from './commands/intercept.js';
 import { cmdInstall } from './commands/install.js';
 
 const HELP = `
@@ -43,7 +44,15 @@ ${bold('Iterating')}
 ${bold('The record')}
   ${cyan('record add')} <loop> [--did ..] [--saw ..] [--skipped ..] [--stopped ..] [--note ..]
   ${cyan('record log')} [loop] [--n 20] [--by <agent>]
-  ${cyan('record verify')}             verify the hash chain end to end
+  ${cyan('record verify')} [--head <hash>] [--attest [file]] [--key <pub>]
+                             verify the hash chain end to end; --attest also checks
+                             it against a signed head, which catches a cut tail even
+                             after the log grows back
+  ${cyan('record keygen')} [--out <path>]
+                             make an ed25519 signing key (kept outside the repo)
+  ${cyan('record sign')} [--key <path>] [--note ..] [--json]
+                             sign the current head — portable proof of what the
+                             record contained, for a client, an auditor, a release
   ${cyan('metrics')} [--loop <name>] [--by <agent>] [--json]
                              autonomy posture from the record: auto-approve vs
                              ask vs deny, longest unattended run, actions/intervention
@@ -64,6 +73,11 @@ ${bold('Enforcement')}
                              Claude Code PreToolUse hook: gate every tool call on
                              the warrant — deny blocks, ask prompts the human, allow
                              stays silent. --loop or --strict makes failures fail closed.
+  ${cyan('intercept')} [--loop <name>] [--strict] [--action <verb>] [--server <name>]
+                             Docker MCP Gateway interceptor: gate every tools/call
+                             through the gateway, whatever the client or server.
+                             Wire it with --interceptor before:exec:'docket intercept'.
+                             A gateway can't prompt, so ask blocks rather than asks.
 
 ${dim('Every loop answers five questions: what must it know, how is the work')}
 ${dim('done, what may it do without asking, where does it stop, and what')}
@@ -112,6 +126,8 @@ export async function main(argv) {
       return cmdMcp(rest);
     case 'hook':
       return cmdHook(rest);
+    case 'intercept':
+      return cmdIntercept(rest);
     default:
       console.error(`docket: unknown command "${command}" — try \`docket help\``);
       return 1;

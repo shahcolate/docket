@@ -141,6 +141,15 @@ function coveringAllow(patterns, target) {
   return rule;
 }
 
+// Which loop wrote this rule? Only meaningful once a loop inherits a baseline
+// (see lib/inherit.js): the pattern that fired may belong to a policy file the
+// loop's author never opened. `from` is omitted entirely when the rule is the
+// loop's own — a field that always says "itself" is noise in the record.
+function originOf(loop, key, pattern) {
+  const source = loop.origin?.[`${key}:${pattern}`];
+  return source && source !== loop.name ? { from: source } : {};
+}
+
 export function checkWarrant(loop, action, target) {
   if (!ACTIONS.includes(action)) {
     throw new Error(`unknown action "${action}" — actions are: ${ACTIONS.join(', ')}`);
@@ -149,19 +158,27 @@ export function checkWarrant(loop, action, target) {
 
   const never = firstMatch(b.never, target);
   if (never) {
+    const origin = originOf(loop, 'never', never);
     return {
       verdict: 'deny',
       rule: `never: ${never}`,
-      reason: `"${target}" matches a hard stop. The loop says this never happens, with or without approval.`,
+      ...origin,
+      reason:
+        `"${target}" matches a hard stop. The loop says this never happens, with or without approval.` +
+        (origin.from ? ` This rule is inherited from the "${origin.from}" baseline.` : ''),
     };
   }
 
   const ask = firstMatch(b.ask, target);
   if (ask) {
+    const origin = originOf(loop, 'ask', ask);
     return {
       verdict: 'ask',
       rule: `ask: ${ask}`,
-      reason: `"${target}" always needs human approval in this loop.`,
+      ...origin,
+      reason:
+        `"${target}" always needs human approval in this loop.` +
+        (origin.from ? ` This rule is inherited from the "${origin.from}" baseline.` : ''),
     };
   }
 
@@ -170,6 +187,7 @@ export function checkWarrant(loop, action, target) {
     return {
       verdict: 'allow',
       rule: `${action}: ${allow}`,
+      ...originOf(loop, action, allow),
       reason: `"${target}" is within the ${action} warrant.`,
     };
   }

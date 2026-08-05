@@ -1,0 +1,53 @@
+# The warrant in front of the Docker MCP Gateway.
+#
+# Run it:   docker compose up --build
+#
+# The gateway fronts real MCP servers; `docket intercept` sits in front of the
+# gateway's `tools/call` path. Every call any client makes, to any server, is
+# checked against the warrant before it runs — and lands on the record either
+# way.
+#
+# Two deployments are shown. Pick one; running both just checks the call twice.
+
+services:
+  gateway:
+    image: docker/mcp-gateway
+    command:
+      - --transport=streaming
+      - --port=9011
+      - --servers=duckduckgo
+
+      # (a) `exec` — the gateway calls the docket binary directly. Lowest
+      #     latency, needs node on the gateway image.
+      - --interceptor
+      - 'before:exec:docket intercept --loop research --dir /work'
+
+      # (b) `docker` — the gateway runs docket as a container per call. No node
+      #     on the host, and the interceptor is pinned to an image digest you
+      #     can attest. Swap it in for (a) by moving the comment.
+      # - --interceptor
+      # - 'before:docker:docket-agent intercept --loop research --dir /work'
+    volumes:
+      # The gateway needs the docker socket only for deployment (b).
+      - /var/run/docker.sock:/var/run/docker.sock
+      # The repo — loops in, record out. This mount is the whole durability
+      # story: the record is written on the host, so it outlives every
+      # container in this file. See docs/sandboxes.md.
+      - ./workspace:/work
+    build:
+      # docket is zero-dependency, so "install it into the gateway image" is a
+      # copy, not a package manager run.
+      dockerfile_inline: |
+        FROM docker/mcp-gateway
+        COPY --from=docket-agent /app /docket
+        RUN ln -s /docket/bin/docket.js /usr/local/bin/docket
+      additional_contexts:
+        docket-agent: service:docket
+
+  # Built so the gateway image can copy docket out of it, and so deployment (b)
+  # has an image to run.
+  docket:
+    build:
+      context: ../..
+    image: docket-agent
+    command: ['version']
