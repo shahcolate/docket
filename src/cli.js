@@ -12,6 +12,7 @@ import { cmdReview } from './commands/review.js';
 import { cmdMcp } from './commands/mcp.js';
 import { cmdHook } from './commands/hook.js';
 import { cmdIntercept } from './commands/intercept.js';
+import { cmdPolicy } from './commands/policy.js';
 import { cmdInstall } from './commands/install.js';
 
 const HELP = `
@@ -67,6 +68,10 @@ ${bold('Portability')}
                              (--index: one line per loop + the protocol, instead of
                              full loops — keeps context flat as rule count grows)
   ${cyan('mcp')}                        run the MCP server (stdio) for agent integration
+  ${cyan('policy')} push|pull|inspect <ref>
+                             share loops as an OCI artifact — ghcr.io/acme/loops:baseline.
+                             pull previews, then asks: policy is vendored and committed,
+                             never fetched at check time (a warrant check has no network)
 
 ${bold('Enforcement')}
   ${cyan('hook')} claude [--loop <name>] [--strict]
@@ -128,6 +133,8 @@ export async function main(argv) {
       return cmdHook(rest);
     case 'intercept':
       return cmdIntercept(rest);
+    case 'policy':
+      return cmdPolicy(rest);
     default:
       console.error(`docket: unknown command "${command}" — try \`docket help\``);
       return 1;

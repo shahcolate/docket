@@ -37,7 +37,7 @@ than waiting for a yes. Configure the loop's warrant accordingly.
 ## Running it
 
 ```console
-$ docker compose up --build
+$ docker compose up
 ```
 
 Or wire it into a gateway you already run:
@@ -46,8 +46,18 @@ Or wire it into a gateway you already run:
 # node on the host
 $ docker mcp gateway run --interceptor 'before:exec:docket intercept --loop research'
 
-# no node on the host
-$ docker mcp gateway run --interceptor 'before:docker:docket-agent intercept --loop research'
+# no node on the host — the published image, pinned by tag or digest
+$ docker mcp gateway run --interceptor 'before:docker:ghcr.io/shahcolate/docket-agent intercept --loop research'
+```
+
+The image is multi-arch (amd64 + arm64) and published on every release tag,
+from the same commit as the npm package. It carries SBOM and provenance
+attestations, so the thing gating your tool calls can answer the same question
+it asks of your agent:
+
+```console
+$ docker buildx imagetools inspect ghcr.io/shahcolate/docket-agent:latest
+$ gh attestation verify oci://ghcr.io/shahcolate/docket-agent:latest --owner shahcolate
 ```
 
 Drop `--loop` to route each call to whichever loop covers it, and add

@@ -549,6 +549,57 @@ than the hook — the only direction a surface is permitted to differ.
 Gated calls are appended to the record as `check` entries with `via:
 "gateway"`.
 
+## Policy distribution
+
+Loops may be published as an **OCI artifact** so a baseline can reach many
+repositories through the registry a team already runs.
+
+- **Manifest.** `artifactType` is `application/vnd.docket.policy.v1+json`. The
+  config blob of the same type lists the loops by name and description.
+- **Layers.** One per loop file, `application/vnd.docket.loop.v1+markdown`,
+  each annotated with `org.opencontainers.image.title` set to its filename.
+  One layer per file — rather than one tarball — keeps each loop individually
+  addressable, readable in a registry UI, and retrievable by generic tools.
+
+Implementations of `pull` **must**, in this order:
+
+1. Verify the manifest digest when the reference is a digest, and every blob's
+   digest against its descriptor, before writing anything.
+2. Reject a manifest whose `artifactType` is not the policy type, and any layer
+   whose media type is not the loop type. A container image is not a policy.
+3. Validate every `title` annotation against the loop-name grammar
+   (`<name>.loop.md`, `name` matching `[a-z0-9][a-z0-9-]*`) and refuse anything
+   else. The publisher chooses that string; a path that reaches the filesystem
+   unchecked is a traversal.
+4. Parse each loop before presenting it. A preview of a file that cannot load
+   is not a preview.
+5. Show what would change and **require human confirmation** before writing,
+   and never silently overwrite an existing loop.
+6. Append the install to the record with the source reference and the digest.
+
+Rule 5 is the one that matters most, and it is not politeness. A loop file is
+not data; it is the artifact that decides what an agent may do. Fetching one
+from a network and installing it unattended *is* the widening-your-own-
+permissions failure this spec exists to prevent, wearing a supply chain as a
+disguise.
+
+### `extends` never names a registry
+
+This is normative and deliberate: **a warrant check must not depend on the
+network.** `extends` resolves only against the local filesystem.
+
+If a baseline could be fetched at check time, the question a reviewer has to
+answer stops being *"what is this agent allowed to do"* and becomes *"what does
+the gate do when the registry is unreachable, or slow, or when the tag moved
+between two checks"* — and every honest answer is worse than the problem it
+solves. Fail open and the gate is decorative; fail closed and an outage stops
+all work; cache and the rules in force are whatever happened to be fetched
+first.
+
+So distribution is a separate, explicit, human step. Policy is pulled,
+vendored, and committed; the warrant is always evaluated from files a reviewer
+can read in a diff.
+
 ## Attestation
 
 The [hash chain](#the-hash-chain) cannot see its own tail being cut off: a
