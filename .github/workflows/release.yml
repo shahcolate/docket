@@ -9,17 +9,24 @@ on:
 
 permissions:
   contents: read
-  id-token: write # npm provenance — links the tarball to this commit and run
+  id-token: write # OIDC — this is what npm authenticates against
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # `registry-url` is what makes setup-node write the .npmrc that the
+      # publish step authenticates through. It is not optional here, even
+      # though it names the default registry.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+
+      # Trusted publishing needs npm >= 11.5.1; node 22 still bundles 10.x.
+      - run: npm install -g npm@latest
 
       # The tag names the release; package.json decides what npm actually
       # gets. If they disagree, the published version is not the one you
@@ -43,6 +50,9 @@ jobs:
       - name: report is current
         run: node eval/run.js --markdown && git diff --exit-code eval/REPORT.md
 
-      - run: npm publish --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # No NODE_AUTH_TOKEN, and that is deliberate: npm authenticates this
+      # job by its OIDC identity against the trusted publisher configured on
+      # the package. Setting a token here would send npm back down the
+      # legacy path and skip OIDC entirely. Provenance is automatic under
+      # trusted publishing, so `--provenance` is not needed either.
+      - run: npm publish

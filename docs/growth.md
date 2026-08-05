@@ -59,13 +59,15 @@ the voice.
 - [ ] **Publish the pending release to npm.** `package.json` is at 0.5.0 but
   the `latest` dist-tag on npm is 0.4.0 — v0.5.0 (per-agent attribution and
   the concurrency fix) merged but was never published, so `npx docket-agent`
-  still installs the previous release. Add an `NPM_TOKEN` secret (Settings →
-  Secrets → Actions; an npm automation token), then
+  still installs the previous release. Register a trusted publisher on
+  npmjs.com (package settings → Trusted Publisher → GitHub Actions,
+  workflow `release.yml`), then
   `git tag v0.5.0 && git push origin v0.5.0` —
   `.github/workflows/release.yml` verifies the tag against `package.json`,
-  runs the suite and the red-team report, and publishes with provenance.
-  Tag the earlier releases too while you are there: `v0.4.0` is the only git
-  tag that exists today, so the release history has holes in it.
+  runs the suite and the red-team report, and publishes with provenance. No
+  token to create, store, or rotate. Tag the earlier releases too while you
+  are there: `v0.4.0` is the only git tag that exists today, so the release
+  history has holes in it.
 - [ ] **Set GitHub topics**: `ai-agents`, `agent-guardrails`, `mcp`,
   `mcp-server`, `audit-log`, `permissions`, `claude`, `cursor`, `llm`,
   `agent-safety`. Topics are how GitHub Explore and search find the repo.
