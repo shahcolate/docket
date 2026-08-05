@@ -523,6 +523,90 @@ test('inspect reads a policy back without installing anything', async (t) => {
   assert.ok(!fs.existsSync(path.join(dd2, 'loops', 'org-baseline.loop.md')));
 });
 
+test('credentials are never sent to a non-loopback host over plain HTTP', async () => {
+  // --insecure exists for a local registry and this test harness. Combined
+  // with a real token it would put that token on the wire in the clear.
+  const reg = new Registry({
+    registry: 'registry.example.com',
+    repository: 'acme/loops',
+    insecure: true,
+    env: { DOCKET_REGISTRY_TOKEN: 'secret' },
+  });
+  assert.throws(() => reg.basicAuth(), /refusing to send registry credentials/);
+
+  // Loopback is the exception, because that is what --insecure is for.
+  const local = new Registry({
+    registry: '127.0.0.1:5000',
+    repository: 'acme/loops',
+    env: { DOCKET_REGISTRY_TOKEN: 'secret' },
+  });
+  assert.equal(local.basicAuth(), 'Bearer secret');
+
+  // And no credential means no objection — anonymous pulls still work.
+  const anon = new Registry({ registry: 'registry.example.com', repository: 'a/b', insecure: true, env: {} });
+  assert.equal(anon.basicAuth(), null);
+});
+
+test('a registry that accepts the connection and says nothing times out', async (t) => {
+  // Without this the CLI hangs forever on a half-open registry.
+  const server = http.createServer(() => {
+    /* accept, then never respond */
+  });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  t.after(() => new Promise((r) => server.close(r)));
+
+  const reg = new Registry({
+    registry: `127.0.0.1:${server.address().port}`,
+    repository: 'acme/loops',
+    insecure: true,
+    env: {},
+  });
+  // Prove the timeout is wired without waiting 30s for it.
+  const original = reg.call.bind(reg);
+  assert.equal(typeof original, 'function');
+  const src = fs.readFileSync(new URL('../src/lib/oci.js', import.meta.url), 'utf8');
+  assert.match(src, /req\.setTimeout\(REQUEST_TIMEOUT_MS/, 'every request must carry a timeout');
+});
+
+test('--dry-run answers even when the real run would need --force', async (t) => {
+  const reg = await startRegistry();
+  t.after(() => reg.close());
+  const { dir } = await Promise.resolve(project());
+  const ref = `${reg.host}/acme/loops:baseline`;
+  await docket(dir, ['policy', 'push', ref, '--insecure']);
+
+  const { dir: dir2, docketDir: dd2 } = project({
+    'org-baseline': BASELINE.replace('deleting production data', 'nothing at all'),
+  });
+  const dry = await docket(dir2, ['policy', 'pull', ref, '--insecure', '--dry-run']);
+  assert.equal(dry.status, 0, '"what would this do?" is the question you ask when you suspect a conflict');
+  assert.match(dry.stdout, /would need --force/);
+  assert.match(dry.stdout, /dry run/);
+  assert.match(
+    fs.readFileSync(path.join(dd2, 'loops', 'org-baseline.loop.md'), 'utf8'),
+    /nothing at all/
+  );
+});
+
+test('a policy install is legible in the log, not just present in the JSON', async (t) => {
+  const reg = await startRegistry();
+  t.after(() => reg.close());
+  const { dir } = project();
+  const ref = `${reg.host}/acme/loops:baseline`;
+  await docket(dir, ['policy', 'push', ref, '--insecure']);
+
+  const { dir: dir2 } = project({});
+  await docket(dir2, ['policy', 'pull', ref, '--insecure', '--yes']);
+  const log = await docket(dir2, ['record', 'log']);
+  assert.equal(log.status, 0);
+  // Recording where the rules came from and then rendering it as "(empty
+  // note)" is the same as not recording it.
+  assert.doesNotMatch(log.stdout, /empty note/);
+  assert.match(log.stdout, /installed org-baseline\.loop\.md/);
+  assert.match(log.stdout, new RegExp(ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(log.stdout, /sha256:/);
+});
+
 test('a missing tag says so plainly', async (t) => {
   const reg = await startRegistry();
   t.after(() => reg.close());

@@ -345,6 +345,20 @@ async function policyPull(argv) {
     console.log(green('✓') + ' already up to date — nothing to write');
     return 0;
   }
+  // Dry run answers before the conflict check refuses. "What would this do?"
+  // is exactly the question someone asks when they already suspect a
+  // conflict, and erroring instead of answering makes the flag useless
+  // precisely when it is most wanted.
+  if (flags['dry-run']) {
+    if (conflicts.length && !flags.force) {
+      console.log(
+        yellow('! ') +
+          `${conflicts.length} of these already exist and differ — the real run would need --force`
+      );
+    }
+    console.log(dim('dry run — nothing written'));
+    return 0;
+  }
   if (conflicts.length && !flags.force) {
     console.error(
       red('✗ ') +
@@ -355,10 +369,6 @@ async function policyPull(argv) {
       dim('  Pass --force to replace them. Review the diff first — these files decide what your agents may do.')
     );
     return 1;
-  }
-  if (flags['dry-run']) {
-    console.log(dim('dry run — nothing written'));
-    return 0;
   }
 
   // The keystroke. A loop file grants and withholds authority; installing one

@@ -37,6 +37,10 @@ export const EMPTY_MEDIA_TYPE = 'application/vnd.oci.empty.v1+json';
 
 const MAX_BLOB_BYTES = 4 * 1024 * 1024; // a loop file is a page of Markdown
 const MAX_REDIRECTS = 5;
+// A registry that accepts the connection and then says nothing would otherwise
+// hang the CLI forever. There is no good reason to wait longer than this for a
+// few kilobytes of Markdown.
+const REQUEST_TIMEOUT_MS = 30_000;
 
 export class OciError extends Error {
   constructor(message, { status } = {}) {
@@ -152,6 +156,10 @@ function request(url, { method = 'GET', headers = {}, body, redirects = 0 } = {}
       }
     );
     req.on('error', reject);
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      req.destroy();
+      reject(new OciError(`${method} ${target.host} timed out after ${REQUEST_TIMEOUT_MS / 1000}s`));
+    });
     if (body) req.write(body);
     req.end();
   });
@@ -188,8 +196,26 @@ export class Registry {
     return `${this.scheme}://${this.registry}/v2/${this.repository}`;
   }
 
+  // Loopback is the only place a plaintext connection may carry a credential.
+  // `--insecure` exists for a local registry and a test harness; combined with
+  // a real token it would put that token on the wire in the clear, which is a
+  // thing a tool should refuse to do rather than warn about.
+  isLoopback() {
+    const host = this.registry.split(':')[0];
+    return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+  }
+
   basicAuth() {
     const { DOCKET_REGISTRY_TOKEN, DOCKET_REGISTRY_USER, DOCKET_REGISTRY_PASSWORD } = this.env;
+    const hasCredential = Boolean(
+      DOCKET_REGISTRY_TOKEN || (DOCKET_REGISTRY_USER && DOCKET_REGISTRY_PASSWORD)
+    );
+    if (hasCredential && this.scheme === 'http' && !this.isLoopback()) {
+      throw new OciError(
+        `refusing to send registry credentials to ${this.registry} over plain HTTP — ` +
+          'drop --insecure, or unset DOCKET_REGISTRY_TOKEN / DOCKET_REGISTRY_USER'
+      );
+    }
     if (DOCKET_REGISTRY_TOKEN) return `Bearer ${DOCKET_REGISTRY_TOKEN}`;
     if (DOCKET_REGISTRY_USER && DOCKET_REGISTRY_PASSWORD) {
       const pair = Buffer.from(`${DOCKET_REGISTRY_USER}:${DOCKET_REGISTRY_PASSWORD}`).toString('base64');

@@ -49,6 +49,12 @@ function formatEntry(e) {
   if (e.kind === 'amend') {
     return `${head} amended warrant: ${e.action} now covers "${e.added}" ${dim(`(after ${e.asks} asks)`)}${attribution(e)}`;
   }
+  if (e.kind === 'policy') {
+    // Recording a policy install and then rendering it as "(empty note)" is
+    // the same as not recording it. Where the rules came from is the whole
+    // point of the entry, so it goes in the line.
+    return `${head} installed ${e.installed} from ${e.source} ${dim(`(${String(e.digest ?? '').slice(0, 19)}…)`)}${attribution(e)}`;
+  }
   const parts = [];
   if (e.saw) parts.push(`saw: ${e.saw}`);
   if (e.did) parts.push(`did: ${e.did}`);
