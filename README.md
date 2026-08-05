@@ -35,7 +35,7 @@ Zero dependencies · plain Markdown + JSONL · MIT
 - **2026.08** — **`v0.6.0`: the warrant leaves the harness.** Enforcement was
   one vendor's hook; now it's also **[`docket intercept`](#the-gateway-gate-every-mcp-tool-call)**,
   a Docker MCP Gateway interceptor that gates every `tools/call` from any
-  client to any server (18 hostile tool calls in the new red-team suite, zero
+  client to any server (20 hostile tool calls in the new red-team suite, zero
   allowed — and at a gateway, silence *is* an allow, so crashes count as
   fail-open). Plus **[`extends:`](#one-baseline-forty-loops)** so one baseline
   governs forty loops and a child can tighten but never loosen, **[signed
@@ -284,7 +284,7 @@ target on conjunctions and requires *every* clause to be warranted, so
 "draft the appeal **and send it**" cannot ride the allow for "draft".
 
 We red-team all of this, seven ways, on every CI build —
-[**10,612 checks**](eval/REPORT.md):
+[**10,614 checks**](eval/REPORT.md):
 
 | Suite | Checks | Result |
 |---|---|---|
@@ -294,7 +294,7 @@ We red-team all of this, seven ways, on every CI build —
 | Fuzzed targets, deterministic seed | 10,000 | 0 allowed |
 | Record-tampering mutations | 239 | 239/239 detected |
 | Hook gate, live binary vs hostile tool calls | 24 | 0 fail-open |
-| Gateway gate, live binary vs hostile MCP tool calls | 28 | 0 fail-open |
+| Gateway gate, live binary vs hostile MCP tool calls | 30 | 0 fail-open |
 
 **Zero silent allows. Zero fail-open outcomes. Zero warranted work blocked.**
 Where a paraphrase weakens a hard stop, it weakens to *ask* — never to allow,

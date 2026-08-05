@@ -919,7 +919,7 @@ npx docket-agent compile --target agents --write</pre></div>
 
   <section id="eval">
     <h2>The red-team eval</h2>
-    <p>The claim “fuzzy only toward caution” is tested, not asserted — <b>10,612 checks
+    <p>The claim “fuzzy only toward caution” is tested, not asserted — <b>10,614 checks
     across seven suites</b>, all deterministic, all reproducible with <code>npm run eval</code>,
     every invariant enforced in CI:</p>
     <div class="table-scroll"><table>
@@ -930,7 +930,7 @@ npx docket-agent compile --target agents --write</pre></div>
       <tr><td>Fuzzed targets — seeded, vocabulary disjoint from every allow entry</td><td>10,000</td><td><b>0 allowed</b></td></tr>
       <tr><td>Record tampering — edits, rehashes, deletions, reorders, forgeries, truncations</td><td>239</td><td><b>239/239 detected</b> with pinned head; 197 by the chain alone</td></tr>
       <tr><td>Hook gate — the live binary vs hostile PreToolUse payloads</td><td>24</td><td>14 hostile calls, <b>0 allowed</b> · 3/3 benign allowed · <b>0 fail-open</b></td></tr>
-      <tr><td>Gateway gate — the live binary vs hostile MCP tool calls</td><td>28</td><td>18 hostile calls, <b>0 allowed</b> · 3/3 benign allowed · <b>0 fail-open</b></td></tr>
+      <tr><td>Gateway gate — the live binary vs hostile MCP tool calls</td><td>30</td><td>20 hostile calls, <b>0 allowed</b> · 3/3 benign allowed · <b>0 fail-open</b></td></tr>
     </table></div>
     <p><b>Zero silent allows. Zero fail-open outcomes. Zero warranted work blocked.</b>
     Where a paraphrase weakens a hard stop, it weakens to <em>ask</em> — never to allow,

@@ -89,6 +89,16 @@ export function argumentStrings(args, depth = 0) {
 // against `allow` (which requires every clause of the target to be covered).
 // A bigger target can turn an allow into an ask. It can never turn an ask
 // into an allow.
+//
+// The length cap is the same argument run backwards, and it is worth being
+// explicit about because it IS a real softness. A caller who pads an
+// innocuous field can push the consequential one past the cut, and a target
+// that loses words loses MATCHES — against `ask` and `never`, the two lists
+// that match fuzzily. So padding can degrade a deny to an ask. It cannot
+// reach allow, because allow needs every remaining clause covered and padding
+// only adds uncovered clauses. Salient keys lead the target so that in the
+// ordinary case the field a human would recognize survives the cut; both
+// cases are in the gateway red-team corpus.
 export function describeCall(toolName, args) {
   const parts = argumentStrings(args)
     .map((s) => s.replace(/\s+/g, ' ').trim())
