@@ -61,3 +61,31 @@ else defends.
 
 Versioning is semver. `npm run eval` must report zero silent allows before
 any release — the claim in the README is regenerated, not asserted.
+
+Publishing is driven by the tag. Bump `version` in `package.json`, merge it
+to `main`, then:
+
+```console
+$ git tag v0.5.0 && git push origin v0.5.0
+```
+
+[`.github/workflows/release.yml`](.github/workflows/release.yml) takes it
+from there: it refuses to run if the tag and `package.json` disagree, runs
+the suite and regenerates the red-team report, then publishes to npm.
+
+There is no npm token anywhere in this repository, and there should never be
+one. Publishing authenticates through
+[trusted publishing](https://docs.npmjs.com/trusted-publishers) — npm
+verifies the workflow's OIDC identity against a publisher registered on the
+package, so the credential is minted per job and expires with it. A
+consequence worth knowing before you edit the workflow: **do not set
+`NODE_AUTH_TOKEN` on the publish step.** npm treats a token as a signal to
+use the legacy path and silently skips OIDC. The same mechanism generates
+provenance attestations automatically, which is why `npm publish` carries no
+`--provenance` flag.
+
+Renaming `release.yml` breaks publishing. The trusted publisher is pinned to
+the workflow *filename*; change it on npm first.
+
+Nobody publishes from a laptop. The one release that skipped this — v0.5.0
+merged, tagged nothing, published nothing — is why the workflow exists.

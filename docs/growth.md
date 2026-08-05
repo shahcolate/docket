@@ -46,12 +46,28 @@ the voice.
 
 ## Checklist — needs a human (repo settings / accounts)
 
-- [ ] **Rename the default branch to `main`.** It is currently a
-  `claude/...` working branch — CI (`.github/workflows/ci.yml`) only
-  triggers on pushes to `main`, so the CI badge shows *no status* and
-  visitors land on WIP. Settings → Branches → switch default, then
-  `git branch -m main` locally. This one is a prerequisite for half the
-  items below.
+- [ ] **Point the default branch at `main`.** `main` already exists and is
+  the real trunk — the v0.4.0 and v0.5.0 releases landed there and CI is
+  green on it. What is stale is the *pointer*: the repository still defaults to
+  `claude/docket-app-concept-9lf7x0`, a scaffold branch 24 commits behind.
+  Two things follow from that, both visible to a first-time visitor: the
+  repo home page serves the v0.2.1 README instead of the current one, and
+  the CI badge resolves against the default branch, which has never run
+  `ci.yml`, so it renders *no status*. Settings → Branches → switch the
+  default to `main`, then delete the merged `claude/*` branches. This one
+  is a prerequisite for half the items below.
+- [ ] **Publish the pending release to npm.** `package.json` is at 0.5.0 but
+  the `latest` dist-tag on npm is 0.4.0 — v0.5.0 (per-agent attribution and
+  the concurrency fix) merged but was never published, so `npx docket-agent`
+  still installs the previous release. Register a trusted publisher on
+  npmjs.com (package settings → Trusted Publisher → GitHub Actions,
+  workflow `release.yml`), then
+  `git tag v0.5.0 && git push origin v0.5.0` —
+  `.github/workflows/release.yml` verifies the tag against `package.json`,
+  runs the suite and the red-team report, and publishes with provenance. No
+  token to create, store, or rotate. Tag the earlier releases too while you
+  are there: `v0.4.0` is the only git tag that exists today, so the release
+  history has holes in it.
 - [ ] **Set GitHub topics**: `ai-agents`, `agent-guardrails`, `mcp`,
   `mcp-server`, `audit-log`, `permissions`, `claude`, `cursor`, `llm`,
   `agent-safety`. Topics are how GitHub Explore and search find the repo.
