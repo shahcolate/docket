@@ -1,0 +1,12 @@
+# The image carries the runtime only: bin, src, templates, spec (see Dockerfile).
+# Everything else is noise in the build context — and .docket in particular must
+# never be baked into an image, or a record would ship with a container.
+.git
+.github
+.docket
+node_modules
+test
+eval
+docs
+*.md
+!package.json

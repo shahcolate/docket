@@ -32,6 +32,16 @@ Zero dependencies · plain Markdown + JSONL · MIT
 
 ## News
 
+- **2026.08** — **`v0.6.0`: the warrant leaves the harness.** Enforcement was
+  one vendor's hook; now it's also **[`docket intercept`](#the-gateway-gate-every-mcp-tool-call)**,
+  a Docker MCP Gateway interceptor that gates every `tools/call` from any
+  client to any server (18 hostile tool calls in the new red-team suite, zero
+  allowed — and at a gateway, silence *is* an allow, so crashes count as
+  fail-open). Plus **[`extends:`](#one-baseline-forty-loops)** so one baseline
+  governs forty loops and a child can tighten but never loosen, **[signed
+  record heads](#sign-the-head-and-the-cut-tail-has-nowhere-to-hide)** that
+  catch a cut tail even after the log grows back, and an official image so the
+  gate runs where there's no Node. ([composing with sandboxes](docs/sandboxes.md))
 - **2026.07** — **`v0.5.0`: the record learns *who*.** Every entry is now stamped with the agent, branch, and worktree that wrote it (**`by`**), so parallel agents stay separable at merge time — with `docket record log --by` and `docket metrics --by` to read one agent's posture back. Appends are now serialized across processes, fixing a real bug: agents writing in parallel could break the hash chain and make `verify` report tampering that never happened. ([who did what](#who-did-what-attribution-for-parallel-agents))
 - **2026.07** — **`v0.4.0` on npm.** One command to make docket ambient in a repo (**`docket install`** — context + hook + MCP, committed and shared); the loop becomes the full **agent contract** (`goal` / `stop` / `budget`); and **`docket metrics`** reads the record back as your autonomy posture — auto-approve vs ask vs deny, longest unattended run, actions per intervention. ([why this matters](#the-loop-is-the-agent-contract))
 - **2026.07** — The red-team program grows to [**10,582 checks across six suites**](eval/REPORT.md): adversarial phrasing, vague-target probes, 10,000 fuzzed targets, 239 tamper mutations, and a live hook-gate corpus — zero silent allows, zero fail-open. The matcher now splits compound targets clause by clause, so a consequence can't ride along with an allowed phrase.
@@ -273,8 +283,8 @@ land first. Compound intent gets the same treatment: the matcher splits a
 target on conjunctions and requires *every* clause to be warranted, so
 "draft the appeal **and send it**" cannot ride the allow for "draft".
 
-We red-team all of this, six ways, on every CI build —
-[**10,582 checks**](eval/REPORT.md):
+We red-team all of this, seven ways, on every CI build —
+[**10,608 checks**](eval/REPORT.md):
 
 | Suite | Checks | Result |
 |---|---|---|
@@ -284,6 +294,7 @@ We red-team all of this, six ways, on every CI build —
 | Fuzzed targets, deterministic seed | 10,000 | 0 allowed |
 | Record-tampering mutations | 239 | 239/239 detected |
 | Hook gate, live binary vs hostile tool calls | 22 | 0 fail-open |
+| Gateway gate, live binary vs hostile MCP tool calls | 26 | 0 fail-open |
 
 **Zero silent allows. Zero fail-open outcomes. Zero warranted work blocked.**
 Where a paraphrase weakens a hard stop, it weakens to *ask* — never to allow,
@@ -320,9 +331,45 @@ $ docket record verify
 
 A record that can be edited quietly is not a record. This one is a
 plain JSONL file you can read, grep, and commit — but not silently rewrite.
-And because a hash chain can't see its own tail being cut off, `verify`
-prints the head hash: pin it anywhere the log can't reach, then
-`docket record verify --head <hash>` catches truncation too.
+
+### Sign the head, and the cut tail has nowhere to hide
+
+A hash chain can't see its own tail being cut off: delete the last ten entries
+and what's left is a perfectly valid, ten-entries-shorter chain. Pinning the
+head (`verify --head <hash>`) catches that on one machine. **Signing** it makes
+the proof portable — something you hand to a client, an auditor, or a release:
+
+```console
+$ docket record keygen                    # ed25519, kept outside the repo
+$ docket record sign
+✓ signed the record at 47 entries
+  head: sha256:fd4394fc8cd4b288…
+  → .docket/attestations/000047-fd4394fc8cd4.json
+
+$ docket record verify --attest --key <public key>
+✓ record matches the attestation — signed at 47 entries, 12 appended since
+  key:    pinned — this is the key you said to trust
+```
+
+Verification checks the entry at the *attested sequence number*, not just the
+current head — so cutting ten entries and appending three more doesn't hide it:
+
+```console
+✗ record does not match the attestation: entry 47 hashes to sha256:9c1e…,
+  but the attestation signed sha256:fd43… — the record was rewritten below
+  the signed point
+```
+
+Two things it refuses to overstate. Signing a chain that doesn't verify is a
+rubber stamp, so `sign` won't do it. And an attestation carrying its own public
+key proves only that *the attestation* wasn't edited — anyone can generate a
+key and sign anything. Without `--key`, `verify` says exactly that instead of
+printing a green check that means less than it looks like:
+
+```console
+  key:    not pinned — this proves the record is intact and the attestation
+          unedited, but not who signed it. Anyone can generate a key.
+```
 
 ## Who did what: attribution for parallel agents
 
@@ -485,6 +532,117 @@ gate. Gated calls land in the record (`via: "hook"`), so the asks you keep
 approving surface in `docket review` — the gate teaches the warrant what to
 say next.
 
+## The gateway gate: every MCP tool call
+
+The hook gates one harness. It works beautifully and it only works in Claude
+Code — which is fine until you notice where an agent's most consequential
+actions actually go. They don't go through the harness's file tools. They go
+out over MCP: to a mail server, a ticket tracker, a cloud API, a payments
+provider.
+
+`docket intercept` gates that side. Wired into the
+[Docker MCP Gateway](https://github.com/docker/mcp-gateway) as an interceptor,
+**every `tools/call` from any client to any server** is checked against the
+warrant before it runs:
+
+```console
+$ docker mcp gateway run \
+    --interceptor 'before:exec:docket intercept --loop deploy'
+```
+
+or, with no Node on the host, as a container:
+
+```console
+$ docker mcp gateway run \
+    --interceptor 'before:docker:docket-agent intercept --loop deploy'
+```
+
+The gateway already intercepts what a gateway can know generically — secrets in
+payloads, OAuth failures. Docket adds what it can't: whether *this* action was
+permitted, for *this* job, by the person accountable for it. A gateway can tell
+that a payload contains an API key. Only the warrant can tell the authorized
+appeal email from the unauthorized one.
+
+**One difference from the hook, stated plainly, because it is a real
+constraint and not a footnote: `ask` blocks — it does not ask.** A gateway has
+no human on the connection to prompt. At a PreToolUse hook, `ask` raises a
+prompt someone can approve; here there is nobody, so the call does not run and
+the message tells the model to get approval out of band. That is strictly
+*tighter* than the hook, which is the only direction docket is ever allowed to
+differ across surfaces — but it means a gateway-fronted workflow stops dead on
+anything unlisted rather than waiting for a yes. Write the warrant knowing
+that.
+
+The gateway's contract inverts the hook's in a way worth naming, because it
+changes what "a bug" means: **stdout empty means the tool runs.** So an
+interceptor that crashes, that prints a warning to stdout, or that emits
+anything the gateway can't unmarshal has *allowed* the call. All three are
+counted as fail-open in [the eval](eval/REPORT.md#suite-6--the-gateway-gate-live),
+not filed as polish for later — 18 hostile tool calls (mail, merges, refunds,
+`DROP TABLE`, planted git hooks, a wire transfer), 0 allowed, 0 crashes.
+
+Every tool behind a gateway is third-party and arbitrary, so docket does not
+guess a verb from a tool name — `search_and_purge` reads like a read.
+Everything defaults to `send`, the verb whose allow list loop authors keep
+shortest on purpose. `--action read` overrides that for a gateway you know
+fronts read-only servers, and it's a real widening; the docs say so.
+
+Full setup, including a runnable Compose file:
+[examples/mcp-gateway](examples/mcp-gateway/).
+
+## One baseline, forty loops
+
+A platform team has rules that hold everywhere: never commit a secret, never
+run destructive commands in production, always ask before spending money.
+Copying those into forty loop files gives you forty places to forget them — and
+no way to answer *"is that rule actually in force everywhere?"* without a grep
+and a hope.
+
+```yaml
+---
+name: deploy
+extends: org-baseline      # ← the floor, in one file
+warrant:
+  change: [staging environment, feature branches]
+---
+```
+
+The merge rule is one sentence: **every list is a union, parent first.** That's
+all of it, and it's safe for a structural reason rather than a careful one —
+the [verdict order](spec/SPEC.md#the-verdict-algorithm) is `never`, then `ask`,
+then allow. A union can only *add* entries, and the two lists consulted first
+are the restricting ones. So:
+
+- A child can't delete a parent's `never`. It's still there, still checked
+  first.
+- A child that *allows* something the parent asks about doesn't win — the
+  parent's `ask` is reached first, and the child's entry is simply never
+  consulted.
+
+**A child may widen only into space the baseline left open**, and a baseline
+closes space by writing `ask` or `never` — not by keeping its own allow lists
+short. There is deliberately no override escape hatch: a baseline a child can
+opt out of is a suggestion, and this field exists precisely because a
+suggestion wasn't working.
+
+And when a rule fires, the verdict says whose it was:
+
+```console
+$ docket check deploy change "drop the production users table"
+DENY  change → "drop the production users table"
+  "drop the production users table" matches a hard stop. The loop says this
+  never happens, with or without approval. This rule is inherited from the
+  "org-baseline" baseline.
+```
+
+That `from` lands on the record too. *"Which policy stopped this?"* is the
+first question at an audit, and it shouldn't take re-reading four files.
+
+Baselines are marked `abstract: true`: real policy, but nothing routes to them
+and they never show up as work. `docket new baseline --template org-baseline`
+ships a starting one. Budgets inherit too, with a floor — a numeric limit
+merges to the **minimum**, so a child can lower a ceiling and never raise one.
+
 ## Why not just a sandbox?
 
 Run your agent in one — genuinely, do. Sandboxes (containers, egress
@@ -497,9 +655,26 @@ the proxy. The warrant can, and the record shows which one happened.
 The two layers meet at the failure that scares us most. A red-team pass on
 an agent sandbox found the agent could plant a git hook in a submodule that
 would have executed **on the host, days after the session ended**. The
-sandbox was secure; the escape was scheduled. That shape of failure is now a
+sandbox was secure; the escape was scheduled. Isolation is a boundary in
+space; that attack is a boundary in time. It is now a
 [scenario family](eval/REPORT.md) in our eval suite, a `never` in the
 shipped templates, and a rule in the [spec](spec/SPEC.md#deferred-consequences).
+
+So run both — and mount the record out, because **a sandbox is designed to be
+disposable and an audit trail is not**:
+
+```console
+$ docker run --rm -it -v "$PWD:/work" -v "$PWD/.docket:/work/.docket" your-agent-image
+```
+
+The rules travel in (they're just repo contents), the evidence travels out.
+Parallel sandboxes are safe on one shared record: appends are serialized across
+processes, and every entry is attributed. When the run ends, `docket record
+sign` makes the head portable.
+
+[**docs/sandboxes.md**](docs/sandboxes.md) works the whole composition
+through — four boundaries (isolation, egress, authority, evidence), what each
+one actually catches, where the seams are, and what none of them give you.
 
 And no, the answer to agent risk is not approving every command — airport
 security for Bash scripts is the failure mode, not the goal. The warrant
@@ -610,10 +785,11 @@ Run it weekly, or wire it into a cron — the proposals wait for you.
 
 ## Starter loops
 
-Eight templates, each a complete worked example (`docket templates`):
+Nine templates, each a complete worked example (`docket templates`):
 
 | Loop | The gist |
 |---|---|
+| `org-baseline` | the floor every other loop inherits — **abstract, `extends`-only** |
 | `prod-hotfix` | diagnose and fix on staging — **production asks, destructive commands never** |
 | `insurance-appeal` | build the appeal and the evidence packet, **stop before send** |
 | `client-follow-up` | promises made, approved language, tone — approval rules included |
@@ -629,14 +805,18 @@ Selling this honestly means saying where the edges are:
 
 - **Not a sandbox.** Docket bounds *authority* and proves what happened; a
   sandbox bounds what the process can physically reach. Run both —
-  [they compose](#why-not-just-a-sandbox).
+  [they compose](docs/sandboxes.md), and the record should be mounted out of
+  the sandbox rather than thrown away with it.
 - **Not another agent framework.** There is no runtime, server, or account
   to adopt. It's a file format, a checker, and a log — the layer under
   whichever agent you already use.
 - **Not a magic cage.** A cooperative agent follows the compiled rules; the
-  [hook](#enforced-not-suggested-claude-code-hook) enforces them mechanically
-  where you wire it; and either way, every check lands on the record. Each
-  layer is exactly as strong as it claims, and no stronger.
+  [hook](#enforced-not-suggested-claude-code-hook) and the
+  [gateway interceptor](#the-gateway-gate-every-mcp-tool-call) enforce them
+  mechanically where you wire them; and either way, every check lands on the
+  record. Each layer is exactly as strong as it claims, and no stronger — the
+  interceptor gates the MCP path, not a shell inside the sandbox reaching for
+  `curl`.
 - **Not finished.** This is v0.5.x, and the spec may still break before 1.0
   (loop files carry a `version` field for exactly that reason). What won't
   move: unlisted means ask, failures land on the human, and the record stays
@@ -660,9 +840,11 @@ Read the [Loop File Spec](spec/SPEC.md) — it's short on purpose.
 
 - [x] ~~`docket check` as a Claude Code PreToolUse hook~~ — shipped as `docket hook claude`
 - [x] ~~Per-agent / worktree attribution in the record (a `by:` field)~~ — shipped in v0.5.0, [with the concurrency fix it needed](#who-did-what-attribution-for-parallel-agents)
+- [x] ~~Signed record heads (attest the chain tip, share the attestation)~~ — shipped as `docket record sign`
+- [x] ~~Loop inheritance (`extends:`) for team baselines~~ — shipped in v0.6.0
+- [x] ~~The warrant as an MCP gateway policy layer~~ — shipped as `docket intercept`
 - [ ] Autonomy-levels guide — mapping loops and readiness to L0–L5, so teams pick a level by its verification, not the task name
-- [ ] Signed record heads (attest the chain tip, share the attestation)
-- [ ] Loop inheritance (`extends:`) for team baselines
+- [ ] Loop distribution as an OCI artifact — `docket policy push ghcr.io/org/loops:baseline`, so a baseline ships the way everything else in a registry does
 - [ ] Record export → human-readable work summaries
 - [ ] Adapters: OpenAI custom instructions, Windsurf
 
