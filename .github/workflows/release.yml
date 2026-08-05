@@ -1,0 +1,48 @@
+name: release
+
+# Publishing is driven by the tag, not by a human at a terminal. Push
+# `vX.Y.Z` and this ships that commit to npm. The last release drifted
+# because the version bump merged and the publish never happened.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write # npm provenance — links the tarball to this commit and run
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      # The tag names the release; package.json decides what npm actually
+      # gets. If they disagree, the published version is not the one you
+      # tagged — fail here rather than discover it in the registry.
+      - name: tag matches package.json
+        run: |
+          tagged="${GITHUB_REF_NAME#v}"
+          declared="$(node -p "require('./package.json').version")"
+          if [ "$tagged" != "$declared" ]; then
+            echo "tag $GITHUB_REF_NAME says $tagged, package.json says $declared" >&2
+            exit 1
+          fi
+          echo "releasing $declared"
+
+      # `prepublishOnly` runs the suite again, but a failure here reads as
+      # "tests" instead of "publish".
+      - run: npm test
+
+      # The README claims zero silent allows across the red-team suite. A
+      # release must not ship a number it cannot reproduce.
+      - name: report is current
+        run: node eval/run.js --markdown && git diff --exit-code eval/REPORT.md
+
+      - run: npm publish --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

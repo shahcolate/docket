@@ -61,3 +61,19 @@ else defends.
 
 Versioning is semver. `npm run eval` must report zero silent allows before
 any release — the claim in the README is regenerated, not asserted.
+
+Publishing is driven by the tag. Bump `version` in `package.json`, merge it
+to `main`, then:
+
+```console
+$ git tag v0.5.0 && git push origin v0.5.0
+```
+
+[`.github/workflows/release.yml`](.github/workflows/release.yml) takes it
+from there: it refuses to run if the tag and `package.json` disagree, runs
+the suite and regenerates the red-team report, then publishes to npm with
+[provenance](https://docs.npmjs.com/generating-provenance-statements) — a
+signed link from the tarball back to this commit and workflow run.
+
+Nobody publishes from a laptop. The one release that skipped this — v0.5.0
+merged, tagged nothing, published nothing — is why the workflow exists.
