@@ -578,8 +578,9 @@ changes what "a bug" means: **stdout empty means the tool runs.** So an
 interceptor that crashes, that prints a warning to stdout, or that emits
 anything the gateway can't unmarshal has *allowed* the call. All three are
 counted as fail-open in [the eval](eval/REPORT.md#suite-6--the-gateway-gate-live),
-not filed as polish for later — 18 hostile tool calls (mail, merges, refunds,
-`DROP TABLE`, planted git hooks, a wire transfer), 0 allowed, 0 crashes.
+not filed as polish for later — 20 hostile tool calls (mail, merges, refunds,
+`DROP TABLE`, planted git hooks, a wire transfer, padding attacks against the
+target's length cap), 0 allowed, 0 crashes.
 
 Every tool behind a gateway is third-party and arbitrary, so docket does not
 guess a verb from a tool name — `search_and_purge` reads like a read.

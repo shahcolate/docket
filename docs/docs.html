@@ -817,9 +817,9 @@ docker mcp gateway run \
     <p>The gateway’s contract inverts the hook’s: <b>empty stdout means the tool runs</b>.
     So an interceptor that crashes, prints a warning to stdout, or emits anything the
     gateway cannot unmarshal has <em>allowed</em> the call. All three are counted as
-    fail-open in the eval rather than filed as polish — 18 hostile tool calls (mail, PR
+    fail-open in the eval rather than filed as polish — 20 hostile tool calls (mail, PR
     merges, refunds, <code>DROP TABLE</code>, an S3 wipe, a planted git hook, a wire
-    transfer), 0 allowed, 0 crashes.</p>
+    transfer, padding attacks against the target’s length cap), 0 allowed, 0 crashes.</p>
 
     <h3>Verbs</h3>
     <p>Every tool behind a gateway is third-party and arbitrary, so docket does not guess a
