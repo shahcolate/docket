@@ -8,5 +8,8 @@ node_modules
 test
 eval
 docs
-*.md
-!package.json
+examples
+Dockerfile
+# Top-level prose only — `/` is load-bearing here. A bare `*.md` would read as
+# "every markdown file", and spec/SPEC.md is COPYed into the image on purpose.
+/*.md

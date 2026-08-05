@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { parseArgs } from '../lib/args.js';
 import { requireDocketDir, loopExists, loopNames } from '../lib/loop.js';
 import {
@@ -18,9 +21,6 @@ import {
   writeAttestation,
 } from '../lib/attest.js';
 import { bold, cyan, dim, green, red, yellow, VERDICT_STYLE } from '../lib/ui.js';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 
 // The signing key lives OUTSIDE the repo by default. A private key committed
 // next to the log it signs is not a signature, it is a decoration: anyone who
@@ -217,10 +217,10 @@ function recordLog(argv) {
 }
 
 function recordVerify(argv) {
-  const { flags } = parseArgs(argv, { booleans: ['attest'] });
+  const { flags, positional } = parseArgs(argv, { booleans: ['attest'] });
   const docketDir = requireDocketDir();
 
-  if (flags.attest !== undefined) return verifyWithAttestation(docketDir, flags);
+  if (flags.attest !== undefined) return verifyWithAttestation(docketDir, flags, positional);
 
   const result = verifyRecord(docketDir, {
     expectHead: typeof flags.head === 'string' ? flags.head : undefined,
@@ -242,12 +242,20 @@ function recordVerify(argv) {
 }
 
 // `--attest` alone uses the newest attestation in .docket/attestations;
-// `--attest <file>` names one. `--key <pub|path>` pins who must have signed it.
-function verifyWithAttestation(docketDir, flags) {
+// `--attest <file>`, `--attest=<file>`, or a trailing path names one.
+// `--key <pub|path>` pins who must have signed it.
+//
+// `attest` is declared boolean so that `--attest --key K` doesn't swallow
+// `--key` as its value. That means a bare `--attest <file>` arrives as a
+// positional, and it must be honored: silently verifying a DIFFERENT
+// attestation than the one the user named is the worst possible outcome here
+// — a green check about a file they never asked about.
+function verifyWithAttestation(docketDir, flags, positional = []) {
   let attestation;
   let source;
-  if (typeof flags.attest === 'string') {
-    source = flags.attest;
+  const named = typeof flags.attest === 'string' ? flags.attest : positional[0];
+  if (named) {
+    source = named;
     try {
       attestation = parseAttestation(fs.readFileSync(source, 'utf8'));
     } catch (err) {

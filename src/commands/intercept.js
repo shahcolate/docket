@@ -182,26 +182,34 @@ export async function cmdIntercept(argv) {
 
   const target = describeCall(call.name, call.arguments);
 
+  // A throw here (bad frontmatter, a missing baseline, an inheritance cycle)
+  // would exit non-zero, and the gateway turns that into "executing
+  // interceptor: …" — which does block the call, but tells the model nothing
+  // it can act on and the operator nothing about what broke. Gate it properly.
   let loop;
-  if (flags.loop) {
-    if (!loopExists(docketDir, flags.loop)) {
-      return failClosed(
-        `no loop named "${flags.loop}" — have: ${loopNames(docketDir).join(', ') || '(none)'}`
-      );
-    }
-    loop = loadLoop(docketDir, flags.loop);
-  } else {
-    const [candidate] = matchLoops(listLoops(docketDir), target, { limit: 1 });
-    if (!candidate) {
-      if (flags.strict) {
-        emitBlock(
-          `docket blocked "${call.name}": no loop covers this call, and this gateway runs in strict mode. ` +
-            'Work outside the loops needs a human. Write a loop that covers it, or have a person run it directly.'
+  try {
+    if (flags.loop) {
+      if (!loopExists(docketDir, flags.loop)) {
+        return failClosed(
+          `no loop named "${flags.loop}" — have: ${loopNames(docketDir).join(', ') || '(none)'}`
         );
       }
-      return 0;
+      loop = loadLoop(docketDir, flags.loop);
+    } else {
+      const [candidate] = matchLoops(listLoops(docketDir), target, { limit: 1 });
+      if (!candidate) {
+        if (flags.strict) {
+          emitBlock(
+            `docket blocked "${call.name}": no loop covers this call, and this gateway runs in strict mode. ` +
+              'Work outside the loops needs a human. Write a loop that covers it, or have a person run it directly.'
+          );
+        }
+        return 0;
+      }
+      loop = candidate.loop;
     }
-    loop = candidate.loop;
+  } catch (err) {
+    return failClosed(`could not load the loops — ${err.message}`);
   }
 
   const result = checkWarrant(loop, action, target);

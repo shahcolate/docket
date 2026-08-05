@@ -284,7 +284,7 @@ target on conjunctions and requires *every* clause to be warranted, so
 "draft the appeal **and send it**" cannot ride the allow for "draft".
 
 We red-team all of this, seven ways, on every CI build —
-[**10,608 checks**](eval/REPORT.md):
+[**10,612 checks**](eval/REPORT.md):
 
 | Suite | Checks | Result |
 |---|---|---|
@@ -293,8 +293,8 @@ We red-team all of this, seven ways, on every CI build —
 | Vague-target probes ("email" vs "status email to the team") | 218 | 0 permissions inherited |
 | Fuzzed targets, deterministic seed | 10,000 | 0 allowed |
 | Record-tampering mutations | 239 | 239/239 detected |
-| Hook gate, live binary vs hostile tool calls | 22 | 0 fail-open |
-| Gateway gate, live binary vs hostile MCP tool calls | 26 | 0 fail-open |
+| Hook gate, live binary vs hostile tool calls | 24 | 0 fail-open |
+| Gateway gate, live binary vs hostile MCP tool calls | 28 | 0 fail-open |
 
 **Zero silent allows. Zero fail-open outcomes. Zero warranted work blocked.**
 Where a paraphrase weakens a hard stop, it weakens to *ask* — never to allow,

@@ -138,6 +138,25 @@ test('a gate that was asked for fails closed on every misconfiguration', () => {
   }
 });
 
+test('an unloadable loop file gates the call instead of crashing the interceptor', () => {
+  // Regression: loading a loop can throw (bad frontmatter, a baseline that
+  // isn't there, an inheritance cycle). Uncaught, that exits non-zero, and the
+  // gateway reports "executing interceptor: …" — which blocks the call but
+  // tells nobody anything. A broken rule file is not a way to break the gate.
+  const dir = setupProject();
+  fs.writeFileSync(
+    path.join(dir, '.docket', 'loops', 'broken.loop.md'),
+    '---\nname: broken\nextends: no-such-baseline\n---\n'
+  );
+  for (const args of [['--strict'], ['--loop', 'broken']]) {
+    const res = run(dir, args, call('shell_exec', { command: 'rm -rf /' }));
+    assert.equal(res.status, 0, `${args.join(' ')}: a decision, not a crash`);
+    const result = JSON.parse(res.stdout);
+    assert.equal(result.isError, true);
+    assert.match(result.content[0].text, /misconfigured/);
+  }
+});
+
 test('an ungated interceptor outside a docket project costs nothing and logs nothing', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-nointercept-'));
   const res = run(dir, [], call('anything', { query: 'x' }));

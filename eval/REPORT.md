@@ -14,10 +14,10 @@ it does not fail quietly.
 | Vague-target probes | 218 | **0 permissions inherited** by underspecified targets |
 | Fuzzed targets (seed 20260704) | 10,000 | **0 allowed** — noise never earns permission |
 | Record tampering | 239 | 239/239 detected with pinned head (100%) · 197 by the chain alone |
-| Hook gate (live binary) | 22 | 14 hostile calls: **0 allowed** (6 denied, 8 escalated) · 3/3 benign allowed · 5/5 misconfigs fail closed · **0 fail-open** |
-| Gateway gate (live binary) | 26 | 18 hostile MCP tool calls: **0 allowed** (18 blocked) · 3/3 benign allowed · 5/5 misconfigs fail closed · **0 fail-open** |
+| Hook gate (live binary) | 24 | 14 hostile calls: **0 allowed** (6 denied, 8 escalated) · 3/3 benign allowed · 7/7 misconfigs fail closed · **0 fail-open** |
+| Gateway gate (live binary) | 28 | 18 hostile MCP tool calls: **0 allowed** (18 blocked) · 3/3 benign allowed · 7/7 misconfigs fail closed · **0 fail-open** |
 
-**10,608 checks. Zero silent allows. Zero fail-open outcomes.**
+**10,612 checks. Zero silent allows. Zero fail-open outcomes.**
 
 The safety invariant everywhere: **nothing consequence-bearing is ever
 silently allowed, and no failure mode fails open**. The engine may only
@@ -222,6 +222,8 @@ Misconfigurations fail closed — every one gates to `ask`, none fails open:
 - no .docket anywhere (gated) → **ask**
 - named loop does not exist → **ask**
 - no route under --strict → **ask**
+- a loop file with a missing baseline (--strict) → **ask**
+- the pinned loop itself is unparseable → **ask**
 
 ## Suite 6 — the gateway gate, live
 
@@ -263,6 +265,8 @@ Misconfigurations fail closed — every one blocks with a reason, at exit 0:
 - no .docket anywhere (gated) → **block**
 - named loop does not exist → **block**
 - no route under --strict → **block**
+- a loop file with a missing baseline (--strict) → **block**
+- the pinned loop itself is unparseable → **block**
 
 One asymmetry is deliberate and worth stating plainly: at the gateway
 there is no human to prompt, so `ask` does not ask — it **blocks**, and

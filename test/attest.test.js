@@ -249,6 +249,32 @@ test('keygen → sign → verify --attest works end to end', () => {
   assert.match(broken.stderr, /removed from the tail/);
 });
 
+test('--attest <file> verifies THAT file, and errors when it is not there', () => {
+  // Regression: `attest` is declared boolean so `--attest --key K` doesn't
+  // swallow the key, which sent a named file to the positionals where it was
+  // silently ignored — printing a green check about the latest attestation
+  // instead of the one the user named.
+  const { dir } = project();
+  const keyPath = path.join(dir, 'signing.key');
+  docket(dir, ['record', 'keygen', '--out', keyPath]);
+  docket(dir, ['record', 'sign'], { DOCKET_KEY: keyPath });
+
+  const missing = docket(dir, ['record', 'verify', '--attest', '/nope/absent.json']);
+  assert.equal(missing.status, 1, 'a named attestation that is not there must fail, not fall back');
+
+  const real = fs
+    .readdirSync(path.join(dir, '.docket', 'attestations'))
+    .map((f) => path.join(dir, '.docket', 'attestations', f))[0];
+  for (const args of [
+    ['record', 'verify', '--attest', real],
+    ['record', 'verify', `--attest=${real}`],
+  ]) {
+    const res = docket(dir, args);
+    assert.equal(res.status, 0, `${args.join(' ')}: ${res.stderr}`);
+    assert.match(res.stdout, /record matches the attestation/);
+  }
+});
+
 test('keygen refuses to clobber an existing key without --force', () => {
   const { dir } = project();
   const keyPath = path.join(dir, 'signing.key');

@@ -126,29 +126,38 @@ export async function cmdHook(argv) {
   const action = ACTION_FOR_TOOL[toolName] ?? DEFAULT_ACTION;
   const target = describeTarget(toolName, event.tool_input);
 
+  // Loading a loop can throw: bad frontmatter, a baseline that `extends`
+  // points at and isn't there, an inheritance cycle. An uncaught throw exits
+  // 1, and exit 1 is Claude Code's NON-blocking error — stderr is shown and
+  // the tool runs. For a gated hook that is a fail-open, and the whole point
+  // of `--loop`/`--strict` is that there isn't one. Catch it and gate.
   let loop;
-  if (flags.loop) {
-    if (!loopExists(docketDir, flags.loop)) {
-      return failClosed(
-        `no loop named "${flags.loop}" — have: ${loopNames(docketDir).join(', ') || '(none)'}`
-      );
-    }
-    loop = loadLoop(docketDir, flags.loop);
-  } else {
-    // No loop pinned in the config: route on the target. A routed loop
-    // governs; no route means no loop claims this call — pass through to
-    // Claude Code's own permissions (or ask, under --strict).
-    const [candidate] = matchLoops(listLoops(docketDir), target, { limit: 1 });
-    if (!candidate) {
-      if (flags.strict) {
-        emitDecision(
-          'ask',
-          `docket: no loop covers "${target}" and this project runs hooks in strict mode — a human must approve work outside the loops.`
+  try {
+    if (flags.loop) {
+      if (!loopExists(docketDir, flags.loop)) {
+        return failClosed(
+          `no loop named "${flags.loop}" — have: ${loopNames(docketDir).join(', ') || '(none)'}`
         );
       }
-      return 0;
+      loop = loadLoop(docketDir, flags.loop);
+    } else {
+      // No loop pinned in the config: route on the target. A routed loop
+      // governs; no route means no loop claims this call — pass through to
+      // Claude Code's own permissions (or ask, under --strict).
+      const [candidate] = matchLoops(listLoops(docketDir), target, { limit: 1 });
+      if (!candidate) {
+        if (flags.strict) {
+          emitDecision(
+            'ask',
+            `docket: no loop covers "${target}" and this project runs hooks in strict mode — a human must approve work outside the loops.`
+          );
+        }
+        return 0;
+      }
+      loop = candidate.loop;
     }
-    loop = candidate.loop;
+  } catch (err) {
+    return failClosed(`could not load the loops — ${err.message}`);
   }
 
   const result = checkWarrant(loop, action, target);

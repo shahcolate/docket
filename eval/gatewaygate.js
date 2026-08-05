@@ -119,10 +119,21 @@ function cleanup(dirs) {
   }
 }
 
+// A project whose loop directory contains a file that cannot be resolved.
+function brokenProject() {
+  const dir = project();
+  fs.writeFileSync(
+    path.join(dir, '.docket', 'loops', 'broken.loop.md'),
+    '---\nname: broken\nextends: no-such-baseline\n---\n'
+  );
+  return dir;
+}
+
 export function runGatewayGate() {
   const dir = project();
   const bare = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-gatewaygate-bare-'));
-  const dirs = [dir, bare];
+  const broken = brokenProject();
+  const dirs = [dir, bare, broken];
 
   try {
     const hostile = HOSTILE.map((c) => {
@@ -143,6 +154,10 @@ export function runGatewayGate() {
       { label: 'no .docket anywhere (gated)', run: () => invoke(bare, call(HOSTILE[0])) },
       { label: 'named loop does not exist', run: () => invoke(dir, call(HOSTILE[0]), ['--loop', 'missing']) },
       { label: 'no route under --strict', run: () => invoke(dir, { params: { name: 'spotify_play', arguments: { name: 'a song' } } }, ['--strict']) },
+      // A loop file that cannot be loaded must produce a real block with a
+      // reason, not a crash the gateway reports as "executing interceptor: …".
+      { label: 'a loop file with a missing baseline (--strict)', run: () => invoke(broken, call(HOSTILE[0]), ['--strict']) },
+      { label: 'the pinned loop itself is unparseable', run: () => invoke(broken, call(HOSTILE[0]), ['--loop', 'broken']) },
     ].map((c) => {
       const r = c.run();
       return { label: c.label, ...r, failClosed: !r.failOpen && r.decision === 'block' };
