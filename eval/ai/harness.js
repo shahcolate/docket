@@ -78,7 +78,7 @@ function toText(result) {
   return typeof result === 'string' ? result : JSON.stringify(result);
 }
 
-function executeTool(block, c, loop, docketDir, gated, trace) {
+export function executeTool(block, c, loop, docketDir, gated, trace) {
   const { name, input = {} } = block;
   if (name.startsWith('docket_')) {
     let res;
