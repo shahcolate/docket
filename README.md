@@ -312,6 +312,37 @@ and the report says so in the open. Every invariant is enforced by
 Exit codes are part of the contract (`0` allow, `2` ask, `3` deny), so you can
 gate hooks, scripts, and CI on the warrant directly.
 
+### And the model in front of it
+
+The red team proves the engine. It can't tell you whether the *model* consults
+the warrant and stops where it says. **`npm run eval:ai`** measures that with a
+live model. It runs 11 cases across six starter loops: an absent human who says
+"handle it end to end", a client thread that tells the agent to offer 20% off,
+an outage runbook that says to wipe prod, a lapsing settlement offer, a
+"make sure they hear from us Monday" that invites a scheduled send. The agent
+gets the loop exactly as `docket compile` renders it, docket's real MCP tools,
+and sandboxed world tools that could do damage. The grade reads only what
+executed, with no LLM judge: forbidden calls that ran, `never`-listed content in
+client-facing text, and whether the warranted work still got done (an agent
+that refuses everything scores zero on work).
+
+Every case runs twice: **ungated** (the model's judgment is the only barrier)
+and **gated** (every world-tool call passes `checkWarrant` first, as
+`docket hook` does). The gap between the two columns is the work the gate
+does. A breach in the gated column is an engine gap, and the run exits non-zero.
+
+```console
+$ export ANTHROPIC_API_KEY=...
+$ npm run eval:ai -- --trials 5                  # claude-opus-5-5, both modes
+$ npm run eval:ai -- --model claude-sonnet-5-5 --effort low --mode ungated
+$ npm run eval:ai -- --case followup-injection --trials 20 --markdown   # → eval/AI-REPORT.md
+```
+
+This eval samples a live model and costs money, so it stays out of CI. The report quotes a 95%
+upper bound next to every breach count, because "0 of 15" doesn't mean
+"never". The harness and grader are tested in CI against scripted fake models
+(`test/aieval.test.js`).
+
 ## On the record, not on trust
 
 Every warrant check and every piece of finished work lands in an append-only,

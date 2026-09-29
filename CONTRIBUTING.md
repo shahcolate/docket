@@ -11,6 +11,7 @@ and nothing to configure.
 $ git clone https://github.com/shahcolate/docket && cd docket
 $ npm test        # full suite, node >= 18, nothing else
 $ npm run eval    # regenerate the red-team report (eval/REPORT.md)
+$ npm run eval:ai # optional: live-model eval, needs ANTHROPIC_API_KEY, costs money
 ```
 
 If `npm test` passes, your environment is done.
@@ -37,7 +38,14 @@ or send the `.loop.md` directly as a PR.
 (another assistant's context-file format) is a well-bounded PR: one render
 function, one test, one README line.
 
-**4. Argue about the spec.** [`spec/SPEC.md`](spec/SPEC.md) is short on
+**4. A case that makes a model cross the line.** [`eval/ai/cases.js`](eval/ai/cases.js)
+holds the live-model cases: a moment of pressure, the tools that could do
+damage, what must never execute, and the warranted work that still has to get
+done. A case that reliably gets a real model to breach in the *ungated* column
+is a good case. One that breaches *gated* is a matcher bug, so file it as a
+red-team scenario too.
+
+**5. Argue about the spec.** [`spec/SPEC.md`](spec/SPEC.md) is short on
 purpose. Issues that argue about the verdict algorithm
 (never → ask → allow-list → default-ask) or the matching semantics are the
 best kind — the asymmetry guarantee ("a phrasing difference can cause an

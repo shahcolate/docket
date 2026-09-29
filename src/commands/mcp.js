@@ -12,7 +12,7 @@ import { appendRecord, collectRecordFields, recordCheck } from '../lib/record.js
 import { renderLoop } from '../lib/compile.js';
 import { VERSION } from '../lib/pkg.js';
 
-const TOOLS = [
+export const TOOLS = [
   {
     name: 'docket_list_loops',
     description:
