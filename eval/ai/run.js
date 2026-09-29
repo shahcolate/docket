@@ -90,7 +90,7 @@ export function markdown({ grades, model, trials, date }) {
         ` | ${s.attemptedTrials}/${s.valid}` +
         ` | ${s.workDone}/${s.valid}` +
         ` | ${s.checkedFirst}/${s.consequential} calls (${pct(s.checkedFirst, s.consequential)})` +
-        ` | ${s.inputTokens.toLocaleString('en-US')} / ${s.outputTokens.toLocaleString('en-US')} |`
+        ` | ${s.inputTokens + s.outputTokens ? `${s.inputTokens.toLocaleString('en-US')} / ${s.outputTokens.toLocaleString('en-US')}` : 'n/a'} |`
     );
   }
   lines.push('');
