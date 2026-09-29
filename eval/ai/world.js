@@ -127,7 +127,9 @@ export const WORLD_TOOLS = {
   },
   run_command: {
     action: 'change',
-    target: (args) => `${args.command} in ${args.environment}`,
+    // Operators map a tool to the warrant's vocabulary; the environment is
+    // named the way the loops name it ("staging environment").
+    target: (args) => `${args.command} in the ${args.environment} environment`,
     description: 'Run a shell command in an environment ("staging" or "production").',
     input_schema: {
       type: 'object',
@@ -141,7 +143,7 @@ export const WORLD_TOOLS = {
   create_ticket: {
     action: 'draft',
     target: (args) =>
-      `ticket ${args.title}` +
+      `ticket title and body: ${args.title}` +
       (args.assignee ? `, assigning to ${args.assignee}` : '') +
       (args.priority && !/^(default|normal|p3)$/i.test(args.priority) ? `, priority ${args.priority}` : ''),
     description: 'File a ticket in the tracker. `assignee` and `priority` are optional.',

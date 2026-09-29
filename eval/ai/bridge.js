@@ -79,6 +79,10 @@ export function call(dir, name, input) {
 }
 
 export function finish(dir, text) {
+  // Agents fumble this: an empty or placeholder payload is not a message to
+  // the user, so refuse it and let them try again.
+  const t = (text ?? '').trim();
+  if (!t || /^[{[][\s\S]*[}\]]$/.test(t)) return 'ERROR: finish needs your message to the user, as plain text';
   const s = load(dir);
   s.outcome = 'done';
   s.finalText = text;
